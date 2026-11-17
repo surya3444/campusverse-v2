@@ -1,0 +1,40 @@
+// Public API of roles and access on screen (decision 0020).
+export {
+  ACCESS_CHANGED,
+  AccessError,
+  ROLE_CHANGED,
+  accessOf,
+  accessOverview,
+  assignAccess,
+  createRole,
+  decideGrant,
+  endAccess,
+  renameRole,
+  setRolePermissions,
+  type AccessOverview,
+  type GrantRequest,
+  type ScopeInput,
+} from './application/access.js';
+export {
+  CASE_ENDED,
+  CASE_GRANTED,
+  CASE_MAX_HOURS,
+  caseGrants,
+  endCase,
+  explainAccess,
+  grantCase,
+  type AccessExplanation,
+  type CaseGrantRow,
+} from './application/cases.js';
+export {
+  AREAS,
+  CATALOGUE,
+  DATA_CLASSES,
+  NAMED_HEALTH,
+  LOCKED_ROLES,
+  dataClassOf,
+  isSensitive,
+  type Area,
+  type DataClass,
+  type GrantPlan,
+} from './domain/catalogue.js';

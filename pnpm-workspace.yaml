@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+  - modules/*/*
+
+# Refuse packages published less than 3 days ago (minutes). Supply-chain guard.
+minimumReleaseAge: 4320
+
+# Packages allowed to run install scripts. Everything else is blocked.
+allowBuilds:
+  esbuild: true
+  # Optional native speed-up for BullMQ; the pure-JS fallback is fine.
+  msgpackr-extract: false

@@ -1,0 +1,34 @@
+# Monthly timed restore check in the test account (guide: restore in an isolated environment).
+# The result and its duration go to the run summary and the CampusVerse/RestoreMinutes metric.
+# The live account's check is run by the owner with the same script (docs/runbooks/restore.md).
+# Repository variables: TEST_DEPLOY_ROLE_ARN, TEST_DB_SUBNET_GROUP, TEST_DB_SG.
+name: Restore check
+
+on:
+  schedule:
+    - cron: '30 22 1 * *' # 04:00 IST on the 2nd of each month
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  restore:
+    if: vars.TEST_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    environment: test
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.TEST_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+      - name: Restore the newest snapshot and check it
+        env:
+          CLUSTER: campusverse-test
+          DB_INSTANCE: campusverse-test
+          DB_SUBNET_GROUP: ${{ vars.TEST_DB_SUBNET_GROUP }}
+          DB_SG: ${{ vars.TEST_DB_SG }}
+        run: infra/scripts/restore-check.sh

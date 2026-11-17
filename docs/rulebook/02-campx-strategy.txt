@@ -1,0 +1,96 @@
+2. Understanding CampX's product strategy
+CampX sells one idea: every function of a college or university on one data spine, with AI
+built in, live in 8 weeks. It targets Indian higher education only . Its six "systems" are really
+five functional systems plus Medha, an AI layer across them. CampX's own Enterprise
+page counts "five systems and 26 modules"
+.
+How CampX positions itself
+Element What CampX states Source
+Market Institution types Streams and
+levels
+Scale " AI-first infrastructure for Indian higher
+education"
+; no mention of schools anywhere on
+the site
+Standalone college, autonomous college, group of
+colleges, university , distance/open university , ed-
+tech
+Engineering, medical, arts, sciences, commerce,
+management, law , pharmacy , agriculture; diploma
+to PhD and executive programmes
+140+ institutions, 500K+ students, f aculty and
+staff; 29 logos (UPES Online, IILM, CGU Odisha,
+GMRIT , CBIT , MGIT , MVSR, Anurag)
+Home
+Home
+Home
+Speed "Most institutions go live in 8 weeks" Home
+Home, Xpress
+<<PAGE 4>>
+Element What CampX states Source
+Commercial
+SaaS with per-user pricing and a "student-pays"
+model
+option for small colleges; Enterprise is a
+perpetual, white-labelled, single-tenant licence
+with a fixed annual maintenance fee and
+unlimited staff users
+AI Medha: chat, voice, Smart Analysis, W orkflow
+Agents; on Enterprise it runs on the institution's
+own Anthropic, OpenAI or Gemini account;
+"Course Studio" for AI-built courses
+T rust ISO 27001:2022 certified;
+"SOC 2-ready"
+;
+"On
+P ath to DPDP A Compliance"
+; 99.9% uptime SLA;
+1EdT ech L TI Advantage Complete dated 16 June
+2026
+Marketing Xpress media hub: 149 articles, 25 whitepapers, a
+magazine, events (NEXT by Campx with Google
+Cloud, 5 Nov 2026)
+Home, Enterprise
+Medha,
+Enterprise
+Security
+Xpress, Blueprint
+The five strategic moves behind the product
+1. Workflow-first, persona workspaces. Every system lists the roles that use it and
+what each does. A buyer sees their own staff in the product.
+2. One data spine and one learner record. The Enterprise page says a single learner
+record follows the student from enquiry to alumnus, with data entered once.
+3. Configuration, not code. W orkflows, roles, fees and approvals are configured "in
+minutes"
+. This is how CampX makes the 8-week promise believable.
+4. AI as governance, not a chatbot. Medha inherits the caller's role and tenant and logs
+every prompt, retrieval and action. CampX sells AI to cautious leadership by making it
+auditable.
+5. Trust and content as the sales motion. ISO 27001, the L TI certification and a large
+article library aimed at IQAC and leadership do the selling before a demo.
+What is verified and what is only claimed. Everything in this document about CampX
+comes from CampX's own site or from your TXT file. Nothing was independently audited.
+<<PAGE 5>>
+Claim Status
+ISO 27001:2022 SOC 2 DPDP L TI Advantage Complete Stated on the site; no certificate number or date
+published
+"Ready" only , so not certified
+"On path to" on most pages; the F AQ says "aligned
+with" (CampX contradicts itself)
+Stated with a date (16 June 2026); can be checked
+in the 1EdT ech product directory
+140+ institutions, 500K+ users Stated; logo wall shows 29 names
+Live-activity panel on the home page Illustrative sample events, not customer data
+Where your TXT file and the live site differ. The site lists more than the TXT file:
+Academics: an FFCS application and a "Timetabling & Schedules" specification (clash-
+free generation, substitutions, calendar sync).
+Finance: an Expenses application.
+Operations: Student Services, F acilities and Visitors as applications.
+Enrollment: applications named Pre-Admissions CRM, Applicant T racking System and
+Admissions Counselling.
+People: applications named Staff Onboarding, Attendance, Leave Management,
+Appraisals and Research Profile.
+Extra roles: Chief Finance Officer , Placement Officer , Administrative Officer and
+Admissions Director .
+All of these are included in the mapping in section 7 and marked "site only"
+.

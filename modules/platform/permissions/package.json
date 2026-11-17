@@ -1,0 +1,22 @@
+{
+  "name": "@campusverse/platform-permissions",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@campusverse/config": "workspace:*",
+    "@campusverse/db": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "ioredis": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
+  }
+}

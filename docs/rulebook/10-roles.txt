@@ -1,0 +1,1090 @@
+10. Role-based capability comparison and the Campusverse role
+ecosystem
+CampX defines 34 role workspaces for higher education, 38 with the site's extras.
+Campusverse needs about 50 ready-made roles because it also serves schools, groups,
+health staff , f amilies and outside partners. Each role is three things: a set of permissions, a
+scope in the hierarchy , and a home dashboard.
+10.1 Every CampX role, mapped
+CampX role CampX
+system
+Campusverse
+role template
+Status in
+Campusverse
+Dean / HoD Academics Dean; Head of
+Department
+HoD ready-made in
+V2 plan; Dean new
+F aculty Academics F aculty
+(college) /
+T eacher
+(school)
+Exam
+Academics Controller of
+Controller
+Examinations
+T eacher in V1 What
+Campusverse
+must add
+Calendar
+planning,
+outcome
+review ,
+accreditation
+sign-off
+CIE, evaluation,
+mentoring, OBE
+tagging
+IQAC
+Coordinator
+Academics,
+Operations,
+People
+IQAC
+Coordinator
+New Eligibility ,
+seating,
+evaluation,
+moderation,
+results publish
+In V2 plan Accreditation
+workspace,
+evidence
+library ,
+readiness score
+<<PAGE 56>>
+CampX role CampX
+system
+Campusverse
+role template
+Academic
+Coordinator
+Academics Academic
+Coordinator
+Course
+Coordinator
+Academics Course
+Coordinator
+Research
+Coordinator
+Academics,
+People
+Research
+Coordinator
+Feedback
+Coordinator
+Academics Feedback
+Coordinator (or
+IQAC
+permission)
+Student Academics,
+Operations
+Student (school
+/ college)
+Finance Officer Finance Finance Officer
+/ Accountant
+Status in
+Campusverse
+What
+Campusverse
+must add
+New Timetable
+generation,
+course
+allocation,
+section
+oversight
+New Syllabus
+pacing,
+assessment
+plan per course
+offering
+New Scholars,
+publications,
+grants
+New Survey design,
+cycles, action-
+taken
+V1 Course
+registration,
+hall tickets,
+library ,
+requests, Mitra
+V1 (Accountant) GL,
+reconciliation,
+statutory
+outputs
+Cashier / Fee
+Counter
+Finance Cashier V1 Day-close,
+exceptions log
+Scholarship
+Officer
+Finance Scholarship
+Officer
+New Scheme
+mapping,
+verification,
+disbursement
+<<PAGE 57>>
+CampX role CampX
+system
+Campusverse
+role template
+Status in
+Campusverse
+What
+Campusverse
+must add
+HR Admin Finance,
+People
+HR Admin;
+P ayroll Officer
+V1 (HR/P ayroll
+officer)
+Onboarding,
+documents,
+exit
+Management /
+CFO / Chief
+Finance Officer
+Finance,
+People
+Group Finance
+Head;
+Management
+Group owner in V1 Financial
+statements,
+compliance
+dashboard
+Student /
+P arent
+Finance P arent; Student V1 Dues, online
+payment,
+receipts
+Hostel W arden Operations W arden New Allocation,
+mess,
+complaints,
+outing passes
+T ransport
+Manager
+Operations T ransport
+Manager
+New Routes,
+vehicles, live
+trips
+Librarian Operations Librarian New Whole Library
+module
+Helpdesk
+Admin
+Operations Helpdesk
+Admin
+New Routing, SLAs,
+escalation
+Placement
+Coordinator /
+Placement
+Officer
+Operations Placement
+Officer
+In V2 plan Recruiter
+pipeline, offers,
+NIRF data
+Alumni
+Coordinator
+Operations Alumni
+Coordinator
+New Campaigns,
+events,
+mentorship,
+giving
+<<PAGE 58>>
+CampX role CampX
+system
+Campusverse
+role template
+Status in
+Campusverse
+What
+Campusverse
+must add
+Administrative
+Officer
+Operations
+(site)
+Administrative
+Officer
+New Student
+requests,
+f acilities, no-
+dues
+Admissions
+Head /
+Admissions
+Director
+Enrollment Admissions
+Head
+Office/Admissions
+in V1
+Merit,
+counselling,
+offers, funnel
+analytics
+Counsellor Enrollment Admission
+Counsellor
+New Lead
+workspace,
+calls,
+WhatsApp,
+scoring
+V erification
+Enrollment V erification
+Officer
+Officer
+New Documents
+Check
+Marketing T eam Enrollment Marketing
+Executive
+New Campaigns,
+source tracking
+Front Office Enrollment Front Office P artly (Visitors) W alk-in
+capture,
+appointments
+Applicant Enrollment Applicant New Applicant
+portal: forms,
+documents,
+fee, status
+HR Director People HR Head New W orkforce
+planning,
+attrition,
+policies
+Department
+Head
+People Head of
+V2 plan T eam
+Department
+attendance,
+leave approval,
+reviews
+<<PAGE 59>>
+CampX role CampX
+system
+Campusverse
+role template
+Staff Member People Staff (teaching
+and non-
+teaching)
+Management People Principal /
+Director /
+Registrar
+Medha Every role gets
+Mitra within its
+permissions
+Status in
+What
+Campusverse
+Campusverse
+must add
+V1 Self-service
+app
+V1 W orkforce
+dashboards
+P artial Role-specific
+Mitra (section
+14)
+Administrator ,
+F aculty ,
+Student
+(Medha)
+10.2 The Campusverse role catalogue
+Scope says where a role works in the hierarchy: Group → Institution (university , college or
+school) → Institute or wing → Department → Program or class → Section → Self or ward.
+" Approves" is the def ault; every institution can change it in the shared approval designer .
+Role Scope Responsibilities
+and key actions
+Dashboard
+and reports
+Approves Mitra helps
+with
+Channel
+Group Owner
+/ T rust Chair
+Group Sets strategy
+and policy;
+compares
+institutions
+Enrolment,
+collections,
+attendance,
+results,
+compliance
+per institution
+(totals only)
+Budgets, fee
+policy , senior
+hires
+Cross-
+institution
+questions,
+board
+briefings
+W eb,
+mobile
+Group
+Administrator
+(trust office)
+Group Configures
+group policy ,
+shared fee and
+pay rules, rule
+packs
+Policy
+overrides per
+branch, user
+counts
+Branch
+overrides
+Setup checks W eb
+Group
+Finance Head
+(CFO)
+Group Consolidated
+accounts, cash,
+fund
+accounting
+Day book,
+dues, budget
+vs actual,
+statutory
+status
+Large
+refunds,
+write-offs,
+budget
+changes
+V ariance
+explanations
+W eb
+<<PAGE 60>>
+Role Scope Responsibilities
+and key actions
+Dashboard
+and reports
+Vice-
+Chancellor /
+President
+University Academic and
+administrative
+leadership
+Institute
+comparison,
+accreditation
+readiness,
+NIRF trend
+Registrar University Statutory
+administration,
+records,
+affiliations
+Registrations,
+certificates
+issued,
+committee
+cases, returns
+due
+Principal /
+Director
+(college)
+Institution Runs the
+college
+Attendance,
+results, fees,
+staffing,
+AICTE
+deficiency
+Principal
+(school)
+School Runs the school Attendance,
+homework,
+results, fee
+dues,
+transport,
+health totals
+Vice-
+Principal /
+Academic
+Coordinator
+(school)
+Wing or
+stage
+Timetable,
+substitutions,
+curriculum
+pacing
+Syllabus
+coverage,
+substitutions,
+assessments
+due
+Dean Institute or
+f aculty
+Academic
+calendar ,
+programs,
+outcomes
+Outcomes by
+program,
+results,
+accreditation
+status
+Head of
+Department
+Department Courses,
+f aculty load,
+students of the
+department
+Attendance
+shortages, CIE
+status, OBE,
+workload
+Academic
+Coordinator
+(college)
+Institute Timetable,
+course
+allocation,
+sections
+Clashes,
+unallocated
+courses
+Approves Mitra helps
+with
+Channel
+Regulations,
+results
+publication,
+senior posts
+Degrees,
+transfers,
+migration
+Leave of
+HoDs,
+concessions,
+events
+Leave, T C,
+concessions,
+events
+Substitutions,
+lesson plans
+Curriculum
+changes,
+accreditation
+sign-off
+Leave, course
+allocation,
+condonation
+(first level)
+Timetable
+publish
+Briefings,
+what-if on
+NIRF
+W eb,
+mobile
+Compliance
+deadlines
+W eb
+Daily briefing W eb,
+mobile
+Daily briefing,
+report-card
+remarks
+review
+W eb,
+mobile
+Timetable
+drafts
+W eb
+Outcome
+analysis
+W eb
+At-risk
+students,
+department
+briefing
+W eb,
+mobile
+Timetable
+generation
+W eb
+<<PAGE 61>>
+Role Scope Responsibilities
+and key actions
+Course
+Coordinator
+F aculty
+(college)
+T eacher /
+Class
+T eacher
+(school)
+Controller of
+Examinations
+IQAC
+Coordinator
+Research
+Coordinator
+Admissions
+Head
+Admission
+Counsellor
+Course
+offering
+Syllabus pacing,
+assessment
+plan
+Own
+sections
+T each, mark
+attendance, run
+CIE, evaluate,
+mentor
+Own
+sections
+T each,
+attendance,
+diary ,
+homework,
+report cards,
+PTM
+Institution Exam schedule,
+eligibility ,
+seating,
+evaluation,
+results
+Institution OBE, NAAC,
+NBA, NIRF ,
+AQAR, surveys
+Institution Scholars,
+publications,
+grants
+Institution Pipeline, merit,
+counselling,
+offers
+Own leads Follow-ups,
+calls,
+WhatsApp
+Front Office Campus W alk-ins,
+visitors,
+appointments
+Dashboard
+and reports
+Coverage %,
+CIE
+completion
+My classes,
+at-risk
+mentees,
+pending
+marks
+My class,
+absentees,
+homework
+due
+Eligibility list,
+valuation
+progress,
+revaluation
+queue
+Readiness
+score, missing
+evidence,
+attainment
+gaps
+Scholar
+progress,
+publications
+by
+department
+Funnel,
+sources,
+counsellor
+performance,
+seat matrix
+My leads,
+reminders,
+scores
+T oday's
+visitors and
+walk-ins
+Approves Mitra helps
+with
+Question
+papers for
+the course
+Assignment
+extensions
+Student leave
+(class
+teacher)
+Question
+drafting by
+CO and
+Bloom level
+Lesson plans,
+questions,
+feedback on
+scripts
+Report-card
+remarks,
+worksheets
+Seating plans,
+anomaly
+checks on
+marks
+Report drafts,
+gap analysis
+Channel
+W eb
+W eb,
+teacher
+app
+T eacher
+app
+(offline),
+web
+W eb
+W eb
+Results
+publication,
+moderation
+Survey
+cycles,
+evidence
+finalisation
+Progress
+reviews
+Offers, quota
+seats, fee
+waivers
+Publication
+summaries
+Forecasts,
+follow-up
+drafts
+— Message
+drafts, next-
+best lead
+W eb
+W eb
+W eb,
+mobile
+Visitor entry — W eb,
+tablet
+<<PAGE 62>>
+Role Scope Responsibilities
+and key actions
+V erification
+Officer
+Institution Document
+checks,
+eligibility
+Marketing
+Executive
+Institution Campaigns,
+sources
+Finance
+Officer /
+Accountant
+Institution Fees, ledger ,
+reconciliation,
+expenses
+Cashier Counter Collect,
+receipt, day-
+close
+Scholarship
+Officer
+Institution Schemes,
+verification,
+disbursement
+HR Head Institution
+or group
+W orkforce plan,
+policies
+HR Admin Institution Onboarding,
+documents,
+attendance,
+leave, exit
+P ayroll
+Officer
+Institution P ay runs and
+statutory filings
+Staff
+(teaching and
+non-
+teaching)
+Self Check-in, leave,
+payslips,
+declarations
+Librarian Library Catalogue,
+circulation,
+fines
+W arden Hostel Rooms, mess,
+complaints,
+outings
+Dashboard
+and reports
+Pending
+documents
+Campaign
+performance
+Collections,
+dues,
+unmatched
+bank lines
+My collections
+today
+Applications
+by scheme,
+pending
+credits
+Attrition,
+vacancies,
+cadre ratios
+Joiners,
+expiring
+documents,
+exits
+Run status,
+statutory due
+dates
+My
+attendance,
+leave balance,
+payslips
+Issues,
+overdues,
+footf all
+Occupancy ,
+complaints,
+outing
+requests
+Approves Mitra helps
+with
+Channel
+Document
+OCR checks W eb
+acceptance
+— Campaign
+copy
+Refunds up
+to limit,
+Reconciliation
+suggestions
+expense
+payments
+W eb
+W eb
+— — W eb
+Scholarship
+verification
+Eligibility
+checks
+W eb
+Hires,
+transfers
+W orkforce
+analysis
+Leave (per
+policy),
+documents
+Letters and
+notices
+P ay run
+finalise (with
+finance)
+Explains pay
+variances
+— Policy
+questions
+Fine waivers Catalogue
+entry from
+ISBN
+Outing
+passes, room
+changes
+W eb
+W eb
+W eb
+Staff app
+W eb
+— W arden
+app
+<<PAGE 63>>
+Role Scope Responsibilities
+and key actions
+Mess
+Manager
+T ransport
+Manager
+Driver /
+Attendant
+Gate /
+Security
+F acilities
+Manager /
+Store Keeper
+Helpdesk
+Admin
+Placement
+Officer
+Alumni
+Coordinator
+Medical
+Officer /
+Nurse
+W ellbeing
+Counsellor
+Mess Menus, stock,
+attendance
+T ransport Routes,
+vehicles,
+drivers
+Own trip Start trip,
+boarding scan
+Campus Visitors, pick-
+ups, gate
+passes
+Campus Assets, stock,
+work orders,
+vendors
+Institution Ticket routing,
+SLAs
+Institution Recruiters,
+drives, offers
+Institution Alumni records
+and
+engagement
+Health
+Connect
+Records, visits,
+vaccinations,
+emergencies
+Own cases Counselling
+notes
+Mentor Own
+mentees
+Check-ins, logs,
+escalation
+Dashboard
+and reports
+Approves Mitra helps
+with
+Channel
+Meals served,
+cost per
+student
+Purchases (to
+limit)
+— W eb
+Live trips,
+delays,
+expiring
+documents
+Route
+changes
+Route
+suggestions
+W eb
+My route — — Driver
+T oday's
+expected
+visitors and
+pick-ups
+Open work
+orders, stock
+alerts, AMC
+expiries
+Open tickets
+by
+department,
+SLA breaches
+Placement %,
+median salary ,
+drive pipeline
+Engagement,
+events, giving
+T oday's visits,
+due
+vaccinations
+(named)
+My cases
+(notes visible
+to counsellor
+only)
+Mentee risk
+flags
+app
+Gate exit
+against
+approved
+pass
+— Gate app
+Purchase
+requests (to
+limit)
+— W eb
+Escalations Ticket
+W eb
+summaries
+Student
+eligibility
+exceptions
+Resume and
+JD matching
+W eb
+E vent
+approvals
+Campaign
+drafts
+W eb
+Sick-room
+send-home
+Visit notes W eb,
+mobile
+Referrals — W eb
+Escalation Meeting prep T eacher
+app
+<<PAGE 64>>
+Role Scope Responsibilities
+and key actions
+Student
+(school)
+Self Timetable,
+homework,
+results, clubs
+Dashboard
+and reports
+Approves Mitra helps
+with
+My day — Study
+companion
+(age-
+appropriate,
+no
+marketplace)
+My courses,
+attendance %,
+dues
+— Study
+companion,
+career
+guidance
+My child today Consent;
+child leave;
+outing passes
+Questions in
+regional
+languages
+Channel
+Student
+app
+Student
+app, web
+P arent
+app
+Student
+(college)
+Self Registration,
+courses, exams,
+library ,
+placements
+P arent /
+Guardian
+Own wards Attendance,
+homework,
+results, fees,
+bus, health
+alerts, consent
+Applicant Own
+application
+Apply , upload,
+pay , track
+Alumni Self Profile, events,
+mentoring,
+giving
+External
+Recruiter
+Own
+company
+Post jobs, see
+shortlists,
+schedule
+P artner
+Doctor /
+Hospital
+Consented
+students
+only
+T eleconsults,
+referrals
+Auditor /
+Inspector
+(read-only)
+As granted,
+time-limited
+Review
+evidence
+Data
+Protection /
+Grievance
+Officer
+Institution Data requests,
+breaches,
+consent
+coverage
+10.3 How hierarchical access works
+Every permission check combines four parts:
+1. Role: what actions are allowed.
+Application
+status
+Opportunities,
+events
+My drives and
+shortlists
+Referred
+cases
+E vidence
+library , ledgers
+Requests by
+SLA, consent
+coverage %
+— Application
+help
+W eb,
+mobile
+— — W eb
+Offers — Recruiter
+portal
+— — P artner
+portal
+— — W eb
+Data
+corrections
+and erasures
+Request
+triage
+W eb
+<<PAGE 65>>
+2. Scope node: where in the hierarchy . A group role sees all institutions below it; a
+branch user sees only their branch.
+3. Relationship: own sections, own mentees, own wards, own leads.
+4. Data class: public, internal, personal, financial, or sensitive (health, counselling,
+category and caste certificates).
+Three rules sit on top:
+Sensitive data is opt-in per role. Group owners and principals see health totals, never
+names, unless granted for a case. Every such grant is logged.
+Break-glass access exists for emergencies. It needs a reason, alerts the data
+protection officer and expires.
+Mitra inherits the same four checks. It can never answer with data the user could not
+open themselves.
+Institutions copy and edit any template. Changes are versioned and logged.

@@ -1,0 +1,400 @@
+14. AI architecture: Mitra compared with Medha
+Mitra should copy Medha's governance model exactly and beat it on reach. Medha's
+governance: sees only what the user sees, logs every step, acts only under the user's
+authority . Mitra's reach: nine systems instead of five, group-wide questions, school-safe
+behaviour for children, Indian languages, and compliance agents that work every night.
+Mitra must be one assistant built on one set of tools, not a separate bot per module.
+14.1 Medha vs Mitra
+Dimension Medha (as stated by
+CampX)
+Campusverse V1 AI
+Assistant
+Mitra (recommended)
+Scope Five systems, one
+institution
+One branch at a
+time
+Nine systems; group roles
+ask across institutions
+Modes Learning Assistant,
+T eaching Assistant,
+Smart Analysis,
+W orkflow Agents
+Chat with simple
+actions
+Ask Mitra, Mitra on every
+screen, Agents, W atch,
+Student Companion,
+T eacher Assistant
+V oice Students None Students, parents and
+drivers; regional
+languages
+Languages Not stated English English, Hindi, T elugu,
+T amil, Kannada, Malayalam
+first; more per state pack
+Proactive
+work
+Not described None Mitra W atch: nightly
+checks against rule packs;
+each finding opens a task
+with evidence
+Children Not described Not addressed Age-aware: no profiling,
+no marketplace, no ads;
+study help only for minors
+Health data Not applicable Not separated Never reads named health
+or counselling data except
+for medical roles
+<<PAGE 105>>
+Dimension Medha (as stated by
+CampX)
+Governance Role- and tenant-
+scoped; every prompt,
+retrieval and action
+audited; inside the
+platform
+Models Bring your own
+Anthropic, OpenAI or
+Gemini account
+(Enterprise)
+Campusverse V1 AI
+Assistant
+Respected
+permissions in the
+demo
+Mitra (recommended)
+Same, plus data classes,
+approval matrix, per-
+agent evaluation, India-
+region inference
+Not stated Model-neutral gateway;
+bring-your-own on
+dedicated cells
+14.2 The role assistants
+All of these are the same Mitra, with tools and tone chosen by role.
+" Alone" means Mitra
+may do it without a confirm click. Everything else needs the user's confirmation, or a
+second approver where shown.
+Assistant Who What it does Alone Needs approval
+Student
+Companion
+(school)
+Student
+Companion
+(college)
+Students under
+Explains
+18
+homework and
+lessons from the
+class's own
+material; reminds
+of deadlines
+Students 18+ Study help,
+registration rules,
+dues, hall ticket
+status, career
+questions
+Answer ,
+explain
+Nothing
+transactional; no
+marketplace, no
+profiling
+Answer Course
+registration
+changes,
+payments
+<<PAGE 106>>
+Assistant Who What it does Alone Needs approval
+P arent
+assistant
+T eacher
+assistant
+F aculty
+assistant
+Principal and
+management
+assistant
+Group
+intelligence
+P arents Attendance,
+homework,
+results, fees, bus
+ET A, consent
+questions, in
+their language, by
+voice
+School teachers W orksheets,
+lesson plans,
+report-card
+remarks, diary
+entries
+College f aculty Lesson plans,
+CO- and Bloom-
+tagged
+questions, rubric
+feedback, at-risk
+mentees
+Principals,
+directors, owners
+Daily briefing,
+cross-module
+and cross-branch
+questions,
+anomalies
+Group owners,
+trust office
+Compare
+institutions;
+consolidated
+trends; where to
+intervene
+HR assistant HR, staff Policy answers,
+leave balances,
+letters,
+workforce
+analysis
+Answer P ayments,
+consent changes,
+leave requests
+Draft Publishing
+remarks or marks
+Draft Publishing
+questions, marks
+Answer Any action
+Answer Any action
+Answer ,
+draft
+Issuing letters,
+leave decisions
+<<PAGE 107>>
+Assistant Who What it does Alone Needs approval
+Finance
+assistant
+Admission
+assistant
+Academic
+assistant
+Examination
+assistant
+IQAC and
+accreditation
+assistant
+Healthcare
+assistant
+Career
+guidance
+assistant
+Finance staff Dues reminders,
+reconciliation
+suggestions,
+variance
+explanations
+Counsellors,
+admissions head
+Lead scoring,
+follow-up drafts,
+document OCR
+checks, forecasts
+Deans,
+coordinators
+Timetable drafts,
+substitution
+suggestions,
+elective
+allocation runs
+Controller of
+Examinations
+Seating plans,
+eligibility
+exceptions, mark
+anomalies
+IQAC Draft SAR, AQAR
+and NIRF
+sections from
+evidence; gap
+lists
+Medical officer ,
+nurse
+Visit notes,
+vaccination due
+lists, stock alerts
+College students;
+senior secondary
+for guidance only
+Resume
+feedback, mock
+interviews, job
+matching
+Draft Sending
+reminders in
+bulk; any posting
+or refund
+Draft,
+score
+Offers, waivers
+Draft Publishing
+timetables or
+allocations
+Draft, flag Results
+publication
+(second
+approver)
+Draft Submission
+(second
+approver)
+Draft P arent alerts with
+clinical content
+Answer ,
+draft
+Applying to jobs
+<<PAGE 108>>
+Assistant Who What it does Alone Needs approval
+W orkflow
+agents
+Compliance
+agents (Mitra
+W atch)
+Cross-module
+analytics
+Predictive
+insights
+Any role, within
+permissions
+Multi-step tasks:
+create a
+feedback form,
+schedule PTMs,
+raise purchase
+requests
+Principals,
+registrar , IQAC,
+DPO
+Nightly checks:
+AICTE f aculty
+deficiency ,
+attendance
+shortages before
+exams, ABC
+uploads pending,
+missing PSOs,
+consent
+coverage, UDISE+
+deadlines
+Leadership " At-risk students
+with pending
+fees"
+,
+"hostel
+occupancy vs
+mess cost"
+Mentors, HoDs Early-warning
+signals with
+reasons from
+attendance,
+marks, fee status,
+consented
+wellbeing check-
+ins
+Draft and
+route
+Publish or submit
+Open a
+task with
+evidence
+Any fix
+Answer —
+Flag Any intervention
+is a human
+decision
+14.3 How Mitra is built
+Mitra has seven parts, drawn after this list:
+1. Surfaces: a chat panel in every app, an "analyse" button on every table, voice in the
+mobile apps, and the task inbox for agent and W atch output.
+<<PAGE 109>>
+2. Orchestrator: plans the steps of a request and chooses tools. It holds no data of its
+own.
+3. T ool registry: every module publishes its actions and queries as typed tools, the same
+permissioned APIs the screens use. Mitra cannot call anything the user's role could
+not.
+4. Knowledge: a semantic layer over the reporting store (so answers never slow daily
+work), plus an index of the institution's own regulations, handbooks and circulars.
+5. Policy guard: applies scope, relationship and data class to every retrieval; strips
+named health and counselling data for non-medical roles; enforces the age rules.
+6. Model gateway: model-neutral, inference in Indian regions, cost metering per tenant,
+bring-your-own account for dedicated cells.
+7. Audit and evaluation: every prompt, retrieval, tool call and output goes to the Activity
+Log. Each agent ships with a test set and is re-tested on every model change.
+Mitra architecture · one assistant, one policy guard
+Every request passes the policy guard before it touches data, and everything lands in the
+Activity Log. That is why one Mitra can serve a five-year-old's parent and a university
+registrar safely .
+<<PAGE 110>>
+14.4 Rules for safe AI
+Action class Examples Rule
+Read and
+answer
+"Who is below 75% this month?" Draft Allowed within the user's
+permissions; answer shows its
+sources
+Allowed; nothing leaves draft
+without a person
+Preview and one confirm click
+Reversible
+action
+Sensitive
+action
+Never Lesson plan, reminder text, SAR
+section, timetable
+Create a club, schedule a PTM,
+open a ticket
+Publish results, send bulk
+messages, refunds, offers, consent
+changes, anything about health
+T rain on institution data; use
+children's data for profiling or ads;
+read counselling notes; act without
+a user
+Confirm click plus a second
+approver from the approval
+designer
+Blocked in the policy guard
+Answers about individuals always show the records used. Risk scores always show their
+reasons and never trigger action on their own. The DPDP Act bars tracking or behavioural
+monitoring of children except where the Fourth Schedule allows it for an institution's
+educational purposes or children's safety , so Mitra's early warning runs only for those
+purposes (Fourth Schedule summary).
+14.5 The name: Mitra
+Three names appear across your documents:
+"V erse AI" (Rebuild Blueprint),
+"Mitra" (V2
+Product Document) and CampX's "Medha"
+. Recommendation: keep Mitra. In product
+menus it is "Mitra"
+; the formal brand is "Campusverse Mitra"
+. Drop "V erse AI"
+.
+<<PAGE 111>>
+Option For Against
+Mitra ("friend") V erse AI Saathi, Sahayak,
+Disha
+W arm; understood across Indian
+languages; suits students, parents
+and staff; works as a verb ("ask
+Mitra")
+Ties to the Campusverse brand Listed earlier as alternatives Common word; like Medha it is a
+Sanskrit-derived name, so
+marketing should not invite direct
+comparison; avoid "Shiksha Mitra"
+,
+which is a teacher designation in
+Uttar Pradesh
+Generic "X AI" pattern; says
+nothing to a parent;
+"V erse" is
+widely used in tech names
+Saathi is close to the ministry's
+SA THEE platform; Sahayak sounds
+formal; Disha is used by many
+government schemes
+Run a trademark search in classes 9 and 42 for "Campusverse Mitra" before launch.

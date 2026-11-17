@@ -1,0 +1,12 @@
+@import '@campusverse/ui/styles.css';
+@source '../app';
+@source '../lib';
+
+/* The shared font stacks name the regional faces; this English-only app doesn't load them, and
+   an undefined variable would drop the whole stack. */
+:root {
+  --font-noto-kannada: system-ui;
+  --font-noto-telugu: system-ui;
+  --font-noto-tamil: system-ui;
+  --font-noto-devanagari: system-ui;
+}

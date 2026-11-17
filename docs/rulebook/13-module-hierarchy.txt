@@ -1,0 +1,2232 @@
+13. Recommended systems and module hierarchy
+The nine systems hold 46 modules; Campus Core adds 11 shared services and Mitra adds 8
+capabilities. Every V1 module keeps its name or moves whole into one of them; none is
+dropped.
+<<PAGE 76>>
+13.1 Final system architecture
+System Purpose Modules Institution
+Enrollment T urn
+enquiries into
+enrolled
+students,
+f airly and
+measurably
+Admissions CRM;
+Applications;
+Merit & Seat
+Allocation; Offers
+& Onboarding
+Academics Plan, teach,
+assess and
+certify
+learning
+Academic
+Structure; Course
+Registration;
+Timetable;
+Attendance;
+T eaching &
+Learning;
+Assessments;
+Exams & Results;
+OBE; Feedback &
+Surveys; Library;
+Research & PhD
+Student Records;
+Certificates & ID
+Cards; Mentoring;
+Clubs & E vents
+Primary roles Shared
+types
+All Admissions
+Head, Counsellor ,
+Front Office,
+V erification
+Officer ,
+Marketing,
+Applicant, P arent
+All (modules
+vary by
+profile)
+Dean, HoD ,
+Principal,
+Academic and
+Course
+Coordinators,
+F aculty/T eacher ,
+CoE, IQAC,
+Librarian,
+Research
+Coordinator ,
+Student, P arent
+All Office staff ,
+Registrar , Class
+T eacher , Mentor ,
+Student, P arent
+dependencies
+Communications,
+Documents,
+W orkflow , Rule
+P acks (eligibility ,
+quotas),
+Integrations
+(payments,
+WhatsApp, IVR),
+Privacy & Consent
+Rule P acks,
+W orkflow ,
+Documents,
+Integrations (L TI,
+devices), Reports
+Organization,
+Privacy & Consent,
+Documents & e-
+Sign,
+Communications
+Students Keep one
+lifelong
+record per
+learner and
+support them
+through their
+stay
+Finance Bill, collect,
+account for
+and report
+every rupee
+Fees; Scholarships
+& Concessions;
+Accounts &
+Expenses
+All Finance Officer ,
+Cashier ,
+Scholarship
+Officer , CFO,
+P arent, Student
+W orkflow ,
+Integrations
+(gateways, bank,
+T ally), Rule P acks
+(fee caps, GST),
+Reports
+<<PAGE 77>>
+System Purpose Modules Institution
+People Hire, run, pay
+and develop
+staff lawfully
+Operations Run the
+physical
+campus
+safely
+Primary roles Shared
+types
+dependencies
+HR; Staff
+Attendance &
+Leave; Appraisals
+& Development;
+P ayroll
+All HR Head, HR
+Admin, P ayroll
+Officer , HoD ,
+Staff
+W orkflow ,
+Documents,
+Integrations
+(biometric, bank,
+statutory files),
+Rule P acks (state
+PT and L WF ,
+Labour Codes)
+Integrations (GPS,
+RFID),
+Communications,
+W orkflow
+Health
+Connect
+Career
+Connect
+Quality &
+Compliance
+Keep
+students safe
+and healthy ,
+privately
+Make
+students
+employable
+and keep
+them
+connected
+Prove quality
+and meet
+every
+regulatory
+duty from
+live data
+T ransport; Hostel
+& Mess; Inventory
+& Assets; F acilities
+& Maintenance;
+Visitors & Gate;
+Helpdesk
+Health Records;
+Medical Visits &
+Stock; Emergency;
+Counselling &
+W ellbeing; Care
+Network
+Placements;
+Internships; Skill-
+Up & Micro-
+credentials;
+Career Guidance;
+Alumni
+Accreditation;
+Government
+Reports;
+Grievances &
+Committees;
+Compliance
+Monitor
+All T ransport
+Manager , Driver ,
+W arden, Mess
+Manager , Store
+Keeper , F acilities
+Manager ,
+Security ,
+Helpdesk Admin
+Schools
+mainly;
+residential
+colleges
+Colleges,
+universities;
+senior
+secondary
+(guidance
+only)
+All (content
+varies)
+Medical Officer ,
+Nurse, W ellbeing
+Counsellor ,
+P arent, P artner
+Doctor , Principal
+(totals only)
+Placement
+Officer , Alumni
+Coordinator ,
+Recruiter ,
+Student, Alumni
+IQAC
+Coordinator ,
+Registrar ,
+Principal, Data
+Protection
+Officer ,
+committee
+members
+Privacy & Consent
+(strict), health
+vault,
+Communications,
+Integrations
+(partners)
+Privacy & Consent
+(age gate),
+Documents
+(badges),
+Integrations,
+Reports
+Reports, Rule
+P acks, Documents
+(evidence), Mitra
+W atch
+<<PAGE 78>>
+System Purpose Modules Institution
+Campus
+Core
+Mitra (AI
+layer)
+Shared
+services
+every system
+inherits
+Ask, analyse
+and act
+across every
+system
+within the
+user's
+permissions
+Home
+(experience)
+The first
+screen for
+every role
+Organization &
+Hierarchy; Identity
+& Access; Rule
+P acks; W orkflow &
+Approvals;
+Communications;
+Documents & e-
+Sign; Privacy &
+Consent; Activity
+Log; Reports &
+Analytics;
+Integrations Hub;
+Data Import
+Ask Mitra; Mitra
+on every screen;
+Mitra Agents;
+Mitra W atch;
+Student
+Companion;
+T eacher Assistant;
+V oice &
+Languages; AI
+Governance
+Dashboards; My
+W ork; All
+Institutions
+Primary roles Shared
+types
+dependencies
+All Group
+Administrator , IT
+Admin, Data
+Protection
+Officer
+—
+All E very role Identity & Access,
+Reports &
+Analytics, Activity
+Log, Integrations
+Hub (model
+gateway)
+All E very role Reports, W orkflow
+13.2 Identity of each system: what it owns and how it connects
+System Problems it
+solves
+Enrollment Lost leads,
+manual merit
+lists, unclear
+status for
+f amilies
+Data it owns
+(source of
+truth)
+Leads,
+applicants,
+applications,
+documents
+submitted,
+merit lists, seat
+matrix, offers
+T alks to Students, Finance,
+Academics,
+Communications
+W orkflows it
+controls
+Enquiry →
+application →
+verification →
+merit →
+counselling →
+offer → enrol
+Reports it
+generates
+Funnel,
+sources,
+counsellor
+performance,
+seat fill,
+category-wise
+admissions
+How Mitra
+helps
+Lead scoring,
+follow-up
+drafts,
+document OCR
+checks, seat
+forecasts
+<<PAGE 79>>
+System Problems it
+solves
+Academics Re-keyed
+structures,
+manual
+timetables, late
+shortage
+detection,
+accreditation
+scramble
+Students Student history
+stitched
+together every
+year; certificate
+queues
+Finance Leakage,
+manual
+reconciliation,
+double entry
+into T ally
+People P aper HR,
+payroll errors,
+statutory risk,
+missing f aculty
+data
+Operations Unsafe
+transport,
+untracked
+repairs, lost
+assets
+Data it owns
+(source of
+truth)
+Programs,
+regulations,
+courses,
+batches,
+sections,
+timetables,
+attendance,
+marks, results,
+outcomes,
+library holdings,
+research
+records
+Learner record
+and identifiers,
+guardians,
+enrolment
+history , credits
+ledger ,
+certificates
+issued,
+mentoring
+notes, activities
+Fee plans, dues,
+receipts,
+concessions,
+scholarships,
+ledger , budgets,
+bank lines
+Staff records,
+documents,
+attendance,
+leave,
+appraisals, pay
+structures, pay
+runs, statutory
+filings
+V ehicles,
+routes, trips,
+rooms,
+allocations,
+stock, assets,
+work orders,
+visitors, tickets
+T alks to Students, Finance,
+People, Quality &
+Compliance,
+Career Connect
+All systems read
+the learner record
+Enrollment,
+Students,
+Operations,
+People, Quality &
+Compliance
+Academics
+(workload,
+research), Finance
+(salary journal),
+Quality &
+Compliance
+Finance (fees,
+purchases),
+Students, Health
+Connect
+(emergency),
+Communications
+W orkflows it
+controls
+Setup and
+rollover;
+registration;
+teaching;
+assessment;
+exams to
+results; OBE
+cycle; library
+circulation;
+PhD lifecycle
+Promotions
+and transfers,
+exit and re-
+entry ,
+certificate
+requests, no-
+dues,
+mentoring,
+events
+Billing and
+collection,
+concessions,
+refunds,
+scholarships,
+month-end,
+budgets
+Recruit to exit;
+leave; pay run;
+statutory filing;
+appraisal
+cycles
+Route planning
+and trips;
+hostel
+allocation;
+procurement;
+maintenance;
+visitor and
+pick-up checks;
+tickets
+Reports it
+generates
+Attendance,
+results
+analysis,
+syllabus
+coverage,
+attainment,
+library usage
+Strength by
+category and
+gender ,
+certificates
+issued,
+mentoring
+coverage,
+participation
+Day book,
+collections,
+dues, ledger ,
+trial balance,
+budget vs
+actual
+Headcount,
+attrition, cadre
+ratios, payroll
+register ,
+statutory
+status
+Occupancy ,
+transport
+usage, stock,
+asset register ,
+SLA
+performance
+How Mitra
+helps
+Timetable
+drafts,
+question
+papers by CO
+and Bloom
+level, lesson
+plans, report-
+card remarks,
+at-risk alerts
+Mentee
+briefings;
+certificate
+requests
+answered in
+chat
+Dues
+reminders,
+variance
+explanations,
+reconciliation
+suggestions
+Policy answers
+for staff , pay
+variance
+explanations,
+letter drafts
+Route
+suggestions,
+ticket triage,
+stock alerts
+<<PAGE 80>>
+System Problems it
+solves
+Data it owns
+(source of
+truth)
+T alks to W orkflows it
+controls
+Reports it
+generates
+How Mitra
+helps
+Health
+Connect
+Late emergency
+response, no
+health history ,
+parent anxiety
+Health records,
+visits,
+vaccinations,
+medicines,
+counselling
+notes, consents
+for partners
+Students (status
+only), Academics
+(medical leave
+status),
+Communications,
+partners (with
+consent)
+Sick-room visit;
+check-up
+camps;
+vaccination
+reminders;
+emergency;
+referral and
+teleconsult
+T otals for
+management
+and
+accreditation,
+never names
+Visit notes for
+nurses; nothing
+about named
+students for
+non-medical
+roles
+Career
+Connect
+Placement data
+in
+spreadsheets;
+no skills
+pathway
+Career profiles,
+opportunities,
+applications,
+offers,
+internships,
+badges, alumni
+Academics (CGP A,
+credits), Students,
+Quality &
+Compliance
+(NIRF), Finance
+(paid courses)
+Drive lifecycle;
+internship
+lifecycle;
+course
+enrolment;
+badge issue;
+alumni
+engagement
+Placement %,
+median salary ,
+higher studies,
+internships,
+badges
+Resume
+feedback,
+mock
+interviews, job
+matching
+(adults)
+Quality &
+Compliance
+Accreditation
+and returns
+rebuilt by hand;
+missed
+deadlines;
+committee non-
+compliance
+E vidence
+library ,
+accreditation
+submissions,
+government
+return files,
+committee
+cases,
+obligations
+register
+Reads every
+system; writes
+tasks to owners
+Accreditation
+cycles, return
+filing,
+grievance
+cases,
+compliance
+findings
+Readiness
+scores,
+deadline
+calendar , filed
+returns,
+committee
+registers
+Report drafts;
+Mitra W atch
+findings
+Which CampX capabilities land in each system (detail in section 7):
+Enrollment takes all of CampX Enrollment.
+Academics takes CampX Academics, except Mentoring, Events and the credential
+issuing, plus Library from CampX Operations and Research Profile from CampX
+People.
+Students takes Mentoring and Events from CampX Academics and Student Services
+from CampX Operations.
+Finance takes Fees, Scholarships and Expenses.
+People takes CampX People plus P ayroll from CampX Finance.
+Operations takes Hostel, Mess, T ransport, F acilities, Maintenance, Helpdesk and
+Visitors.
+Career Connect takes Placements and Alumni.
+Quality & Compliance takes the NAAC, NBA and IQAC exports and the f aculty-
+compliance reports.
+<<PAGE 81>>
+Mitra takes all of Medha.
+13.3 Hierarchy: Enrollment
+"For" shows which institution profiles get each sub-module: All, School, College (affiliated
+and autonomous), University , or HE (all higher education).
+Module Sub-module Features Roles For
+Admissions
+CRM
+Leads &
+Sources
+Admissions
+CRM
+Pipeline &
+Follow-ups
+Admissions
+CRM
+Campaigns &
+Reports
+Applications Application
+Forms
+Applications Documents
+Check
+Applications Application
+Fees
+Merit & Seat
+Allocation
+Eligibility &
+Merit
+W eb forms, walk-in
+capture, agents with
+commission, campaigns
+with source tags, bulk
+import, duplicate check
+Kanban by stage,
+reminders, calls and
+WhatsApp on the lead
+timeline, prospect
+scoring
+Campaign builder ,
+funnel, source return,
+counsellor performance
+Multi-step programme-
+wise forms, validation,
+save and resume,
+applicant portal
+Upload, OCR of
+marksheets, T C and
+certificates, officer
+verification, status
+Online payment,
+receipts, waivers
+Eligibility from the rule
+pack, merit lists, cut-
+offs, tie-break rules
+Counsellor , Front
+Office, Marketing
+All
+Counsellor ,
+Admissions Head
+All
+Admissions Head,
+Marketing
+All
+Applicant, P arent All
+V erification
+Officer
+All
+Applicant, Finance
+Officer
+All
+Admissions Head HE
+<<PAGE 82>>
+Module Sub-module Features Roles For
+Merit & Seat
+Allocation
+Merit & Seat
+Allocation
+Offers &
+Onboarding
+Offers &
+Onboarding
+Offers &
+Onboarding
+Offers &
+Onboarding
+Counselling
+Rounds
+Rounds, choice filling,
+seat matrix by category
+and quota within
+approved intake
+School
+Admissions
+Age eligibility per class,
+sibling priority , RTE
+Section 12(1)(c) lottery ,
+interaction slots
+Offers Offer and provisional
+letters, seat-
+confirmation fee, accept
+or decline, waitlist
+movement
+Enrol One step creates the
+student record, batch,
+section, roll number , fee
+plan, parent login and ID
+card
+Consent at
+Entry
+Privacy notice, guardian
+verification, purpose-
+wise consent, AP AAR
+optional with consent
+Induction Checklist, document
+submission, orientation,
+app invites
+Admissions Head HE
+Principal, Office School
+Admissions Head,
+Applicant
+All
+Office All
+P arent, Applicant All
+Office, Student All
+13.4 Hierarchy: Academics
+Module Sub-module Features Roles For
+Academic
+Structure
+Explorer &
+Setup Guide
+T ree view of
+everything; 8-step
+setup guide (kept
+from V1)
+Academic
+Coordinator ,
+Principal
+All
+<<PAGE 83>>
+Module Sub-module Features Roles For
+Academic
+Structure
+Academic
+Structure
+Academic
+Structure
+Academic
+Structure
+Academic
+Structure
+Academic
+Structure
+Academic
+Structure
+Course
+Registration
+Course
+Registration
+Programs &
+Classes
+Programs,
+specialisations,
+streams, classes,
+NEP stages
+(5+3+3+4)
+Regulations Rule version per
+program: credits,
+electives, pass rules,
+exit awards; batches
+keep their version
+Batches &
+T erms
+Admission cohorts;
+terms; two intakes a
+year; lateral entry; re-
+entry
+Classes,
+Sections &
+Groups
+Sections, strength
+limits, lab and
+tutorial groups
+Subjects &
+Courses
+L - T -P credits, NCrF
+hours, course type,
+COs, Bloom level
+T eacher
+Allocation
+T eacher per subject
+per section;
+workload check
+against HR norms
+Y ear Rollover Promotion by rule
+pack (pass, detain,
+exit with award);
+final year to alumni
+Curriculum Published per
+program and
+regulation
+Registrations T erm parity check,
+add/drop windows,
+advisor approval
+Dean, Principal All
+Dean, CoE HE
+Academic
+Coordinator
+HE
+Academic
+Coordinator
+All
+HoD All (credits
+optional for
+schools)
+HoD All
+Principal, CoE All
+Dean HE
+Student,
+F aculty
+advisor
+HE
+<<PAGE 84>>
+Module Sub-module Features Roles For
+Course
+Elective
+Registration
+Baskets
+Seat caps; allocation
+by preference, CGP A
+or first come
+Course
+Credit Rules Minimum and
+Registration
+maximum credits,
+prerequisites,
+majors, minors,
+honours, value-
+added courses
+Course
+Registration
+Open Electives
+& MOOCs
+Electives across
+institutes of one
+university;
+SW A Y AM/NPTEL
+slots within the 40%
+cap
+Course
+Registration
+Slot & F aculty
+Choice
+FFCS: student picks
+slot and f aculty
+Timetable Class
+Timetable
+Clash-free auto-
+generation across
+teachers, rooms and
+groups
+Timetable My Timetable T eacher's week;
+Google or Outlook
+calendar sync
+Timetable Substitutions Free teachers
+suggested when one
+is on leave; class
+notified
+Timetable Rooms & Labs Room booking, lab
+slots
+Timetable Exam
+Clash check for
+Timetable
+elective
+combinations
+Academic
+Coordinator
+HE; school
+streams
+Dean HE
+Student HE
+Student University
+(optional)
+Academic
+Coordinator
+All
+T eacher All
+Vice-Principal,
+HoD
+All
+Coordinator All
+CoE All
+<<PAGE 85>>
+Module Sub-module Features Roles For
+Attendance Mark
+Day-wise (school) or
+Attendance
+period-wise
+(college); QR- T O TP ,
+biometric, RFID; f ace
+(consent-gated,
+later); offline
+T eacher All
+Attendance View
+Attendance
+Student, parent and
+mentor views
+Student,
+P arent,
+Mentor
+P arent, Class
+T eacher
+All
+All
+Attendance Leave
+Requests
+P arent applies in app;
+medical leave status
+from Health Connect
+Attendance Shortage &
+Condonation
+Threshold from rule
+pack (often 75%),
+alerts, condonation
+approval, feeds exam
+eligibility
+Attendance Holidays Per campus and per
+state
+T eaching &
+Learning
+My Classes Sections taught, at-
+risk students
+T eaching &
+Learning
+Lesson Plans T erm plans, delivery
+tracking, syllabus
+coverage %
+T eaching &
+Learning
+Class Diary &
+Homework
+Diary and homework
+posted to the parent
+app
+T eaching &
+Learning
+Assignments Create, collect, grade
+with rubrics;
+plagiarism check
+T eaching &
+Learning
+Courses Course builder ,
+SCORM player , L TI
+Advantage, Course
+Studio with Mitra
+HoD , CoE All
+Office All
+T eacher All
+T eacher ,
+Course
+Coordinator
+All
+T eacher School
+T eacher All
+(plagiarism:
+HE)
+T eacher All
+<<PAGE 86>>
+Module Sub-module Features Roles For
+T eaching &
+Learning
+Live Classes Scheduling,
+attendance flows to
+Attendance,
+recordings
+T eaching &
+Learning
+P arent
+Meetings
+PTM slot booking;
+notes saved to the
+record
+Assessments Question Bank T axonomy , difficulty ,
+CO and Bloom tags
+Assessments Quizzes &
+T ests
+Online tests, auto-
+marking; proctoring
+for adults (later)
+Assessments CIE Plan W eighted
+components from
+the regulation;
+rubrics
+Assessments Gradebook Marks per
+component; locks on
+submission
+Exams &
+Results
+Exam Setup P atterns from rule
+pack:
+internal/external,
+practicals, CBSE's
+two Class 10 exams,
+CISCE splits
+Exams &
+Results
+Hall Tickets &
+Eligibility
+Attendance, fee and
+no-dues checks; QR
+admit cards
+Exams &
+Results
+Seating &
+Invigilation
+Room-wise seating;
+invigilation roster
+counted in workload
+T eacher All
+T eacher ,
+P arent
+T eacher All
+T eacher All
+Course
+Coordinator
+HE
+T eacher All
+CoE, Principal All
+CoE All
+CoE All
+School
+<<PAGE 87>>
+Module Sub-module Features Roles For
+Exams &
+Results
+Exams &
+Results
+Exams &
+Results
+Exams &
+Results
+Exams &
+Results
+Exams &
+Results
+Evaluation Marks entry; on-
+screen evaluation,
+scanning, bundling,
+dual valuation,
+moderation
+Results SGP A/CGP A (UGC
+10-point), CBSE,
+CISCE and state
+grades; publish with
+approval
+Report Cards &
+HPC
+Board report cards;
+P ARAKH HPC up to
+Class 8; Mitra drafts
+remarks
+Re-exams Revaluation,
+supplementary ,
+improvement
+Board
+Registration
+CBSE and CISCE
+candidate lists (L OC)
+with AP AAR check
+T ranscripts CMM and
+transcripts, digitally
+signed
+OBE Program
+Outcomes
+Vision, mission,
+PEOs, POs
+(versioned), PSOs
+COs per course; CO–
+PO/PSO matrix (1–3)
+CoE, F aculty HE
+CoE All
+T eacher ,
+Principal
+School
+CoE, Student All
+Office School
+CoE HE
+IQAC, HoD HE
+F aculty HE
+OBE Course
+Outcomes &
+Mapping
+OBE Attainment Direct from tagged
+items; indirect from
+surveys; targets and
+weights;
+"finalise"
+gate
+IQAC HE
+<<PAGE 88>>
+Module Sub-module Features Roles For
+OBE Gap Analysis &
+Actions
+Actions taken,
+carried into the next
+cycle
+Feedback &
+Surveys
+Survey Builder Course, f aculty ,
+f acility , parent, exit,
+alumni and employer
+templates
+Feedback &
+Surveys
+Cycles &
+Responses
+Scheduled cycles,
+anonymity , weighted
+scoring
+Feedback &
+Surveys
+Action T aken Actions with owners;
+evidence to NAAC
+Library Catalogue ISBN lookup,
+MARC21 import,
+accession register
+Library Circulation Issue, return, renew ,
+reserve;
+barcode/RFID; rules
+by member type
+Library OP AC Search and reserve
+from the apps
+Library Fines Fines flow to Fees;
+no-dues for exams
+and exit
+Library E-resources &
+Footf all
+ONOS, Shodhganga
+and NDLI links; usage
+statistics; gate
+register; stock
+verification
+Research &
+PhD
+Scholars Registration,
+supervisor ,
+coursework,
+progress reviews,
+viva, award
+HoD , IQAC HE
+IQAC,
+Feedback
+Coordinator
+All
+Feedback
+Coordinator
+All
+IQAC All
+Librarian All
+Librarian All
+Student, Staff All
+Librarian All
+Librarian All
+Research
+Coordinator
+University
+<<PAGE 89>>
+Module Sub-module Features Roles For
+Research &
+PhD
+Research &
+PhD
+Research &
+PhD
+Publications P apers, patents,
+books; ORCID and
+Scopus sync; shown
+on HR profile
+Projects &
+Grants
+Ethics &
+Plagiarism
+Funded projects,
+budgets, utilisation
+reports
+Similarity check;
+Shodhganga
+submission
+F aculty HE
+Research
+Coordinator ,
+Finance
+Research
+Coordinator
+University
+University
+13.5 Hierarchy: Students
+Module Sub-module Features Roles For
+Student
+Records
+Student
+Records
+Student
+Records
+Student
+Records
+Student
+Records
+All Students &
+Profile
+Lifelong record;
+guardians; AP AAR, ABC
+and PEN; consent status
+Promotions &
+T ransfers
+Section, program and
+branch changes with
+approval; exit with
+award; re-entry
+T ransfer
+Certificate
+T C carrying PEN and
+AP AAR
+Credit Record Credits earned,
+transferred in, MOOC
+and activity credits;
+ABC sync status
+Alumni
+Conversion
+Final-year students
+move to Career Connect
+› Alumni
+Certificates &
+ID Cards
+Requests Bonafide, conduct,
+migration, duplicates;
+status in app; fees
+Office All
+Office,
+Registrar
+All
+Office School
+Registrar HE (schools
+in credit
+pilots)
+Office All
+Student,
+Office
+All
+<<PAGE 90>>
+Module Sub-module Features Roles For
+Certificates &
+ID Cards
+T emplates &
+Numbering
+Print designer;
+sequences per
+institution and year
+Certificates &
+ID Cards
+No-Dues Pulls dues from Fees,
+Library , Hostel,
+Inventory and labs
+Certificates &
+ID Cards
+Digital Issue E-signature, QR
+verification page,
+DigiLocker/NAD push
+Certificates &
+ID Cards
+ID Cards Student and staff cards;
+QR works with
+attendance, library and
+gate
+Mentoring Allocation Mentor per student;
+ratios
+Mentoring Check-ins &
+Logs
+Scheduled meetings,
+notes, concerns
+Mentoring Escalation Flags from Mitra early
+warning; route to
+counsellor , HoD or
+parent
+Clubs &
+Events
+Clubs Explore, join, club roles,
+coordinator approval
+Clubs &
+Events
+Events Registration,
+attendance, certificates,
+calendar
+Clubs &
+Events
+NSS, NCC &
+Sports
+Hours and participation;
+activity credits; NAAC
+evidence
+Office All
+Office All
+Registrar All
+Office All
+HoD All
+Mentor All
+Mentor All
+Student,
+F aculty
+All
+Coordinator All
+Coordinator All
+<<PAGE 91>>
+13.6 Hierarchy: Finance
+Module Sub-module Features Roles For
+Fees Fee Structures Heads; programme-
+,
+class- and batch-
+wise; instalments;
+credit-based fees;
+state fee caps as
+data
+Fees Fee Assignment Automatic on
+enrolment from the
+batch plan;
+transport and
+hostel fees follow
+allocations
+Fees Fee Counter Cash, cheque, DD ,
+card, UPI; auto-
+numbered receipts;
+day-close per
+cashier
+Fees Online P ayments UPI, cards, net
+banking, UPI
+AutoP ay; pay from
+the parent app
+Fees Demand Notices &
+Reminders
+Bulk notices;
+WhatsApp and SMS
+reminders drafted
+by Mitra
+Fees Fines & Late Fees Rule-based
+penalties; waiver
+approval; library
+fines flow in
+Finance
+All
+Officer
+Finance
+All
+Officer
+Cashier All
+P arent,
+Student
+All
+Finance
+All
+Officer
+Finance
+Officer
+All
+<<PAGE 92>>
+Module Sub-module Features Roles For
+Fees Refunds Policy engine
+(dates,
+percentages,
+deductions);
+approvals; audit
+Fees Reports Day book, collection
+MIS, dues by head,
+branch and counter
+Scholarships &
+Concessions
+Scholarships &
+Concessions
+Scholarships &
+Concessions
+Scholarships &
+Concessions
+Accounts &
+Expenses
+Accounts &
+Expenses
+Concessions Category rules
+(sibling, staff ward,
+merit); approval
+chain
+Institutional
+Scholarships
+Eligibility , award,
+disbursement
+Government
+Schemes
+NSP and state
+portal schemes
+mapped;
+application to
+credit;
+reconciliation
+RTE
+Reimbursement
+T rack state
+reimbursement
+claims for RTE seats
+General Ledger Chart of accounts
+per legal entity;
+postings from fees,
+payroll and
+purchases; trial
+balance;
+statements
+V ouchers &
+Expenses
+P ayment and
+receipt vouchers;
+bills; approval
+before payment
+Finance
+Officer
+All
+CFO All
+Finance
+Officer
+All
+Scholarship
+Officer
+All
+Scholarship
+Officer
+All
+Office School
+(private
+unaided)
+Accountant All
+Accountant All
+<<PAGE 93>>
+Module Sub-module Features Roles For
+Accounts &
+Expenses
+Accounts &
+Expenses
+Accounts &
+Expenses
+Accounts &
+Expenses
+Accounts &
+Expenses
+Budgets Budget vs actual
+per department;
+alerts at 80%
+Bank
+Reconciliation
+Statement import;
+auto-matching;
+exceptions
+Fund Accounting Separate funds for
+trusts, grants and
+projects
+Reimbursements Staff claims paid
+through P ayroll or
+directly
+T ax & Exports GST on taxable
+heads; TDS on
+vendor payments;
+T ally export
+CFO All
+Accountant All
+CFO T rusts,
+universities
+Accountant All
+Accountant All
+13.7 Hierarchy: People
+Module Sub-module Features Roles For
+HR Staff Profile, qualifications, PhD ,
+experience, cadre; research
+shown from Research &
+PhD
+HR Recruitment &
+Onboarding
+Job posts, applications,
+selection committee, offer
+letters, checklist, induction,
+automatic logins
+HR Staff Documents Repository , verification,
+expiry alerts
+HR W orkload T eaching load against
+norms; invigilation; linked to
+timetable
+HR Admin All
+HR Admin All
+HR Admin All
+HoD All
+<<PAGE 94>>
+Module Sub-module Features Roles For
+HR Promotions &
+T ransfers
+Scheme rules (for example
+TET where a state requires
+it); transfers within a group
+HR F aculty
+Compliance
+Student–f aculty ratio, cadre
+ratio, PhD share against
+AICTE, UGC and NAAC
+norms
+HR Exit Resignation, no-dues
+across modules, relieving
+and experience letters
+HR W orkforce
+Insights
+Attrition, vacancies,
+department analytics
+Staff Attendance
+& Leave
+Attendance &
+Shifts
+Biometric devices,
+geofenced app check-in,
+shifts
+Staff Attendance
+& Leave
+Leave Casual, earned, medical,
+maternity , academic,
+vacation, on-duty for FDPs;
+balances; policy builder;
+multi-level approval
+Appraisals &
+Development
+Appraisals Goals, self-review , student
+feedback, HoD review ,
+cycles
+Appraisals &
+Development
+T raining & FDP T raining log and
+certificates; counted for
+NAAC and AICTE
+P ayroll P ay Run Six steps (kept from V1);
+blocks future periods; one
+status per run
+P ayroll Salary Structures Components; UGC and
+AICTE pay scales; 50%
+wage-rule validator
+HR Head All
+HR Head,
+IQAC
+HE
+HR Admin All
+HR Head All
+Staff , HR
+Admin
+All
+Staff , HoD All
+HR Head,
+HoD
+All
+Staff All
+P ayroll
+Officer
+All
+P ayroll
+Officer
+All
+<<PAGE 95>>
+Module Sub-module Features Roles For
+P ayroll Assignments &
+Arrears
+Revisions with effective
+dates; arrears
+P ayroll Deductions Loss of pay; penalties
+shown to staff in advance
+P ayroll Statutory P ayroll Gratuity & Final
+Settlement
+P ayroll P ayslips & Bank
+T ransfer
+PF (ECR), ESI, PT and L WF
+by state, TDS (24Q), Form
+16
+Gratuity incl. fixed-term
+staff; wages paid within
+two working days of exit
+P ayslips with year-to-date
+and tax; bulk bank file
+P ayroll
+Officer
+P ayroll
+Officer
+P ayroll
+Officer
+P ayroll
+Officer
+Staff ,
+P ayroll
+Officer
+All
+All
+All
+All
+All
+13.8 Hierarchy: Operations
+Module Sub-module Features Roles For
+T ransport V ehicles &
+Drivers
+V ehicle documents
+with expiry alerts;
+driver licence and
+background-check
+records
+T ransport Routes & Stops Stops; route
+optimisation from
+student addresses
+T ransport Enrolments P arent self-
+registration; fee
+follows the route
+T ransport T rips Live GPS; ET A to
+parents; boarding
+scan by QR or RFID
+T ransport
+Manager
+All
+T ransport
+Manager
+All
+P arent All
+Driver , P arent All
+<<PAGE 96>>
+Module Sub-module Features Roles For
+T ransport Alerts Delay , pick-up and
+drop alerts
+Hostel & Mess Hostels &
+Rooms
+Hostels, blocks, room
+types, amenities
+Hostel & Mess Allocations Rules by year , gender
+and preference; fee
+follows the room
+Hostel & Mess Mess Menus, mess
+attendance,
+feedback, cost per
+student
+Hostel & Mess Kitchen Stock Purchase and usage
+entries linked to
+Inventory
+Hostel & Mess Outing P asses Requests with parent
+approval; gate check
+Hostel & Mess Complaints Raised through
+Helpdesk with the
+room tagged
+Inventory &
+Assets
+Assets Register , QR tags,
+custodian, location
+Inventory &
+Assets
+Store & Stock Items, minimum-stock
+alerts, yearly audit
+Inventory &
+Assets
+Procurement Quotes, purchase
+orders, goods receipt;
+posts to Accounts
+Inventory &
+Assets
+Kits & Sales Uniforms, books, kits;
+payment through
+Fees
+Inventory &
+Assets
+AMC &
+W arranty
+Contracts and
+expiries
+P arent All
+W arden Residential
+W arden Residential
+Mess
+Manager
+Residential
+Mess
+Manager
+Residential
+W arden,
+P arent
+Residential
+Student,
+W arden
+Residential
+Store Keeper All
+Store Keeper All
+Store Keeper ,
+Finance
+Officer
+All
+Store Keeper School
+mainly
+F acilities
+Manager
+All
+<<PAGE 97>>
+Module Sub-module Features Roles For
+F acilities &
+Maintenance
+Buildings &
+Spaces
+Buildings, rooms,
+capacities, booking
+(feeds Timetable and
+exam seating)
+F acilities &
+Maintenance
+W ork Orders Routing, technicians,
+vendors, response
+targets
+F acilities &
+Maintenance
+Preventive
+Maintenance
+Schedules and
+checklists
+Visitors & Gate Register &
+P asses
+Photo and ID capture,
+host approval, time-
+limited QR pass,
+blocked list
+Visitors & Gate Student Pick-
+up
+Only authorised
+guardians; O TP to the
+parent
+Visitors & Gate Gate P ass Students leaving
+during class hours
+need approval
+Helpdesk Tickets Department routing,
+SLA timers,
+escalation, CSA T
+Helpdesk Knowledge
+Base
+Answers to common
+questions, also used
+by Mitra
+F acilities
+Manager
+All
+F acilities
+Manager
+All
+F acilities
+Manager
+All
+Front Office,
+Security
+All
+Security School
+Security All
+Helpdesk
+Admin
+All
+Helpdesk
+Admin
+All
+13.9 Hierarchy: Health Connect
+Module Sub-module Features Roles For
+Health
+Records
+Records History , allergies, blood
+group, conditions, kept
+in the health vault
+Medical Officer All
+<<PAGE 98>>
+Module Sub-module Features Roles For
+Health
+Records
+Check-ups &
+Growth
+Check-up camps with
+partners; BMI and
+growth
+Health
+Records
+V accinations Due and overdue doses;
+reminders to parents
+only
+Health
+Records
+Health Reports T otals for management
+and accreditation; never
+names
+Medical Visits
+& Stock
+Sick-room
+Visits
+Visits and outcomes;
+parent alert; send-home
+marks medical leave as a
+status only
+Medical Visits
+& Stock
+Medicines &
+Stock
+Expiry alerts;
+dispensing log
+Emergency SOS &
+Protocols
+One-tap SOS, nearest
+partner hospital,
+incident report,
+emergency broadcast
+Counselling &
+W ellbeing
+Counselling Notes isolated from all
+other records; student-
+only by def ault; referrals
+Counselling &
+W ellbeing
+W ellbeing
+Check-ins
+V oluntary and
+consented; only totals
+reach management
+Care Network T elemedicine Booked from the parent
+app
+Care Network Pharma-C Prescriptions to the
+partner pharmacy only
+with consent
+Care Network cInsurance Plans and claims
+tracking with partner
+insurers
+Medical Officer School
+mainly
+Nurse, P arent School
+Principal All
+Nurse All
+Nurse All
+Principal, Nurse All
+Counsellor All
+Counsellor All
+P arent, P artner
+Doctor
+All
+P arent All
+P arent, Office All
+<<PAGE 99>>
+Module Sub-module Features Roles For
+Care Network P artner
+Hospitals
+Onboarding, data-
+processing terms,
+consent-gated sharing
+Group
+Administrator
+All
+13.10 Hierarchy: Career Connect
+Module Sub-module Features Roles For
+Placements Companies &
+Recruiters
+Recruiter pipeline
+and recruiter portal
+Placement
+HE
+Officer ,
+Recruiter
+Placement
+HE
+Officer
+Placements Drives Scheduling;
+eligibility filters
+(CGP A, backlogs,
+branch);
+registrations
+Placements Virtual
+Placement
+Office
+Online tests and
+interview
+scheduling
+Placements Offers &
+Outcomes
+Offers, joining,
+salary; NIRF feed;
+employer-survey
+invite
+Placements Job Board Jobs matched to
+skills
+Internships Opportunities &
+T racking
+Applications, hours,
+supervisor
+feedback; credits to
+the record
+Skill-Up &
+Micro-
+credentials
+Courses &
+W orkshops
+Free and paid; paid
+shown only to
+students 18 or over;
+school students see
+only courses their
+school assigns
+Recruiter ,
+Student
+Placement
+Officer
+HE
+HE
+Student HE
+Student,
+F aculty
+HE;
+vocational
+school
+subjects
+Student All (age rules
+apply)
+<<PAGE 100>>
+Module Sub-module Features Roles For
+Skill-Up &
+Micro-
+credentials
+Skill-Up &
+Micro-
+credentials
+Career
+Guidance
+Career
+Guidance
+Micro-
+credentials
+V erifiable badges
+(Open Badges 3.0)
+with hours and
+credit value
+Off-campus
+Credits
+SW A Y AM, NPTEL
+and approved
+MOOC certificates
+verified and
+mapped
+Student Profiles Resume builder;
+skills from courses
+and badges
+Counselling &
+Mentorship
+Career counselling,
+expert sessions,
+alumni mentors,
+Mitra mock
+interviews
+Alumni Directory Profiles with
+consent for contact
+Alumni Engagement Campaigns, events,
+mentorship
+Alumni Giving Donations with
+receipts through
+Accounts
+Student All
+Student, CoE HE
+Student All
+Student All
+Alumni
+Coordinator
+Alumni
+Coordinator
+Alumni
+Coordinator
+All
+All
+T rusts, HE
+<<PAGE 101>>
+13.11 Hierarchy: Quality & Compliance
+Module Sub-module Features Roles For
+Accreditation NAAC Binary accreditation
+and maturity levels;
+legacy AQAR while
+old grades remain
+valid; metric
+calculators by
+institution type
+Accreditation NBA SAR Tier I and II
+drafts from live OBE
+data
+Accreditation NIRF Data pack in the
+submission format;
+year-on-year
+comparison
+Accreditation Evidence
+Library
+Every number linked
+to its source records
+and files
+Accreditation Readiness Score per framework;
+missing evidence list
+Government
+Reports
+UDISE+ Profile, f acility ,
+teacher and student
+data; PEN;
+progression status
+Government
+Reports
+AP AAR, ABC
+& NAD
+ID capture with
+consent; credit and
+marksheet upload;
+reconciliation
+Government
+Reports
+Board
+Registration
+L OC and registration
+files
+Government
+Reports
+AISHE Y early survey data
+from Students, HR
+and Organization
+IQAC HE
+IQAC T echnical
+programs
+IQAC HE
+IQAC All
+IQAC,
+Principal
+All
+Office School
+Registrar All
+Office School
+Registrar HE
+<<PAGE 102>>
+Module Sub-module Features Roles For
+Government
+Reports
+Government
+Reports
+Government
+Reports
+Grievances &
+Committees
+Grievances &
+Committees
+Compliance
+Monitor
+Compliance
+Monitor
+AICTE & UGC Mandatory
+disclosure; deficiency
+report; returns
+State Returns Exports configured in
+each state pack
+Deadline
+Calendar
+Every deadline with
+an owner; reminders
+Committees Anti-ragging, internal
+complaints (POSH),
+SC/ST cell, grievance
+redressal; members
+and meetings
+Cases Intake (anonymous
+option), timelines,
+outcomes, appeals
+Obligation
+Register
+Each obligation with
+owner , rule pack and
+evidence
+Findings Mitra W atch findings
+arrive as tasks with
+evidence
+Registrar HE
+Office All
+Registrar All
+Registrar HE (POSH: all
+employers)
+Committee
+members
+All
+Principal,
+Registrar
+All
+Owners All
+13.12 Hierarchy: Campus Core, Mitra and Home
+Service Sub-modules and features
+Organization & Hierarchy Groups, institutions, campuses, institution profiles,
+branding, settings, custom fields, recorded branch
+overrides
+Identity & Access Users, SSO (Google, Microsoft), MF A for staff , O TP
+for parents, roles, scopes, data classes, break-glass
+<<PAGE 103>>
+Service Sub-modules and features
+Rule P acks W orkflow & Approvals Communications Documents & e-Sign Privacy & Consent Activity Log Reports & Analytics Integrations Hub Data Import Mitra Home Catalogue (CBSE, CISCE, state boards, university
+regulations, UGC, AICTE, NBA, NAAC, Labour
+Codes, state PT/L WF), versions, effective dates,
+test cases, tenant overrides
+Designer , approvers by role and scope, amount
+limits, timers, escalation, My W ork inbox
+SMS (DL T), WhatsApp, email, push, in-app;
+announcements with read receipts; campus feed;
+calendar; social posts; parent–teacher messages;
+language packs
+Storage, templates, PDF generation, e-signature,
+QR verification, DigiLocker
+Notices, consent ledger , data-rights requests,
+retention schedules, breach register , Data
+Protection Officer console
+T amper-evident, India-hosted, kept 180 days or
+longer , includes Mitra's steps
+Reporting store, report builder , scheduled reports,
+dashboards
+L TI 1.3, OneRoster , SAML/OIDC, payment gateways,
+bank files, T ally , biometric and RFID devices, GPS,
+ABC/NAD , WhatsApp, IVR, AI model gateway
+T emplates, checks, undo; V1 importers
+Ask Mitra; Mitra on every screen; Mitra Agents;
+Mitra W atch; Student Companion; T eacher
+Assistant; V oice & Languages; AI Governance
+(section 14)
+Role dashboards; My W ork (every approval and
+task in one inbox); All Institutions (side-by-side
+comparison for group roles)
+<<PAGE 104>>

@@ -1,0 +1,53 @@
+// Public API of staff attendance (decision 0020): check-ins, the office register, settings, reports.
+export {
+  STAFF_CHECKED,
+  STAFF_DAY_MARKED,
+  StaffAttendanceError,
+  attendanceSettings,
+  awayOn,
+  checkIn,
+  markDay,
+  monthReport,
+  myDay,
+  register,
+  updateAttendanceSettings,
+  type AttendanceSettings,
+  type CheckIn,
+  type Day,
+  type MyDay,
+} from './application/attendance.js';
+export {
+  distanceMetres,
+  istDate,
+  monthTotals,
+  summariseDay,
+  type DayStatus,
+} from './domain/day.js';
+export { staffAttendanceTools } from './application/verse.js';
+export {
+  DEFAULT_LEAVE_TYPES,
+  LEAVE_CANCELLED,
+  LEAVE_DECIDED,
+  LEAVE_REQUESTED,
+  LeaveError,
+  adjustLeave,
+  askLeave,
+  cancelLeave,
+  decideLeave,
+  installLeaveTypes,
+  leaveBalances,
+  leaveQuote,
+  leaveRequests,
+  leaveTypes,
+  myLeave,
+  payrollInputs,
+  payrollInputsIn,
+  saveLeaveType,
+  type HolidaysPort,
+  type LeaveRequest,
+  type LeaveType,
+  type LeaveTypeInput,
+  type PayrollInputs,
+  type TypeBalance,
+} from './application/leave.js';
+export { leaveYear, type PayrollRow } from './domain/leave.js';

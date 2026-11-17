@@ -1,0 +1,24 @@
+{
+  "name": "@campusverse/platform-verse",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
+  },
+  "dependencies": {
+    "@campusverse/db": "workspace:*",
+    "@campusverse/platform-events": "workspace:*",
+    "@campusverse/platform-organisation": "workspace:*",
+    "@campusverse/platform-permissions": "workspace:*",
+    "@campusverse/verse-ai": "workspace:*",
+    "drizzle-orm": "^0.45.4"
+  }
+}

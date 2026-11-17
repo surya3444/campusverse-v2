@@ -1,0 +1,52 @@
+# After CI passes on main: build the images once, push them to the test account and deploy.
+# The same images are later promoted to the live environment (promote.yml), never rebuilt.
+# Repository variables: TEST_DEPLOY_ROLE_ARN, TEST_REGISTRY, TEST_DOMAIN.
+name: Deploy to test
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && vars.TEST_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    environment: test
+    env:
+      AWS_REGION: ap-south-1
+      TAG: ${{ github.event.workflow_run.head_sha }}
+      REGISTRY: ${{ vars.TEST_REGISTRY }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.TEST_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push images
+        run: |
+          for target in api worker migrate web admin; do
+            docker buildx build --target "$target" --push \
+              --cache-from type=gha,scope="$target" --cache-to type=gha,mode=max,scope="$target" \
+              -t "$REGISTRY/campusverse/$target:$TAG" .
+          done
+      - name: Deploy, migrate and smoke test
+        env:
+          CLUSTER: campusverse-test
+          APP_HOST: test.${{ vars.TEST_DOMAIN }}
+          API_HOST: api.test.${{ vars.TEST_DOMAIN }}
+          ADMIN_HOST: admin.test.${{ vars.TEST_DOMAIN }}
+        run: infra/scripts/deploy.sh

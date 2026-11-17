@@ -1,0 +1,65 @@
+# Promotes an image tag that is already running in test to the live environment, unchanged.
+# Runs only in the GitHub environment "production", which requires the owner's approval, and
+# assumes a role that trusts only that environment (infra/bootstrap).
+# Repository variables: TEST_DEPLOY_ROLE_ARN, TEST_REGISTRY, LIVE_DEPLOY_ROLE_ARN, LIVE_REGISTRY,
+# LIVE_DOMAIN.
+name: Promote to live
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Commit SHA already deployed and checked in test
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-live
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_REGION: ap-south-1
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+      - name: Pull the tested images
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.TEST_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+      - uses: aws-actions/amazon-ecr-login@v2
+      - run: |
+          for target in api worker migrate web admin; do
+            docker pull "${{ vars.TEST_REGISTRY }}/campusverse/$target:$TAG"
+            docker tag "${{ vars.TEST_REGISTRY }}/campusverse/$target:$TAG" \
+              "${{ vars.LIVE_REGISTRY }}/campusverse/$target:$TAG"
+          done
+      - name: Push them to the live account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.LIVE_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+      - uses: aws-actions/amazon-ecr-login@v2
+      - run: |
+          for target in api worker migrate web admin; do
+            docker push "${{ vars.LIVE_REGISTRY }}/campusverse/$target:$TAG"
+          done
+      - name: Deploy, migrate and smoke test
+        env:
+          CLUSTER: campusverse-live
+          REGISTRY: ${{ vars.LIVE_REGISTRY }}
+          APP_HOST: app.${{ vars.LIVE_DOMAIN }}
+          API_HOST: api.${{ vars.LIVE_DOMAIN }}
+          ADMIN_HOST: admin.${{ vars.LIVE_DOMAIN }}
+          # The live admin portal is limited to office networks; the runner isn't one.
+          SMOKE_ADMIN: '0'
+        run: infra/scripts/deploy.sh

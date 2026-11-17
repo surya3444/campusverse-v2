@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+.next/
+next-env.d.ts
+test-results/
+playwright-report/
+apps/web/e2e/screenshots/
+.expo/
+
+# Terraform working files and state (state lives in S3)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Load-test fixture: synthetic data, but it holds session tokens
+load/fixture.json

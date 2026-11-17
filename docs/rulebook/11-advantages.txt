@@ -1,0 +1,245 @@
+11. Campusverse competitive advantages
+Campusverse's advantage is scope, not depth: one platform for every stage of education
+and for the student's health and career , on which no Indian competitor shown here
+competes. Each advantage is real only once the build item in the fourth column ships.
+T oday several are partial.
+# Advantage What CampX
+shows publicly
+Nothing for
+schools
+1 K-12 school
+management
+(classes, sections,
+diary , homework,
+PTM, report
+cards, transport
+for children)
+2 Multiple
+education boards
+(CBSE, CISCE,
+state boards)
+Campusverse today What makes it
+Live breadth; one
+board per branch
+real
+Board per class
+or program; state
+packs; P ARAKH
+HPC; offline
+teacher app
+Who buys it
+Schools, school
+chains
+None CBSE and ICSE
+presets (ICSE
+scales wrong)
+Rule packs for
+CBSE (two Class
+10 exams), CISCE
+(1–9 and A–E),
+each target state
+Schools, mixed
+groups
+<<PAGE 66>>
+# Advantage What CampX
+shows publicly
+Campusverse today What makes it
+3 College and
+university
+management
+4 Mixed groups:
+schools and
+colleges under
+one trust
+5 Student health
+infrastructure
+6 Healthcare and
+wellness
+integrations
+7 Career
+development and
+skill-building
+8 Internships and
+placements
+9 Parent
+engagement
+Core strength Breadth, shallow
+depth
+Groups of colleges
+and universities
+only
+Live (9-institution
+demo tenant)
+None Records, visits,
+vaccinations,
+insurance,
+pharmacy
+None Pharma-C,
+cInsurance,
+telemedicine
+(documented)
+Placements and
+alumni only
+Skill-Up, workshops,
+certifications
+Recruiter CRM,
+drives, offers
+Companies, drives,
+job board,
+placement office
+Student/P arent
+fee workspace
+only
+P arent
+communications,
+PTM
+real
+P0–P1 academic
+depth (sections
+8, 17)
+Group policies
+with branch
+overrides; group-
+level Mitra;
+consolidated
+finance
+Health vault;
+aggregate-only
+dashboards;
+consent-gated
+partner network
+Hospital and
+insurer
+partnerships
+with signed data-
+processing terms
+Age gate; micro-
+credentials as
+Open Badges;
+credits into ABC;
+school career
+guidance
+Internships
+counted as
+credits; offer
+tracking; NIRF
+graduation-
+outcome feed
+P arent app with
+consent, pick-up
+O TP , bus ET A,
+health alerts,
+regional
+languages
+Who buys it
+Colleges,
+universities
+Educational
+trusts (the
+strongest
+wedge)
+Residential
+schools and
+colleges;
+parents
+Same, plus
+revenue share
+Colleges;
+senior
+secondary
+schools
+Colleges,
+universities
+Schools
+<<PAGE 67>>
+# Advantage What CampX
+shows publicly
+Campusverse today What makes it
+10 School-specific
+workflows (RTE
+quota, T C with
+PEN, UDISE+,
+child pick-up)
+11 Cross-institution
+management
+12 Whole education
+lifecycle (school
+→ college →
+alumni)
+13 India-specific
+regulation as a
+product
+14 Price for the long
+tail
+real
+None P artial RTE lottery; T C
+with PEN and
+AP AAR; UDISE+
+export; pick-up
+authorisation
+Enterprise multi-
+campus
+Enquiry to
+alumnus inside
+higher education
+Says "aligned with"
+NAAC, NBA, UGC,
+NEP; DPDP "on
+path"
+Custom quotes;
+student-pays
+option
+All Institutions view Compare and
+benchmark
+across branches;
+shared services
+(central
+admissions,
+central payroll)
+Separate records
+per year
+One lifelong
+learner record
+keyed to AP AAR,
+carried across
+institutions in the
+same group
+P artial OBE and
+NIRF outputs
+Government
+Reports and
+Accreditation
+modules; Mitra
+W atch; consent
+ledger before 13
+May 2027
+₹299 per student
+per year
+Self-serve
+onboarding; 4-
+week school go-
+live
+Who buys it
+Private schools
+Groups
+Groups with
+both segments
+E very buyer;
+strongest with
+IQAC and
+principals
+Small and mid-
+sized schools
+and colleges
+Where not to compete head-on yet. Three CampX strengths are worth matching only
+after the P0 and P1 work:
+Perpetual enterprise licences. These suit large universities that want ownership.
+Campusverse should first offer a dedicated cell under SaaS.
+FFCS. Few universities use it.
+On-screen evaluation at university scale. Autonomous colleges can use a partner
+product in the meantime.
+<<PAGE 68>>
+The one-sentence pitch this enables: "The only platform that runs your schools and your
+colleges, keeps every student's health and career on the same record, and files your
+government returns from live data.
+"

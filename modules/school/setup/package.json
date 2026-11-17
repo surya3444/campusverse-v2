@@ -1,0 +1,51 @@
+{
+  "name": "@campusverse/school-setup",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@campusverse/people-appraisals": "workspace:*",
+    "@campusverse/shared-gate": "workspace:*",
+    "@campusverse/shared-hostel": "workspace:*",
+    "@campusverse/shared-library": "workspace:*",
+    "@campusverse/test-data": "workspace:*",
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
+  },
+  "dependencies": {
+    "@campusverse/config": "workspace:*",
+    "@campusverse/crypto": "workspace:*",
+    "@campusverse/db": "workspace:*",
+    "@campusverse/people-records": "workspace:*",
+    "@campusverse/platform-access": "workspace:*",
+    "@campusverse/platform-audit": "workspace:*",
+    "@campusverse/platform-control": "workspace:*",
+    "@campusverse/platform-documents": "workspace:*",
+    "@campusverse/platform-events": "workspace:*",
+    "@campusverse/platform-fields": "workspace:*",
+    "@campusverse/platform-identity": "workspace:*",
+    "@campusverse/platform-organisation": "workspace:*",
+    "@campusverse/platform-permissions": "workspace:*",
+    "@campusverse/rules": "workspace:*",
+    "@campusverse/school-enrolment": "workspace:*",
+    "@campusverse/shared-assets": "workspace:*",
+    "@campusverse/shared-communications": "workspace:*",
+    "@campusverse/shared-expenses": "workspace:*",
+    "@campusverse/shared-finance": "workspace:*",
+    "@campusverse/shared-helpdesk": "workspace:*",
+    "@campusverse/shared-staff-attendance": "workspace:*",
+    "@campusverse/shared-transport": "workspace:*",
+    "@campusverse/verse-ai": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "fflate": "^0.8.3",
+    "read-excel-file": "^9.3.14",
+    "write-excel-file": "^4.1.1",
+    "zod": "^4.6.7"
+  }
+}

@@ -1,0 +1,2318 @@
+7. Complete feature-by-feature mapping
+Every one of the 231 CampX features is mapped below to where it exists in Campusverse
+today , its status, and where it belongs in the recommended architecture. No feature is
+dropped. Where several features share the same status and destination they sit in one
+row , with the count shown (for example "(3 features)").
+How to read the columns
+CampX module is the CampX application.
+in your TXT file.
+CampX sub-module is the CampX specification.
+V1 status uses the labels from section 4.
+"Site only" means it is on campx.in but not
+Earlier V2 status is Specified, P artly specified or Not specified in the two earlier V2
+documents.
+<<PAGE 28>>
+Gap identified uses your seven classifications: fully available; available but lacks
+depth; partially available; proposed in V2 but not built; completely missing; needs
+validation; not applicable. No CampX feature was judged not applicable: every one has
+a use for at least one Campusverse institution type.
+Recommended action: Keep (nothing to do), Expand (add depth to what exists), Fix
+(exists but gives wrong results), Build (new work), V alidate (confirm it in V1 first).
+Use this table as the product backlog's source list. Each Build or Expand row becomes an
+epic under the recommended module.
+7.1 Academics
+63 features: 11 fully available, 19 partial or lacking depth, 26 in the V2 plan but not built, 5
+completely missing, 2 need validation.
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent
+today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Recommended
+system › module
+Recommended
+action
+Learning
+(setup)
+Academic
+Configuration
+Degrees,
+programmes,
+branches (3
+features)
+Academic
+Structure ›
+Explorer
+(University →
+Institution →
+Department →
+Program)
+Live Specified Fully
+available
+Academics ›
+Academic
+Structure
+Keep
+Learning
+(setup)
+Academic
+Configuration
+Regulations
+(rule version
+per
+programme,
+e.g. R22, R25)
+None Missing Specified Proposed in
+V2, not built
+Academics ›
+Academic
+Structure ›
+Regulations
+Build
+Learning
+(setup)
+Academic
+Configuration
+Batches
+(admission
+cohort kept for
+the whole
+programme)
+Y ears and
+sections copied
+each academic
+year
+P artial Specified P artially
+available
+Academics ›
+Academic
+Structure ›
+Batches
+Rebuild as
+cohort
+Learning
+(setup)
+Academic
+Configuration
+Sections Classes &
+Sections; lab
+batches
+Live Specified Fully
+available
+Academics ›
+Academic
+Structure ›
+Classes &
+Sections
+Keep
+Learning
+(setup)
+Academic
+Configuration
+One versioned
+structure
+(history kept
+per change)
+Copy into next
+year , then
+promote
+P artial Specified P artially
+available
+Academics ›
+Academic
+Structure › Y ear
+Rollover
+Rebuild with
+versions
+Course
+registration
+CBCS Elective
+buckets
+Course
+Registration ›
+Elective
+baskets (none
+configured in
+demo)
+P artial Specified P artially
+available
+Academics ›
+Course
+Registration ›
+Elective Baskets
+Expand: seat
+caps, allocation
+rules
+Course
+registration
+CBCS Majors and
+minors
+None Missing Specified Proposed in
+V2, not built
+Academics ›
+Course
+Registration ›
+Credit Rules
+Build
+<<PAGE 29>>
+CampX
+module
+Course
+registration
+CampX sub-
+module
+CampX feature Campusverse
+equivalent
+today
+V1
+status
+Earlier V2
+status
+CBCS V alue-added
+None Missing P artly
+courses
+specified
+Gap
+identified
+Proposed in
+V2, not built
+Course
+registration
+CBCS Credit limits
+per term
+None (no
+credits shown
+in demo)
+Missing Specified Proposed in
+V2, not built
+Course
+registration
+CBCS Prerequisite
+rules
+None Missing Specified Proposed in
+V2, not built
+Course
+registration
+(site only)
+FFCS Fully flexible
+choice of
+course, f aculty
+and slot
+None Missing Not
+specified
+Completely
+missing
+Scheduling
+(site only)
+Timetabling &
+Schedules
+Clash-free
+generation
+across
+sections,
+f aculty and
+rooms
+Timetable built
+by hand per
+section
+P artial Specified P artially
+available
+Scheduling
+(site only)
+Timetabling &
+Schedules
+Substitutions None Missing Specified Proposed in
+V2, not built
+Scheduling
+(site only)
+Timetabling &
+Schedules
+Calendar sync None Missing Specified Proposed in
+V2, not built
+Attendance Attendance F ace capture None Missing Specified Proposed in
+V2, not built
+Attendance Attendance Fingerprint and
+RFID capture
+(2 features)
+Not seen in
+demo
+Not
+verified
+Specified Needs
+validation
+Attendance Attendance QR-based
+T O TP capture
+None Missing Specified Proposed in
+V2, not built
+Attendance Attendance Condonation None Missing Specified Proposed in
+V2, not built
+Attendance Attendance Automatic
+alerts
+Absence
+notifications
+P artial Specified P artially
+available
+Learning LMS L TI 1.3 None Missing Specified Proposed in
+V2, not built
+Recommended
+system › module
+Academics ›
+Academic
+Structure ›
+Subjects (course
+type)
+Academics ›
+Course
+Registration ›
+Credit Rules
+Academics ›
+Course
+Registration ›
+Credit Rules
+Academics ›
+Course
+Registration ›
+Slot & F aculty
+Choice
+Academics ›
+Timetable › Class
+Timetable
+Academics ›
+Timetable ›
+Substitutions
+Academics ›
+Timetable › My
+Timetable
+Academics ›
+Attendance ›
+Mark
+Attendance
+Academics ›
+Attendance +
+Campus Core ›
+Integrations
+Academics ›
+Attendance ›
+Mark
+Attendance
+Academics ›
+Attendance ›
+Shortage &
+Condonation
+Academics ›
+Attendance ›
+Shortage &
+Condonation
+Academics ›
+T eaching &
+Learning ›
+Courses;
+Campus Core ›
+Integrations
+Recommended
+action
+Build
+Build
+Build
+Build for FFCS
+universities
+Expand: auto-
+generate
+Build
+Build
+Build (consent-
+gated)
+V alidate, then
+build device hub
+Build rotating QR
+Build with
+approval chain
+Expand: rule-
+pack thresholds
+Build; seek
+1EdT ech
+certification
+<<PAGE 30>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent
+today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Learning LMS Deep Linking;
+Assignment &
+Grade Services
+(2 features)
+None Missing P artly
+specified
+Proposed in
+V2, not built
+Learning LMS SCORM
+content
+Course builder
+with digital
+content
+P artial Specified P artially
+available
+Learning LMS Quizzes Assessments:
+question bank,
+assessment
+library , online
+tests
+Live Specified Fully
+available
+Learning LMS Gradebook T eaching ›
+Gradebook
+Live Specified A vailable,
+lacks depth
+Assessments CIE Rubric-based
+assessment
+Assignments
+without rubrics
+Missing Specified Proposed in
+V2, not built
+Assessments CIE Multi-
+Gradebook
+columns
+P artial Specified P artially
+available
+component
+assessment
+Assessments CIE Multi-grade
+(several
+grading scales)
+Grading bands
+in exam
+settings
+P artial Specified P artially
+available
+Assessments CIE Offline or
+online
+Online tests;
+offline marks
+entry
+Live Specified Fully
+available
+Assessments CIE Proctoring None Missing Not
+specified
+Completely
+missing
+Examinations Examination Scheduling Exams › All
+Live Specified Fully
+Exams
+available
+Examinations Examination Eligibility
+checks
+(attendance,
+fees, no-dues)
+None Missing Specified Proposed in
+V2, not built
+Examinations Examination Hall-ticket
+generation
+Hall ticket
+settings (admit
+card, QR)
+Live Specified Fully
+available
+Examinations Examination Seating plans Seat by roll
+number
+P artial Specified P artially
+available
+Examinations Examination Invigilation
+duty
+None Missing Specified Proposed in
+V2, not built
+Examinations Evaluation On-screen
+valuation
+None Missing Specified Proposed in
+V2, not built
+Examinations Evaluation Physical
+valuation
+Marks entry
+and approval
+Live Specified Fully
+available
+Recommended
+system › module
+Academics ›
+T eaching &
+Learning ›
+Courses
+Academics ›
+T eaching &
+Learning ›
+Courses
+Academics ›
+Assessments ›
+Quizzes & T ests
+Academics ›
+Assessments ›
+Gradebook
+Academics ›
+Assessments ›
+Rubrics
+Academics ›
+Assessments ›
+CIE Plan
+Campus Core ›
+Rule P acks
+Academics ›
+Assessments
+Academics ›
+Assessments ›
+Quizzes & T ests
+Academics ›
+Exams & Results
+Academics ›
+Exams & Results
+› Hall Tickets
+Academics ›
+Exams & Results
+› Hall Tickets
+Academics ›
+Exams & Results
+› Seating &
+Invigilation
+Academics ›
+Exams & Results
+› Seating &
+Invigilation
+Academics ›
+Exams & Results
+› Evaluation
+Academics ›
+Exams & Results
+› Evaluation
+Recommended
+action
+Build full L TI
+Advantage
+Expand: SCORM
+player
+Keep
+Expand:
+components
+from regulation
+Build
+Expand: weights
+per regulation
+Expand
+Keep
+Build (adults only
+by def ault)
+Keep
+Build
+Keep
+Expand: room-
+wise plans
+Build; count in
+workload
+Build
+Keep
+<<PAGE 31>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent
+today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Examinations Evaluation Script scanning None Missing Specified Proposed in
+V2, not built
+Examinations Evaluation Bundling
+(coded,
+anonymous
+scripts)
+None Missing Not
+specified
+Completely
+missing
+Examinations Evaluation Dual valuation None Missing Specified Proposed in
+V2, not built
+Examinations Evaluation Proctoring
+(exam hall)
+None Missing Not
+specified
+Completely
+missing
+OBE Attainments CO–PO–PSO
+mapping
+OBE › Programs,
+Course
+Outcomes (0
+PSOs; identical
+matrix rows in
+demo)
+P artial Specified P artially
+available
+OBE Attainments Attainment
+thresholds
+OBE settings:
+targets and
+levels (CO and
+PO results
+disagree)
+P artial Specified P artially
+available
+OBE Attainments NAAC, NBA
+and IQAC
+report exports
+NBA Criterion
+3, NAAC KI 2.6
+(old
+framework),
+NIRF data
+points
+P artial Specified P artially
+available
+Feedback Feedback Course, f aculty
+and f acility
+surveys
+Concerns &
+Feedback
+(grievance
+forms)
+P artial Specified P artially
+available
+Feedback Feedback W eighted
+scoring
+None Missing Not
+specified
+Completely
+missing
+Feedback Feedback Action-taken
+reports
+OBE gap
+analysis only
+P artial Specified P artially
+available
+Mentoring Mentoring Mentor
+allocation
+None Missing Specified Proposed in
+V2, not built
+Mentoring Mentoring Scheduled
+check-ins
+None Missing Specified Proposed in
+V2, not built
+Mentoring Mentoring Progress logs None Missing Specified Proposed in
+V2, not built
+Mentoring Mentoring Escalation
+flags
+None Missing Specified Proposed in
+V2, not built
+Examinations Student
+Credentials
+Consolidated
+marks memo
+(CMM)
+Report cards
+only
+P artial Specified P artially
+available
+Recommended
+system › module
+Academics ›
+Exams & Results
+› Evaluation
+Academics ›
+Exams & Results
+› Evaluation
+Academics ›
+Exams & Results
+› Evaluation
+Academics ›
+Exams & Results
+› Seating &
+Invigilation
+Academics › OBE Academics › OBE
+› Settings
+Quality &
+Compliance ›
+Accreditation
+Academics ›
+Feedback &
+Surveys
+Academics ›
+Feedback &
+Surveys
+Academics ›
+Feedback &
+Surveys; Quality
+& Compliance ›
+Accreditation
+Students ›
+Mentoring
+Students ›
+Mentoring
+Students ›
+Mentoring
+Students ›
+Mentoring (fed
+by Mitra early
+warning)
+Academics ›
+Exams & Results
+› T ranscripts
+Recommended
+action
+Build
+Build
+Build with third-
+valuer rule
+Build
+Fix and expand
+Fix calculation
+Expand: binary
+NAAC, SAR Tier
+I/II
+Build structured
+surveys
+Build
+Expand
+Build
+Build
+Build
+Build
+Build
+<<PAGE 32>>
+CampX
+module
+CampX sub-
+module
+Examinations Student
+Credentials
+Examinations Student
+Credentials
+Examinations Student
+Credentials
+Examinations Student
+Credentials
+Examinations Student
+Credentials
+PhD
+Management
+PhD
+Management
+Research-
+scholar
+lifecycle,
+registration to
+award
+Events Events Campus
+events with
+participation
+tracked for
+accreditation
+CampX feature Campusverse
+equivalent
+today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Original degree
+(OD) and
+provisional
+certificate
+(PC) (2
+features)
+Certificate
+templates
+P artial Specified P artially
+available
+Bonafide
+certificates
+Certificates ›
+Requests,
+T emplates
+Live Specified Fully
+available
+T ranscripts None Missing Specified Proposed in
+V2, not built
+Issued on
+demand
+Certificates ›
+Requests
+Live Specified Fully
+available
+Digitally signed None Missing Specified Proposed in
+V2, not built
+None Missing Specified Proposed in
+V2, not built
+Clubs;
+academic
+activity
+creation;
+calendar
+P artial Specified P artially
+available
+Recommended
+system › module
+Students ›
+Certificates & ID
+Cards
+Students ›
+Certificates & ID
+Cards
+Academics ›
+Exams & Results
+› T ranscripts
+Students ›
+Certificates & ID
+Cards
+Students ›
+Certificates & ID
+Cards › Digital
+Issue
+Academics ›
+Research & PhD
+Recommended
+action
+Expand: degree
+workflow + NAD
+Keep
+Build
+Keep
+Build; push to
+DigiLocker/NAD
+Build
+(universities)
+Students › Clubs
+& Events
+Expand
+7.2 Finance
+44 features: 17 fully available, 13 partial or lacking depth, 11 in the V2 plan but not built, 1
+completely missing, 2 need validation.
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Fees Fee Structure Multi-
+Fee Structures
+(heads)
+Live Specified Fully
+component
+fees
+available
+Fees Fee Structure Programme-
+wise and batch-
+wise
+Per class or
+program; no batch
+cohort
+P artial Specified P artially
+available
+Fees Fee Structure Instalment
+plans
+Not seen in demo Not
+verified
+Specified Needs
+validation
+Fees P ayment
+Channels
+Online: UPI,
+cards, net
+banking (3
+features)
+Online payment
+setups
+Live Specified Fully
+available
+Fees P ayment
+Channels
+Offline: cash,
+demand draft,
+cheque (3
+features)
+Fee Counter Live Specified Fully
+available
+Recommended
+system › module
+Finance › Fees ›
+Fee Structures
+Finance › Fees ›
+Fee Structures
+Finance › Fees ›
+Fee Structures
+Finance › Fees ›
+Online P ayments
+Finance › Fees ›
+Fee Counter
+Recommended
+action
+Keep
+Expand to
+batch
+V alidate, then
+build
+Keep; add UPI
+AutoP ay
+Keep
+<<PAGE 33>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+Gap
+status
+identified
+Scholarships Concessions &
+Scholarships
+W aivers Concessions Live Specified Fully
+available
+Scholarships Concessions &
+Scholarships
+Category
+concessions
+Concessions
+(manual)
+P artial Specified P artially
+available
+Scholarships Concessions &
+Scholarships
+Government
+scheme
+mapping
+Institutional
+scholarships only
+Missing Specified Proposed in
+V2, not built
+Fees Fines & Late
+Fees
+Rule-based
+penalties, auto-
+applied, waiver
+approvals (3
+features)
+None Missing Specified Proposed in
+V2, not built
+Fees Refunds Policy-driven
+refunds with
+approvals and
+audit trail (3
+features)
+Refunds;
+Approvals;
+Activity Logs
+P artial Specified P artially
+available
+Fees Receipts &
+Demand
+Notices
+Auto-
+numbered
+receipts
+Fee Counter
+receipts
+Live Specified Fully
+available
+Fees Receipts &
+Demand
+Notices
+Bulk demand
+notices
+None Missing Not
+specified
+Completely
+missing
+Fees Receipts &
+Demand
+Notices
+Dues
+reminders
+None Missing Specified Proposed in
+V2, not built
+Fees Reconciliation Automated
+bank matching
+with exception
+flagging (2
+features)
+None Missing Specified Proposed in
+V2, not built
+Fees Reports &
+Ledgers
+Day book Not seen in demo Not
+Specified Needs
+verified
+validation
+Fees Reports &
+Ledgers
+Collection MIS
+P aid/due reports,
+and
+collection metrics
+outstanding
+dues (2
+features)
+Live Specified Fully
+available
+Fees Reports &
+Ledgers
+Ledger exports Expense
+Management
+ledger books
+P artial Specified P artially
+available
+P ayroll P ayroll Inputs Attendance
+integration,
+leave
+deductions,
+allowances (3
+features)
+Six-step pay run;
+loss of pay; salary
+components
+Live Specified Fully
+available
+P ayroll P ayroll Inputs Arrears None Missing Specified Proposed in
+V2, not built
+P ayroll P ayslips &
+Statutory
+Salary
+structures and
+payslip
+generation (2
+features)
+Salary structures;
+payslips
+Live Specified Fully
+available
+Recommended
+system › module
+Finance ›
+Scholarships &
+Concessions
+Finance ›
+Scholarships &
+Concessions
+Finance ›
+Scholarships &
+Concessions ›
+Schemes
+Finance › Fees ›
+Fines & Late
+Fees
+Finance › Fees ›
+Refunds
+Finance › Fees ›
+Fee Counter
+Finance › Fees ›
+Demand Notices
+Finance › Fees ›
+Due Reminders
+Finance ›
+Accounts › Bank
+Reconciliation
+Finance › Fees ›
+Reports
+Finance › Fees ›
+Reports
+Recommended
+action
+Keep
+Expand: rule-
+based
+Build (NSP ,
+state portals)
+Build
+Expand: policy
+engine
+Keep
+Build
+Build
+Build
+V alidate, then
+build
+Keep
+Finance ›
+Accounts ›
+Ledger
+People › P ayroll ›
+P ay Run
+Expand to
+general ledger
+Keep
+People › P ayroll ›
+Assignments
+Build
+People › P ayroll Keep
+<<PAGE 34>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+Gap
+status
+identified
+P ayroll P ayslips &
+Statutory
+Form 16 None Missing Specified Proposed in
+V2, not built
+P ayroll P ayslips &
+Statutory
+PF and ESI
+returns (2
+features)
+Deductions
+computed; no
+return files on
+screen
+P artial Specified P artially
+available
+P ayroll Compliance TDS, PF , ESI and
+professional
+tax aligned (4
+features)
+Deducted in pay
+run; no 24Q
+P artial Specified P artially
+available
+Fees Accounting
+Integration
+GL postings None Missing Specified Proposed in
+V2, not built
+Fees Accounting
+Integration
+Export to T ally
+or another ERP
+None Missing Specified Proposed in
+V2, not built
+Scholarships Scholarships
+(app)
+Eligibility
+checks through
+disbursement
+and aid
+reconciliation
+Scholarships;
+Approvals
+P artial Specified P artially
+available
+Expenses
+(site only)
+Expenses Expense
+tracking
+Expense
+Management:
+vouchers,
+categories,
+budgets,
+reimbursements
+Live Specified Fully
+available
+Recommended
+system › module
+People › P ayroll ›
+Statutory
+People › P ayroll ›
+Statutory
+People › P ayroll ›
+Statutory
+Finance ›
+Accounts ›
+Ledger
+Finance ›
+Accounts › T ally
+Export
+Finance ›
+Scholarships &
+Concessions
+Finance ›
+Accounts ›
+Expenses
+Recommended
+action
+Build
+Build ECR and
+ESI files
+Expand: state
+slabs, 24Q
+Build
+Build
+Expand
+Keep
+7.3 Operations
+42 features: 11 fully available, 6 partial or lacking depth, 19 in the V2 plan but not built, 3
+completely missing, 3 need validation.
+CampX
+module
+F acilities
+(site only)
+F acilities
+(site only)
+F acilities
+(site only)
+F acilities
+(site only)
+F acilities
+(site only)
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+Gap
+status
+identified
+F acilities Asset registry Inventory ›
+Assets
+Live Specified Fully
+available
+F acilities Space allocation Infrastructure:
+buildings,
+general and
+exam rooms
+P artial Specified P artially
+available
+F acilities AMC and
+warranty
+tracking
+None Missing Specified Proposed in
+V2, not built
+Maintenance W ork-order
+routing
+Issues (general) P artial P artly
+specified
+P artially
+available
+Maintenance Preventive
+schedules
+None Missing Specified Proposed in
+V2, not built
+Recommended
+system › module
+Operations ›
+Inventory &
+Assets
+Operations ›
+F acilities &
+Maintenance ›
+Spaces
+Operations ›
+Inventory &
+Assets › AMC &
+W arranty
+Operations ›
+F acilities &
+Maintenance ›
+W ork Orders
+Operations ›
+F acilities &
+Maintenance
+Recommended
+action
+Keep; add QR
+tags
+Expand:
+booking
+Build
+Build
+Build
+<<PAGE 35>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+F acilities
+(site only)
+Maintenance T echnician and
+vendor
+assignment
+None Missing Not
+specified
+Completely
+missing
+Hostel Hostel Room-type
+management,
+allocation,
+occupancy (3
+features)
+Hostels, Rooms,
+Allocations,
+Dashboard
+Live Specified Fully
+available
+Hostel Hostel Complaints None in hostel Missing Specified Proposed in
+V2, not built
+Hostel Mess Meal planning Kitchen meal
+Live Specified Fully
+planning
+available
+Hostel Mess Mess
+None Missing Specified Proposed in
+attendance and
+V2, not built
+student
+feedback (2
+features)
+T ransport T ransport Route
+optimisation
+None Missing Specified Proposed in
+V2, not built
+T ransport T ransport GPS live
+T rip tracking P artial Specified P artially
+tracking
+available
+T ransport T ransport Stop-wise
+allocation
+Routes and
+Enrollments
+Not
+verified
+Specified Needs
+validation
+T ransport T ransport Self-registration None Missing Specified Proposed in
+V2, not built
+None Missing Specified Proposed in
+V2, not built
+Library Library Catalogue with
+ISBN/MARC
+import,
+circulation,
+reservations,
+fines, OP AC,
+RFID/barcode
+(6 features)
+Student
+Services
+(site only)
+Student
+Services
+(site only)
+Student
+Services
+(site only)
+Student
+Services
+Student
+Services
+Student
+Services
+Bonafide and
+certificate
+requests (2
+features)
+Certificates ›
+Requests
+Live Specified Fully
+available
+No-dues
+requests
+None Missing P artly
+specified
+Proposed in
+V2, not built
+Print designer Certificate
+templates; ID
+card designer
+Live Specified Fully
+available
+Helpdesk Helpdesk Multi-
+department
+ticketing
+Issues;
+Concerns &
+Feedback
+P artial Specified P artially
+available
+Helpdesk Helpdesk SLA timers and
+automatic
+escalation (2
+features)
+None Missing Specified Proposed in
+V2, not built
+Recommended
+system › module
+Operations ›
+F acilities &
+Maintenance
+Operations ›
+Hostel & Mess
+Operations ›
+Hostel & Mess (via
+Helpdesk)
+Operations ›
+Hostel & Mess ›
+Mess
+Operations ›
+Hostel & Mess ›
+Mess
+Operations ›
+T ransport › Routes
+& Stops
+Operations ›
+T ransport › T rips
+Operations ›
+T ransport ›
+Enrollments
+Operations ›
+T ransport ›
+Enrollments
+(parent/student
+app)
+Academics ›
+Library
+Students ›
+Certificates & ID
+Cards
+Students ›
+Certificates & ID
+Cards › No-Dues
+Students ›
+Certificates & ID
+Cards › T emplates
+Operations ›
+Helpdesk
+Operations ›
+Helpdesk
+Recommended
+action
+Build
+Keep; add
+allocation rules
+Build
+Keep
+Build
+Build
+Expand: live
+GPS, parent
+ET A
+V alidate
+Build
+Build module
+Keep
+Build
+Keep
+Expand
+Build
+<<PAGE 36>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Helpdesk Helpdesk CSA T None Missing Not
+specified
+Completely
+missing
+Placements Placements Recruiter CRM Career Connect
+› Companies
+Live Specified A vailable,
+lacks depth
+Placements Placements Drive
+scheduling
+Placement
+Drives
+Live Specified Fully
+available
+Placements Placements Eligibility filters
+and offer
+tracking (2
+features)
+Not confirmed in
+demo
+Not
+verified
+Specified Needs
+validation
+Placements Placements Placement
+analytics
+Career overview
+(NIRF pack says
+placements "not
+tracked")
+P artial Specified P artially
+available
+Alumni Alumni Directory Career Connect
+› Alumni
+Live Specified Fully
+available
+Alumni Alumni Engagement
+campaigns
+None Missing Not
+specified
+Completely
+missing
+Alumni Alumni Events,
+None Missing Specified Proposed in
+V2, not built
+mentorship,
+giving (3
+features)
+Visitors
+(site only)
+Visitors Visitor
+management
+Visitor
+Management:
+passes, records,
+approvals
+Live Specified Fully
+available
+Recommended
+system › module
+Operations ›
+Helpdesk
+Career Connect ›
+Placements
+Career Connect ›
+Placements
+Career Connect ›
+Placements
+Career Connect ›
+Placements;
+Quality &
+Compliance ›
+Government
+Reports
+Career Connect ›
+Alumni
+Career Connect ›
+Alumni
+Career Connect ›
+Alumni
+Operations ›
+Visitors & Gate
+Recommended
+action
+Build
+Expand:
+recruiter
+pipeline
+Keep
+V alidate, then
+build
+Expand; feed
+NIRF
+Keep
+Build
+Build
+Keep
+7.4 Enrollment
+40 features: 8 fully available, 10 partial or lacking depth, 17 in the V2 plan but not built, 2
+completely missing, 3 need validation.
+CampX
+module
+CampX sub-
+module
+CRM Prospect
+Sources
+CRM Prospect
+Sources
+CRM Prospect
+Sources
+CRM Prospect
+Sources
+Admission
+Application
+s
+Forms
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+Gap
+status
+identified
+W eb forms and
+bulk import (2
+features)
+Dynamic web
+forms; Leads; Bulk
+Upload
+Live Specified Fully
+available
+W alk-ins Leads entered by
+hand
+P artial Specified P artially
+available
+Agent referrals Live agent
+tracking
+Live Specified A vailable,
+lacks depth
+Campaigns Not seen in demo Not
+Specified Needs
+verified
+validation
+Configurable multi-
+step forms
+Dynamic web
+forms
+P artial Specified P artially
+available
+Recommended
+system › module
+Enrollment ›
+Admissions CRM
+Enrollment ›
+Admissions CRM
+Enrollment ›
+Admissions CRM
+Enrollment ›
+Admissions CRM ›
+Campaigns
+Enrollment ›
+Applications
+Recommend
+ed action
+Keep
+Expand:
+front-office
+capture
+Expand:
+commission
+V alidate,
+then build
+Expand
+<<PAGE 37>>
+CampX
+module
+CampX sub-
+CampX feature Campusverse
+module
+equivalent today
+V1
+status
+Earlier V2
+Gap
+status
+identified
+Admission
+s
+Application
+Forms
+Programme-wise
+forms with field
+validation (2
+features)
+Not seen in demo Not
+verified
+Specified Needs
+validation
+CRM Communica
+tion
+SMS, email and in-
+app (3 features)
+Communications:
+SMS (DL T), email,
+notifications
+Live Specified Fully
+available
+CRM Communica
+tion
+WhatsApp None Missing Specified Proposed in
+V2, not built
+CRM Communica
+tion
+Every message
+tracked on the
+applicant timeline
+Follow-ups P artial Specified P artially
+available
+Applicant
+T racking
+Document
+Manageme
+nt
+Digital collection,
+verification and
+status tracking (3
+features)
+None Missing Specified Proposed in
+V2, not built
+Admission
+s
+Eligibility &
+Merit
+Rule-based
+eligibility , merit
+lists, cut-off
+mapping (3
+features)
+None Missing Specified Proposed in
+V2, not built
+Admission
+s
+Counselling Counselling rounds
+and seat allocation
+(2 features)
+None Missing Specified Proposed in
+V2, not built
+Admission
+s
+Offers &
+Decisions
+Offer letters,
+provisional/confirm
+ed status, seat
+allotment (3
+features)
+None Missing Specified Proposed in
+V2, not built
+Admission
+s
+Application
+Fees
+Online collection
+and receipts (2
+features)
+None Missing Specified Proposed in
+V2, not built
+Admission
+s
+Application
+Fees
+W aivers None Missing Not
+specified
+Completely
+missing
+CRM CRM
+Features
+Pipeline view and
+follow-up
+reminders (2
+features)
+Admissions ›
+Pipeline (Kanban),
+Follow-ups
+Live Specified Fully
+available
+CRM CRM
+Prospect scoring None Missing Specified Proposed in
+Features
+V2, not built
+Applicant
+T racking
+Reporting Conversion funnel
+and source
+tracking (2
+features)
+Pipeline counts by
+stage
+P artial Specified P artially
+available
+Applicant
+T racking
+Reporting Counsellor
+performance
+None Missing Specified Proposed in
+V2, not built
+CRM Integrations P ayment gateways Fees payment
+setups
+Live Specified Fully
+available
+CRM Integrations T elephony/IVR None Missing Not
+specified
+Completely
+missing
+CRM Integrations WhatsApp
+Business API
+None Missing Specified Proposed in
+V2, not built
+Recommended
+system › module
+Enrollment ›
+Applications
+Campus Core ›
+Communications
+Campus Core ›
+Communications
+Enrollment ›
+Admissions CRM
+Enrollment ›
+Applications ›
+Documents Check
+Enrollment › Merit
+& Seat Allocation
+Enrollment › Merit
+& Seat Allocation
+Enrollment ›
+Offers &
+Onboarding
+Enrollment ›
+Applications
+(uses Fees
+payments)
+Enrollment ›
+Applications
+Enrollment ›
+Admissions CRM
+Enrollment ›
+Admissions CRM
+(Mitra-assisted)
+Enrollment ›
+Admissions CRM ›
+Reports
+Enrollment ›
+Admissions CRM ›
+Reports
+Campus Core ›
+Integrations
+Campus Core ›
+Integrations
+Campus Core ›
+Integrations
+Recommend
+ed action
+V alidate,
+then build
+Keep
+Build
+Expand
+Build
+Build
+Build
+Build
+Build
+Build
+Keep
+Build
+Expand
+Build
+Keep
+Build
+Build
+<<PAGE 38>>
+CampX
+module
+Onboardin
+g
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Onboarding Admitted to
+enrolled: roll
+number , section,
+fees, ID (4
+features)
+Admissions ›
+Enrollments
+P artial Specified P artially
+available
+Recommended
+system › module
+Enrollment ›
+Offers &
+Onboarding
+Recommend
+ed action
+Expand: one-
+step enrol
+7.5 People
+30 features: 3 fully available, 4 partial or lacking depth, 16 in the V2 plan but not built, 2
+completely missing, 5 need validation.
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent
+today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Onboarding Onboarding Offer-letter
+generation,
+document
+checklist,
+induction
+scheduling (3
+features)
+None Missing Specified Proposed in
+V2, not built
+Onboarding Onboarding Role assignment Organization ›
+Users, Roles
+(by hand)
+P artial Specified P artially
+available
+Onboarding Staff &
+F aculty
+Profiles
+Master record HR › Staff Live Specified Fully
+available
+Onboarding Staff &
+F aculty
+Profiles
+Qualifications Staff profile
+fields
+P artial Specified P artially
+available
+Onboarding Staff &
+F aculty
+Profiles
+Research profile None Missing Specified Proposed in
+V2, not built
+Onboarding Staff
+Documents
+Document
+repository
+Not seen in
+demo
+Not
+verified
+Specified Needs
+validation
+Onboarding Staff
+Documents
+V erification and
+expiry alerts (2
+features)
+None Missing P artly
+specified
+Proposed in
+V2, not built
+Attendance Attendance Shift
+management
+HR ›
+Attendance;
+shifts
+Live Specified Fully
+available
+Attendance Attendance Biometric
+integration and
+self-service
+check-in (2
+features)
+Not seen in
+demo
+Not
+verified
+Specified Needs
+validation
+Attendance Leave
+Management
+Multi-level
+approvals
+HR › Leaves,
+Leave
+Approvals
+Live Specified A vailable,
+lacks depth
+Recommended
+system › module
+People › HR ›
+Recruitment &
+Onboarding
+People › HR ›
+Recruitment &
+Onboarding
+People › HR › Staff People › HR › Staff Academics ›
+Research & PhD ›
+Publications
+(shown in HR
+profile)
+People › HR › Staff
+Documents
+People › HR › Staff
+Documents
+People › Staff
+Attendance &
+Leave
+People › Staff
+Attendance &
+Leave
+People › Staff
+Attendance &
+Leave
+Recommended
+action
+Build
+Expand: auto-
+provision
+Keep
+Expand
+Build
+V alidate, then
+build
+Build
+Keep
+V alidate, then
+build
+Expand via
+shared
+approvals
+<<PAGE 39>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent
+today
+V1
+status
+Earlier V2
+status
+Gap
+identified
+Recommended
+system › module
+Recommended
+action
+Attendance Leave
+Management
+Balance tracking
+and policy
+configuration (2
+features)
+Not seen in
+demo
+Not
+verified
+Specified Needs
+validation
+People › Staff
+Attendance &
+Leave
+V alidate
+Performance Performance Goal-based
+reviews,
+appraisal
+workflows,
+review cycles (3
+features)
+None Missing Specified Proposed in
+V2, not built
+People ›
+Appraisals &
+Development
+Build
+Insights F aculty
+Compliance
+AICTE/UGC
+cadre ratios
+None Missing Specified Proposed in
+V2, not built
+People › HR ›
+F aculty
+Compliance
+Build; feed
+Quality &
+Compliance
+Insights F aculty
+Compliance
+F aculty
+workload
+tracking
+HR › W orkload Live Specified Fully
+available
+People › HR ›
+W orkload
+Keep; link to
+timetable
+Performance Research
+Profile
+Publications,
+projects,
+achievements (3
+features)
+None Missing Specified Proposed in
+V2, not built
+Academics ›
+Research & PhD
+Build
+Onboarding Exit &
+Clearance
+Resignation, no-
+dues clearance,
+relieving letters
+(3 features)
+None Missing Specified Proposed in
+V2, not built
+People › HR › Exit Build
+Insights Insights Attrition
+dashboards and
+workforce
+intelligence (2
+features)
+None Missing Not
+specified
+Completely
+missing
+People › HR ›
+W orkforce
+Insights
+Build
+Insights Insights Department
+analytics
+Dashboard
+P artial Not
+counts
+specified
+P artially
+available
+People › HR ›
+W orkforce
+Insights
+Build
+7.6 Medha AI
+12 features: 2 fully available, 4 partial or lacking depth, 5 in the V2 plan but not built, none
+completely missing, 1 needs validation.
+CampX
+module
+CampX sub-
+CampX feature Campusverse
+module
+equivalent today
+V1
+status
+Earlier V2
+Gap
+status
+identified
+Recommended
+system › module
+Recommended
+action
+Chat Chat Natural-
+AI Assistant (one
+branch at a time)
+language
+answers from
+live records
+(fees,
+attendance,
+results,
+admissions)
+Live Specified A vailable,
+lacks
+depth
+Mitra › Ask Mitra Expand: group
+scope
+Chat Chat One answer
+composed
+across systems
+AI Assistant
+(cross-module
+question still
+loading after 20
+s)
+P artial Specified P artially
+available
+Mitra › Ask Mitra Fix: shared read
+model
+<<PAGE 40>>
+CampX
+module
+CampX sub-
+module
+CampX feature Campusverse
+equivalent today
+V oice V oice Students speak;
+Medha
+transcribes and
+replies
+Smart
+Analysis
+Smart
+Analysis
+One click on
+any table:
+averages,
+outliers, next
+steps
+W orkflow
+Agents
+W orkflow
+Agents
+Agent drafts,
+routes for
+review ,
+publishes under
+the user's
+authority
+Learning
+Assistant
+Learning
+Assistant
+Assistant for
+students
+T eaching
+Assistant
+T eaching
+Assistant
+Assistant for
+f aculty
+Governance Governance Sees only what
+the user can
+see (role and
+tenant)
+Governance Governance Every prompt,
+retrieval and
+action on the
+audit trail,
+replayable
+Governance Governance Runs inside the
+platform under
+one trust model
+Enterprise
+(site only)
+Bring your
+own model
+Runs on the
+institution's
+Anthropic,
+OpenAI or
+Gemini account
+Enterprise
+(site only)
+Course
+Studio
+Subject experts
+build complete
+courses with AI
+V1
+status
+Earlier V2
+status
+Gap
+identified
+None Missing Specified Proposed
+in V2, not
+built
+None Missing Specified Proposed
+in V2, not
+built
+AI Assistant
+actions (create
+club, collect fee)
+P artial Specified P artially
+available
+None Missing Specified Proposed
+in V2, not
+built
+None Missing Specified Proposed
+in V2, not
+built
+AI Assistant
+respected
+permissions in
+demo
+Live Specified Fully
+available
+Not seen in demo Not
+Specified Needs
+verified
+validation
+Built-in assistant Live Specified Fully
+available
+None Missing Specified Proposed
+in V2, not
+built
+Course builder
+(no AI)
+P artial Not
+specified
+P artially
+available
+Recommended
+system › module
+Recommended
+action
+Mitra › V oice &
+Languages
+Build
+Mitra › Mitra on
+every screen
+Build
+Mitra › Mitra
+Agents
+Expand
+Mitra › Student
+Companion
+Build
+Mitra › T eacher
+Assistant
+Build
+Mitra › AI
+Governance
+Keep
+Campus Core ›
+Activity Log
+V alidate, then
+build
+Mitra Keep
+Mitra › AI
+Governance
+(model gateway)
+Build
+Academics ›
+T eaching &
+Learning › Courses
++ Mitra
+Expand
+Campusverse features with no CampX equivalent (kept, not mapped above): Health
+Connect (all of it); Skill-Up, internships, micro-credentials and career guidance; school
+boards, report cards, P ARAKH HPC, PTM, class diary; staff promotions; kits and uniform
+sales; child pick-up and gate passes; clubs; campus feed and social posts; Government
+Reports.
+<<PAGE 41>>

@@ -1,0 +1,29 @@
+{
+  "name": "@campusverse/shared-staff-attendance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@campusverse/config": "workspace:*",
+    "@campusverse/db": "workspace:*",
+    "@campusverse/people-records": "workspace:*",
+    "@campusverse/platform-audit": "workspace:*",
+    "@campusverse/platform-events": "workspace:*",
+    "@campusverse/platform-organisation": "workspace:*",
+    "@campusverse/platform-permissions": "workspace:*",
+    "@campusverse/platform-workflow": "workspace:*",
+    "@campusverse/verse-ai": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
+  }
+}

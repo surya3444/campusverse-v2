@@ -1,0 +1,466 @@
+9. Missing functional and technical layers
+The deepest gaps are not single features but missing layers. There is no rules layer , no
+credit layer , no consent layer , no accounting layer and no shared read model, so every
+module improvises its own. The tables below cover each area in your brief , plus gaps the
+documents revealed that the brief did not list.
+9.1 Functional and workflow gaps (A)
+Area Campusverse today Missing Priority
+Modules 22 documented +
+demo extras
+16 modules (section 8.1) P0–P2
+Steps exist in isolation P0–P1
+W orkflows end to
+end
+Institutional
+processes
+Day-to-day operations Hand-offs: admission → enrol →
+fees → section in one step; exam
+eligibility from attendance and
+fees; no-dues across modules
+Y ear-end rollover by rules,
+statutory committees,
+accreditation cycles,
+government returns
+P0–P1
+<<PAGE 47>>
+Area Campusverse today Missing Priority
+Role-specific
+functionality
+Generic roles and
+menus
+Persona workspaces for 40+
+roles (section 10)
+P1
+9.2 Academic gaps (B)
+Area Campusverse today Missing Priority
+Academic
+structures
+University → institution →
+department → program;
+years copied yearly
+Batch cohort; three linked
+trees (organisation,
+curriculum, cohort); school
+stages and streams
+Curriculum
+management
+Subjects per department
+per semester
+Curriculum per program and
+regulation; L - T -P credits;
+NCrF hours; COs on each
+course
+Course
+management
+Subjects and teacher
+allocation
+Course types (core, elective,
+minor , V AC, MOOC slot);
+course offerings shared
+across sections
+Regulations and
+calendars
+Academic year , terms,
+holidays
+Regulation versions (R22,
+R25); two intakes a year;
+per-campus and per-state
+calendars
+CBCS and credits Elective baskets, no
+credits
+Credit limits, prerequisites,
+majors, minors, honours, exit
+awards, credit ledger , ABC
+upload
+Elective
+management
+Baskets Seat caps; allocation by
+preference, CGP A or first
+come; open electives across
+institutes
+Examinations Scheduling, hall tickets,
+marks entry
+Eligibility , room-wise
+seating, invigilation, re-
+exams, CBSE two-exam
+model, board L OC
+P0
+P0
+P0
+P0
+P0
+P1
+P0–P1
+<<PAGE 48>>
+Area Campusverse today Missing Priority
+Internal
+assessments
+Gradebook CIE plan with weighted
+components from the
+regulation; rubrics
+Evaluation and
+moderation
+Marks entry and approval On-screen evaluation,
+scanning, bundling, dual
+valuation, moderation rules
+OBE CO–PO mapping, NBA C3,
+NAAC 2.6
+PSOs, surveys, finalise gate,
+correct roll-up, versioned
+POs
+CO–PO–PSO
+mapping
+Identical matrix rows in
+demo
+Per-course articulation 1–3;
+program matrix; CO tags on
+every assessed item
+Research and PhD None Scholar lifecycle;
+publications; projects and
+grants; plagiarism and
+Shodhganga
+Mentoring None Allocation, check-ins, logs,
+escalation, Mitra early
+warning
+LMS and
+integrations
+Courses, live classes,
+lesson plans
+L TI Advantage, SCORM,
+OneRoster , syllabus
+coverage
+Records and
+transcripts
+Report cards Lifelong record, CMM,
+transcripts, signed and in
+DigiLocker/NAD
+School-specific
+(not in brief)
+CBSE and ICSE presets;
+one board per branch
+Board per program/class;
+state boards; P ARAKH HPC;
+RTE quota; T C with PEN and
+AP AAR
+P1
+P2
+P0 (fix),
+P1
+P1
+P2
+P1
+P1
+P0–P1
+P0–P1
+<<PAGE 49>>
+9.3 Financial gaps (C)
+Area Campusverse today Missing Priority
+Fee structures Heads per
+class/program
+Batch-wise; instalments;
+credit-based fees for colleges;
+state fee-regulation caps as
+data
+Fee collection Counter and online UPI AutoP ay; demand notices;
+reminders; fines
+Scholarships Institutional
+scholarships, approvals
+Government scheme mapping;
+disbursement reconciliation
+P ayroll Six-step run with
+deductions
+Statutory return files; arrears;
+Labour-Code validator; future-
+period guard
+Accounting and
+general ledger
+Ledger books, vouchers Double-entry GL, trial balance,
+financial statements
+Budget management Budgets Budget vs actual per
+department; commitment on
+purchase orders
+Bank reconciliation None Statement import and auto-
+matching
+Refund management Refunds with approvals Policy engine (dates,
+percentages, deductions)
+Financial approvals Approvals One approval designer with
+limits by amount and role
+Statutory reporting None 24Q, Form 16, ECR, ESI; GST on
+taxable heads; T ally export;
+fund accounting for trusts
+P1
+P1
+P1
+P0
+P1
+P2
+P1
+P1
+P0
+P0–P1
+<<PAGE 50>>
+9.4 People and HR gaps (D)
+Area Campusverse today Missing Priority
+Staff onboarding Staff enrolment Offer letters, checklist, induction,
+auto-created logins
+P1
+Employee
+lifecycle
+Enrolment,
+promotions
+Recruitment, probation, transfers
+between institutions, exit and
+clearance
+P1
+Attendance Daily attendance,
+shifts
+Biometric and geofenced check-in
+(not verified)
+P1
+Leave Apply and approve Policy builder; balances (not
+verified); academic and vacation
+P1
+leave
+P ayroll See 9.3 See 9.3 P0
+Performance None Appraisal cycles with student
+feedback input
+P2
+F aculty workload W orkload Link to timetable and invigilation;
+norms per cadre
+P1
+Research profiles None Publications, projects,
+ORCID/Scopus sync
+P2
+Statutory
+compliance
+Deductions Cadre ratios, student–f aculty ratio,
+PhD share; Labour Codes
+P0–P1
+Employee self-
+service
+Leave, payslips
+(expected)
+Mobile staff app with check-in,
+documents, tax declarations
+P1
+9.5 Operational gaps (E)
+Area Campusverse today Missing Priority
+Hostel Rooms, allocations,
+kitchen
+Complaints, outing passes, mess
+attendance and feedback
+P2
+<<PAGE 51>>
+Area Campusverse today Missing Priority
+T ransport V ehicles, routes, trips Live GPS and ET A, route
+optimisation, self-registration,
+boarding scan
+P2
+Library None Whole module P1
+Inventory Store, kits, sales,
+purchases
+Minimum-stock alerts, yearly audit P2
+Procurement Purchase reports Quotes, purchase orders, goods
+receipt, posting to Accounts
+P2
+Infrastructure Buildings, rooms Space booking, room capacity
+feeding timetable and exams
+P1
+Maintenance Issues W ork orders, preventive schedules,
+vendors
+P2
+Helpdesk Issues, concerns Routing, SLAs, escalation, CSA T P2
+Visitors P asses, records,
+approvals
+Child pick-up with O TP; gate pass P1
+Asset
+management
+Asset register QR tags, custodians, AMC and
+warranty
+P2
+Campus security Visitors Incident log, emergency broadcast
+(shared with Health Connect
+Emergency)
+P2
+Infrastructure F acilities & Maintenance module P2
+F acility
+management
+9.6 Enrollment gaps (F)
+Area Campusverse today Missing Priority
+Admission CRM Pipeline, leads,
+follow-ups
+Lead management W eb forms, agents,
+bulk upload
+Campaigns, scoring,
+counsellor performance
+W alk-in capture, duplicate
+check, source tracking
+P1–P2
+P1
+<<PAGE 52>>
+Area Campusverse today Missing Priority
+Application
+management
+Dynamic forms Multi-step programme-wise
+forms with validation;
+application fee
+P1
+Document verification None Collection, OCR, officer
+verification, status
+P1
+Counselling None Rounds, seat matrix P1
+Merit lists None Rule-based eligibility , merit,
+P1
+cut-offs
+Seat allocation None Category and quota-wise
+allotment within approved
+intake
+P1
+Enrollment Enrolments One-step enrol into record,
+batch, section, fees, parent
+P1
+login
+Onboarding None Induction checklist, ID card,
+timetable, app invite
+P1
+P arent and applicant
+communication
+SMS, email WhatsApp, applicant portal
+with status
+P1
+9.7 AI gaps (G)
+Area Campusverse today Missing Priority
+AI assistants One branch-scoped
+assistant
+Group scope; regional
+languages; voice
+Role-based copilots None Copilots for 19 roles (section
+14)
+Cross-module
+intelligence
+Slow cross-module
+answers
+Shared read model and
+semantic layer
+Natural-language
+reporting
+Chat answers Answers with tables and
+charts, saved as reports
+P1–P2
+P1–P2
+P1
+P1
+<<PAGE 53>>
+Area Campusverse today Missing Priority
+W orkflow automation Simple create-and-
+collect actions
+Draft → review → publish
+agents
+P2
+AI-generated academic
+content
+None Lesson plans, question
+papers tagged by CO and
+Bloom level, report-card
+remarks
+P2
+AI-driven insights None Mitra on every screen P1
+Predictive analytics None Early-warning signals with
+reasons; human decides
+P2
+Automated compliance
+monitoring
+None Mitra W atch against rule
+packs
+P2
+Intelligent
+recommendations
+None Next-best action on
+dashboards; elective and
+career suggestions (adults)
+P2
+9.8 Platform and infrastructure gaps (H)
+Area Campusverse
+today
+Shared database Missing Priority
+Multi-tenant
+architecture
+Row-level security per tenant and
+hierarchy node; dedicated cells for
+large tenants
+Group policies with recorded
+branch overrides
+Role × scope × data class model P0
+P0
+P0
+Multi-institution
+management
+Role-based access
+control
+Hierarchical
+permissions
+All Institutions
+view
+Roles and
+permissions
+Branch level Group, institution, department,
+program, section, self and ward
+scopes
+Data isolation Not verified T enant keys; separately keyed
+health vault
+P0
+P0
+<<PAGE 54>>
+Area Campusverse
+today
+Missing Priority
+Audit trails Activity Logs T amper-evident, India-hosted, 180
+days minimum, AI steps included
+P0
+Integration
+infrastructure
+Point integrations Integrations Hub with retries and
+monitoring
+API management None
+documented
+OpenAPI 3.1 contracts, keys, rate
+limits, versioning
+W orkflow engine Approvals One engine for approvals,
+escalations and timers
+SMS, email, push WhatsApp, languages,
+preferences, delivery tracking
+P1
+P1
+P0
+P1
+T emplates Documents & e-Sign service P1
+Notification
+infrastructure
+Document
+management
+Reporting and
+analytics
+Module reports Reporting store, report builder ,
+scheduled reports
+Mobile applications Not verified T eacher (offline), parent, student,
+staff , driver/warden apps
+Security and privacy Not evidenced MF A for staff , OW ASP ASVS L2,
+ISO 27001, consent, DPDP rights
+Data migration (not in
+brief)
+Bulk uploads V1 importers, dry run, parallel
+month-end, academic-year cut-
+over
+Localisation (not in
+brief)
+English Hindi, T elugu, T amil, Kannada,
+Malayalam first; others by state
+P1
+P1
+P0
+P0
+P1
+Accessibility (not in
+brief)
+Not assessed WCAG 2.1 AA on every screen P1
+<<PAGE 55>>

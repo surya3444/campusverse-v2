@@ -1,0 +1,413 @@
+8. Missing modules and sub-modules
+Campusverse needs 16 modules it does not have today , and about 130 new sub-modules
+inside modules it already has. Priorities (P0–P3) match the roadmap in section 17.
+8.1 Modules that do not exist in V1
+New module System What it does Why it is needed CampX
+Rule P acks Campus
+Core
+Privacy &
+Consent
+Documents & e-
+Sign
+Integrations
+Hub
+Merit & Seat
+Allocation
+Feedback &
+Surveys
+V ersioned, dated
+rules per board and
+regulator: grading,
+pass marks, credits,
+attendance limits,
+report-card layouts
+Campus
+Core
+Consent ledger per
+student, guardian
+and purpose;
+notices; data-rights
+requests; grievance
+officer; retention
+schedules
+Campus
+Core
+Uploads, generated
+PDFs, digital
+signatures, QR
+verification,
+DigiLocker
+Campus
+Core
+L TI 1.3, OneRoster ,
+SAML/OIDC,
+payment gateways,
+biometric and RFID
+devices, GPS, T ally ,
+ABC/NAD ,
+WhatsApp, IVR
+Enrollment Eligibility rules, merit
+lists, cut-offs,
+counselling rounds,
+seat matrix, quotas,
+RTE lottery
+Academics Course, f aculty ,
+f acility , parent, exit,
+alumni and employer
+surveys; weighted
+scores; action-taken
+One codebase
+for CBSE,
+CISCE, state
+boards and
+university
+regulations
+DPDP Act duties
+from 13 May
+2027; minors are
+most of your
+users
+Signed
+credentials;
+document
+verification in
+admissions and
+HR
+E very external
+connection in
+one place, with
+monitoring
+Admission
+decisions are
+the most
+disputed step
+Feeds OBE
+indirect
+attainment and
+NAAC
+reference
+P artly:
+"versioned
+structure"
+None ("on path
+to")
+Student
+Credentials;
+Document
+Management
+Integrations
+specification
+Eligibility &
+Merit;
+Counselling
+Institution
+types
+Priority
+All P0
+All P0
+All P1
+All P1
+All P1
+Feedback Colleges,
+universities;
+schools
+(parent
+surveys)
+P1
+<<PAGE 42>>
+New module System What it does Why it is needed CampX
+Library Academics Catalogue (ISBN,
+MARC21),
+circulation,
+reservations, fines,
+OP AC,
+barcode/RFID , e-
+resources
+Mentoring Students Mentor allocation,
+check-ins, progress
+logs, escalation
+Government
+Reports
+Quality &
+Compliance
+UDISE+,
+AP AAR/ABC/NAD ,
+board L OC, AISHE,
+AICTE, UGC, NIRF ,
+state returns,
+deadline calendar
+Accreditation Quality &
+Compliance
+NAAC (binary and
+legacy AQAR), NBA
+SAR Tier I/II, NIRF ,
+evidence library ,
+readiness score
+Grievances &
+Committees
+Quality &
+Compliance
+Anti-ragging, internal
+complaints (POSH),
+SC/ST cell, student
+grievance redressal;
+case tracking
+F acilities &
+Maintenance
+Operations Spaces and booking,
+work orders,
+preventive
+schedules,
+technicians and
+vendors
+Research & PhD Academics Scholars,
+supervisors,
+coursework,
+progress reviews,
+viva, award;
+publications,
+projects, grants
+Appraisals &
+Development
+People Goals, self-review ,
+student feedback,
+HoD review , FDP and
+training log
+reference
+Institution
+types
+Priority
+NAAC Criterion
+4 evidence; daily
+library
+operations
+Library All P1
+Student
+support; NAAC
+mentoring
+metrics
+Statutory and
+scheme
+reporting from
+live data
+IQAC workload;
+accreditation
+outcomes
+UGC and AICTE
+require these
+committees
+Repairs and
+space use
+tracked, not
+chased
+University
+research and
+NAAC/NIRF
+research
+metrics
+Staff
+development;
+NAAC f aculty
+metrics
+Mentoring All P1
+Not described All P0
+(ABC/NAD ,
+UDISE+); P1
+(others)
+Attainments
+exports
+Colleges,
+universities
+P1
+None Higher
+education
+(POSH: all
+employers)
+P1
+F acilities;
+Maintenance
+All P2
+PhD
+Management;
+Research
+Profile
+Universities,
+research
+colleges
+P2
+Performance All P2
+<<PAGE 43>>
+New module System What it does Why it is needed CampX
+reference
+Institution
+types
+Priority
+Mitra Agents
+and Mitra
+W atch
+Mitra Draft → review →
+publish agents;
+nightly compliance
+checks that open
+tasks
+Staff time;
+inspection
+readiness
+W orkflow
+Agents
+All P2
+Student
+Companion and
+T eacher
+Assistant
+Mitra Study help for
+students (age-
+appropriate);
+planning and
+marking help for
+teachers
+Daily value for
+the two largest
+user groups
+Learning and
+T eaching
+Assistants
+All P2
+8.2 New sub-modules inside existing modules
+Existing module New sub-modules Priority
+Academic Structure Regulations; Batches (cohorts); version
+history; institution profile
+(school/college/university); two intakes a
+year
+P0
+Students AP AAR, ABC and PEN identifiers;
+guardian accounts; credit record; exit and
+re-entry; alumni conversion
+P0
+Course Registration Credit Rules (limits, prerequisites,
+majors, minors, honours, value-added);
+term parity check; open electives across
+institutes; MOOC (SW A Y AM/NPTEL)
+slots; FFCS slot and f aculty choice (P3)
+P0–P3
+Exams & Results Eligibility checks; room-wise seating and
+invigilation; re-exams and revaluation;
+transcripts and CMM; board registration
+(L OC); on-screen evaluation, scanning,
+bundling, dual valuation (P2); exam-hall
+proctoring (P3)
+P0–P3
+Assessments (V1 " Assessments" +
+gradebook)
+CIE Plan with weighted components;
+rubrics; CO and Bloom tags on questions;
+online proctoring (P3)
+P1
+<<PAGE 44>>
+Existing module New sub-modules Priority
+OBE PSOs; indirect attainment from surveys;
+"finalise" gate; versioned POs (NBA
+GAPC)
+Attendance Period-wise attendance; QR- T O TP;
+biometric/RFID hub; shortage alerts and
+condonation; parent leave requests; f ace
+capture (P3)
+Timetable Auto-generation; substitutions; rooms
+and labs; calendar sync; exam timetable
+clash check
+T eaching & Learning L TI Advantage; SCORM player; syllabus
+coverage; Course Studio with Mitra
+Certificates & ID Cards No-dues; degree and provisional
+workflow; digital signature; QR
+verification; DigiLocker/NAD push
+Clubs & Events Event registration and certificates; NSS,
+NCC and sports hours; activity credits
+Admissions CRM (V1 Admissions) Campaigns with source tracking; front-
+office walk-in capture; agent commission;
+prospect scoring; counsellor
+performance; IVR
+Applications Multi-step programme-wise forms;
+Documents Check with OCR; application
+fees and waivers
+Offers & Onboarding (V1
+Enrollments)
+Offer and provisional letters; seat
+confirmation fee; one-step enrol (record,
+batch, section, roll number , fee plan,
+parent login)
+Fees Fines and late fees; demand notices; due
+reminders; batch-wise structures;
+instalments and UPI AutoP ay; refund
+policy engine
+P0 (fix) /
+P1
+P1
+P1
+P1–P2
+P1
+P2
+P1–P2
+P1
+P1
+P1
+<<PAGE 45>>
+Existing module New sub-modules Priority
+Scholarships & Concessions Rule-based category concessions;
+government scheme mapping (NSP , state
+portals); disbursement reconciliation
+Accounts & Expenses General ledger; bank reconciliation; fund
+accounting; GST on taxable heads; T ally
+export
+HR Recruitment and onboarding; staff
+documents with expiry; f aculty
+compliance (cadre ratios); exit and
+clearance; workforce insights
+Staff Attendance & Leave Biometric and geofenced check-in; leave
+policy builder; academic and vacation
+leave; on-duty for FDPs
+P ayroll Labour-Code wage validator; arrears;
+ECR, ESI, 24Q, Form 16; PT and L WF by
+state; gratuity and two-day final
+settlement; future-period guard
+T ransport Live GPS and parent ET A; route
+optimisation; self-registration; boarding
+scan
+Hostel & Mess Mess attendance and feedback;
+complaints; outing passes
+Inventory & Assets QR asset tags; AMC and warranty;
+procurement posting to Accounts
+Visitors & Gate Authorised child pick-up with O TP;
+student gate pass
+Helpdesk (V1 Issues) Department routing; SLA timers;
+escalation; CSA T
+Communications WhatsApp; regional languages; read
+receipts; parent–teacher messages
+without sharing numbers
+P1
+P1
+P1–P2
+P1
+P0
+P2
+P2
+P2
+P1
+P2
+P1
+<<PAGE 46>>
+Existing module New sub-modules Priority
+Health Connect Career Connect AI Assistant → Mitra Health vault with separate keys;
+aggregate-only management view; break-
+glass access; consent-gated partner
+sharing
+Age gate on paid courses (P0);
+internships counted as credits; micro-
+credentials as Open Badges; recruiter
+pipeline; offer tracking; NIRF feed; alumni
+campaigns, events, mentorship, giving
+Group-wide scope; shared read model;
+Mitra on every screen; regional
+languages; voice; AI audit log
+P0
+P0–P2
+P1–P2

@@ -1,0 +1,27 @@
+{
+  "name": "@campusverse/people-appraisals",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@campusverse/db": "workspace:*",
+    "@campusverse/people-records": "workspace:*",
+    "@campusverse/platform-events": "workspace:*",
+    "@campusverse/platform-organisation": "workspace:*",
+    "@campusverse/platform-permissions": "workspace:*",
+    "@campusverse/verse-ai": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@campusverse/config": "workspace:*",
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
+  }
+}

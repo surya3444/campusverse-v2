@@ -1,0 +1,400 @@
+12. Recommended Campusverse product architecture
+Campusverse should be nine systems on one Campus Core, with Mitra across all of
+them and one experience layer on top. Schools, colleges and universities switch on what
+they need through an institution profile, not through separate products.
+12.1 Why nine systems
+A capability becomes a system when it meets all four tests:
+1. It owns a distinct body of data that others only read.
+2. It has its own primary users.
+3. An institution could reasonably buy or switch it on separately .
+4. It answers to its own regulators or stakeholders.
+A capability that every system needs becomes a Campus Core service. A capability that
+f ails tests 2 or 3 stays a module inside a system.
+Candidate Decision Reason
+Enrollment System Owns leads, applicants,
+applications and offers; distinct
+users (counsellors, marketing);
+sold separately to colleges
+Academics System Owns structure, curriculum,
+attendance, assessments,
+results, outcomes; the largest
+user group
+Students (CampX calls part of this
+"Student Services")
+System Owns the lifelong student
+record, certificates, mentoring
+and activities; the record
+outlives any one course
+Finance System Owns money: dues, receipts,
+ledger; answers to auditors
+<<PAGE 69>>
+Candidate Decision Reason
+People System Owns staff and pay; answers to
+labour and tax law
+Operations System Owns physical campus: buses,
+rooms, stock, gate, repairs
+Health Connect System Owns health data, which must be
+isolated by law and design;
+separate users (medical staff); a
+separate sale and partnerships
+Career Connect System Owns career profiles,
+opportunities, credentials and
+alumni; adult-only marketplace
+rules; separate revenue
+Quality & Compliance System Owns accreditation evidence,
+government returns and
+statutory committees; answers
+to NAAC, NBA, UGC, AICTE,
+MoE; IQAC and registrar users
+AI intelligence Layer (Mitra), not
+a system
+Owns no business data; reads
+every system through the core.
+CampX also treats Medha as a
+layer
+Communications, reports,
+documents, approvals
+Campus Core
+services
+Every system needs them;
+building them once keeps
+behaviour consistent
+Organization and hierarchy ,
+identity , rule packs, consent,
+activity log, integrations
+Campus Core
+services
+Foundational: every request
+passes through them
+Nine is the smallest number that keeps health data isolated, gives compliance one owner ,
+and avoids a catch-all "Operations" system. Fewer systems would merge things with
+different users or laws. More would split modules that share data.
+<<PAGE 70>>
+12.2 The layers
+Layer Contents Rule
+Experience Mitra Nine
+systems
+Campus
+Core
+Home (role dashboards, My W ork
+inbox, All Institutions); admin web;
+teacher , parent, student, staff and
+driver/warden apps; portals for
+applicants, recruiters, partners
+Ask Mitra, Mitra on every screen,
+Agents, W atch, Student Companion,
+T eacher Assistant, V oice &
+Languages, AI Governance
+Enrollment, Academics, Students,
+Finance, People, Operations, Health
+Connect, Career Connect, Quality &
+Compliance
+Organization & Hierarchy , Identity &
+Access, Rule P acks, W orkflow &
+Approvals, Communications,
+Documents & e-Sign, Privacy &
+Consent, Activity Log, Reports &
+Analytics, Integrations Hub, Data
+Import
+Data Operational database per tenant
+(row-level security); separately
+keyed health vault; event log;
+reporting store; file storage
+Shows only what the role and
+profile allow
+Calls the same permissioned APIs
+as the screens; never reads tables
+directly
+Each owns its tables; others read
+through APIs and events
+Built once; every system inherits it
+Hosted in India; tenant keys
+<<PAGE 71>>
+Campusverse architecture · 9 systems, Campus Core, Mitra
+Read top down: people reach every system through the experience layer and Mitra; each
+system owns its data; all of them stand on the same Campus Core. The four shaded
+systems are ones CampX does not have; Students regroups pieces CampX spreads
+across its Academics and Operations.
+CampX vs Campusverse at the architecture level:
+Aspect CampX Campusverse (recommended)
+Systems 5 + Medha 9 + Campus Core + Mitra
+<<PAGE 72>>
+Aspect CampX Campusverse (recommended)
+Institution
+Higher education only scope
+Schools, colleges, universities, groups
+and trusts
+Learner record Enquiry to alumnus within
+higher education
+Lifelong, keyed to AP AAR, across
+institutions in a group
+Rules V ersioned academic
+configuration
+V ersioned rule packs per board,
+university and regulator , with
+effective dates
+Compliance Exports inside Academics Its own system plus Mitra W atch
+Health and
+careers
+None; placements in
+Operations
+T wo systems
+AI Medha across five systems Mitra across nine systems and the
+core
+12.3 One platform, configured per institution type
+Each institution gets an institution profile when it is created. The profile switches
+modules and vocabulary on or off , loads the right rule packs, and picks the ready-made
+roles. A trust can hold schools and colleges side by side, each with its own profile.
+Capability School Affiliated
+college
+Autonomous
+college
+University Group or trust
+Structure
+words
+Class, section,
+stream, wing
+Program, year ,
+semester ,
+section
+Same +
+regulation
+Institute,
+department,
+program,
+regulation,
+batch
+Group →
+institutions
+Rule source Board pack
+(CBSE, CISCE,
+state)
+Affiliating
+university's
+regulations
+Own
+regulations
+Own regulations
+per institute
+Group policies
+with recorded
+branch overrides
+Course
+Registration
+(CBCS)
+Off (streams
+only)
+Limited
+(university-set
+electives)
+On On, with open
+electives across
+institutes; FFCS
+optional
+Per institution
+<<PAGE 73>>
+Capability School Affiliated
+college
+Autonomous
+University Group or trust
+college
+Exams Board-pattern
+exams, report
+cards, HPC,
+board L OC
+Internal marks;
+university runs
+end exams
+Full exam
+engine
+Full exam engine
+Per institution
+incl. evaluation
+OBE Off On for NBA
+On On Per institution
+programs
+Research &
+PhD
+Off Off Optional On Per institution
+Government
+Reports
+UDISE+, AP AAR,
+board L OC, RTE
+AISHE,
+ABC/NAD
+(through
+university),
+AICTE where
+technical
+AISHE,
+ABC/NAD ,
+AICTE, NIRF
+AISHE,
+ABC/NAD , UGC,
+NIRF
+Consolidated
+view
+NAAC, NBA NAAC, NBA,
+NIRF
+NAAC, NIRF Readiness
+across
+institutions
+Optional Optional Optional Group policy
+On On On Group-wide
+recruiter
+network
+Accreditation Board affiliation
+compliance
+Health
+Connect
+Career
+Connect
+Mitra for
+students
+On (parent
+consent)
+Career guidance
+only; no paid
+marketplace for
+under-18s
+Age-appropriate
+study
+companion; no
+profiling
+Companion +
+career
+12.4 The 14 architecture decisions
+Same Same —
+# Consideration Recommendation Why it suits Campusverse
+1 Organisation
+hierarchy
+T yped nodes of any depth:
+Group → University or School
+Group → Campus →
+Institution → Institute/Wing
+→ Department. Affiliation is a
+link, not a parent
+A school and an affiliated
+college can sit in one trust
+while following different
+boards and universities
+<<PAGE 74>>
+# Consideration Recommendation Why it suits Campusverse
+2 Academic structure
+Three linked trees:
+engine
+organisation (who runs it),
+curriculum (program →
+regulation → courses), cohort
+(batch → term → section →
+enrolment)
+3 Student lifecycle One lifelong learner record
+with AP AAR, ABC and PEN;
+batches advance by terms,
+never by copying
+4 Employee lifecycle One staff record across
+institutions of a group;
+recruit → onboard → work →
+develop → exit
+5 Financial
+infrastructure
+Sub-ledgers (fees, payroll,
+purchases) post to one
+general ledger per legal
+entity , with fund accounting
+6 W orkflow and
+approval engine
+One designer for steps,
+approvers by role and scope,
+amount limits, timers and
+escalation
+7 Communication
+infrastructure
+One service for SMS (DL T),
+WhatsApp, email, push and
+in-app, with templates per
+language and delivery
+tracking
+8 Integration and API
+layer
+OpenAPI contract per
+module; event bus between
+systems; Integrations Hub for
+outside systems
+9 Reporting and
+analytics
+Reporting store fed by
+events; report builder;
+scheduled reports; Mitra
+reads the same store
+The same engine models
+"B. T ech CSE (AI&ML) R25,
+batch 2025–29" and "CBSE
+Class 10-B, 2026–27"
+Lateral entry , exit and re-
+entry , and school-to-
+college continuity
+T ransfers within a trust
+without re-entry;
+NAAC/AICTE f aculty data
+from one place
+T rusts run several legal
+entities; auditors need one
+trial balance
+Removes per-module
+approval code; institutions
+change rules themselves
+Consistent consent and
+opt-out handling; cost per
+branch
+Systems stay independent;
+partners integrate once
+Heavy reports and AI do
+not slow daily work (the
+demo's 20-second answer)
+<<PAGE 75>>
+# Consideration Recommendation Why it suits Campusverse
+10 Identity and access SSO (Google, Microsoft),
+MF A for staff , O TP for
+parents; role × scope ×
+relationship × data class
+11 Regulatory and
+compliance engine
+Rule packs (versioned,
+effective-dated, tested) +
+obligation register + evidence
+store + Mitra W atch
+12 AI intelligence layer Mitra: orchestrator calling
+permissioned tools over the
+reporting store and the
+institution's documents, via a
+model-neutral gateway
+13 Health Connect
+integration
+Separate vault and keys;
+other systems receive only
+status ("medical leave"),
+never the reason; partners
+only with consent
+14 Career Connect
+integration
+Reads academic record
+(CGP A, credits, skills) with
+consent; writes placements
+to NIRF and credits to the
+ledger; age gate on paid
+content
+W orks for 5-year-olds'
+parents and for university
+auditors
+Regulation changes
+become data updates, not
+releases
+One assistant everywhere;
+no disconnected bots
+Most sensitive data you
+hold, much of it about
+minors
+Careers become part of
+the record, without
+marketing to children

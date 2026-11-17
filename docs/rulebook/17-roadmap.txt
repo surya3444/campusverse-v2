@@ -1,0 +1,878 @@
+17. Prioritised development roadmap
+Build in this order:
+1. P0: the foundations that every later feature depends on, or that carry legal risk.
+2. P1: what a college or university buyer checks before signing.
+3. P2: where Campusverse pulls ahead.
+4. P3: later bets.
+Nothing is on this list only because CampX has it. FFCS, proctoring and perpetual licences
+are deliberately late.
+Complexity: S = weeks, M = 1–2 months, L = a quarter or more, for a small team.
+17.1 P0: critical foundations (Phases 0–2, to July 2027)
+# Item T ype Problem
+Status
+today
+CampX ref Implementatio
+solved, and
+why P0
+n
+Depend
+s on
+Comple
+xity
+Impact Who
+benefits
+1 Fix the four
+demo defects
+Improve Wrong OBE
+numbers,
+wrong
+semesters,
+future payroll
+runs and
+named health
+data on the
+owner
+dashboard
+undermine
+trust in any
+sales demo
+Live
+defects
+— P atch in V1
+now; design
+out in V2
+— S High All
+2 Remove
+unproven
+claims from
+the demo
+login page
+Improve "SOC 2
+compliant"
+without a
+report f ails
+security
+reviews
+Live CampX
+says "SOC
+2-ready"
+Edit page — S High Sales
+3 Academic
+engine:
+regulations,
+batches as
+cohorts,
+versions,
+institution
+profiles
+Improve
+(rebuild)
+Every
+academic, fee
+and
+compliance
+feature
+depends on it;
+V1 copies
+years
+P artial Academic
+Configurati
+on
+Three linked
+trees; profiles
+for school,
+college,
+university
+Organiz
+ation
+L V ery
+high
+All
+4 Lifelong
+learner record
+with AP AAR,
+ABC, PEN and
+guardians
+Improve Needed for
+ABC/NAD ,
+UDISE+, T C,
+exit/re-entry ,
+Mitra
+P artial Single
+learner
+record
+One record;
+identifiers
+optional with
+consent
+3 M V ery
+All
+high
+<<PAGE 127>>
+# Item T ype Problem
+5 Rule P acks
+engine with
+first packs
+(CBSE, CISCE,
+two states,
+UGC credits,
+one
+university)
+6 Roles × scope
+× relationship
+× data class;
+row-level
+security
+7 Privacy &
+Consent:
+ledger ,
+notices, rights
+requests,
+retention
+8 Health vault
+and
+aggregate-
+only
+dashboards
+9 Age gate on
+Career
+Connect paid
+courses
+10 T amper-
+evident
+Activity Log in
+India (180
+days+), incl. AI
+steps
+11 Shared
+W orkflow &
+Approvals
+engine
+12 Exams &
+Results depth:
+eligibility , rule-
+pack grading,
+CIE
+components,
+re-exams,
+transcripts
+13 Course
+Registration
+credit rules
+(credits,
+limits,
+prerequisites,
+majors,
+minors, term
+parity)
+solved, and
+why P0
+New One codebase
+for all boards;
+regulation
+changes
+become data
+Improve Group vs
+branch
+access;
+sensitive data
+classes
+New DPDP main
+duties from 13
+May 2027;
+most users are
+minors
+Improve Most sensitive
+data; current
+defect
+Improve DPDP bars
+targeted
+advertising at
+children
+Improve CERT -In
+Directions;
+audit trust
+Improve Every module
+needs
+approvals; V1
+approvals are
+partial
+Improve Core of any
+college sale;
+CBSE two-
+exam model
+for schools
+Improve UGC choice-
+based credit
+rules; current
+semester bug
+Status
+today
+CampX ref Implementatio
+n
+Missing V ersioned
+configurati
+on
+V ersioned
+packs with
+effective
+dates and test
+cases
+P artial Context-
+aware
+access
+Shared policy
+service used
+by APIs and
+Mitra
+Missing "On path
+to"
+Consent per
+learner ,
+guardian,
+purpose; DPO
+console
+P artial None Separate store
+and keys;
+break-glass
+P artial None Hide paid
+courses from
+under-18
+accounts
+P artial Full audit
+trail
+Append-only
+store; export
+P artial Configurab
+le
+workflows
+One designer:
+roles, scopes,
+limits, timers
+P artial Examinatio
+n; CIE;
+Credentials
+Built on rule
+packs and
+cohorts
+Depend
+s on
+Comple
+xity
+Impact Who
+3 L V ery
+high
+benefits
+All
+Organiz
+ation
+M High All
+4, 6 M V ery
+All
+high
+(legal)
+6, 7 M High Schools,
+residenti
+al
+Schools
+4, 7 S High
+(legal)
+6 S High All
+6 M High All
+3, 5 L V ery
+high
+All
+P artial CBCS Rules from
+regulation;
+registration
+windows
+3, 5 M High HE
+<<PAGE 128>>
+# Item T ype Problem
+Status
+today
+CampX ref Implementatio
+solved, and
+why P0
+n
+14 P ayroll
+statutory and
+Labour Codes:
+validator ,
+arrears, ECR,
+ESI, PT/L WF ,
+24Q, Form 16,
+two-day final
+settlement,
+future-period
+guard
+Improve Labour Codes
+in force;
+statutory
+penalties
+P artial P ayslips &
+Statutory;
+Complianc
+e
+State slabs as
+rule packs
+15 AP AAR/ABC/
+NAD upload;
+UDISE+
+export
+New UGC directive
+for HEIs;
+UDISE+ for
+every school
+Missing Not
+described
+Government
+Reports
+module (first
+two sub-
+modules)
+16 Data Import
+centre and V1
+importers
+New Migration of
+every V1
+tenant at the
+June–July
+boundary
+P artial
+(bulk
+upload)
+Historical
+records
+preserved
+T emplates,
+checks, undo,
+dry run
+17.2 P1: important product capabilities (Phase 3, Aug–Oct 2027)
+# Item T ype Problem
+Status
+CampX ref Implementatio
+solved, and
+today
+n
+why P1
+17 OBE
+completion:
+PSOs, indirect
+attainment,
+finalise gate,
+versioned POs
+Improve NBA and
+NAAC
+credibility
+P artial Attainmen
+ts
+Survey link;
+gate
+18 Feedback &
+Surveys
+module
+New Indirect
+attainment;
+NAAC
+feedback
+metrics
+P artial Feedback Builder , cycles,
+weighting,
+action taken
+19 Accreditation:
+NAAC binary
+and AQAR,
+NBA SAR, NIRF ,
+evidence
+library ,
+readiness
+New
+(from V1
+reports)
+IQAC
+workload;
+CampX parity
+P artial Exports Calculators
+per institution
+type
+20 Government
+Reports:
+AISHE, AICTE,
+UGC, board
+L OC, state
+returns,
+deadline
+calendar
+New Statutory and
+scheme
+returns
+Missing Not
+described
+Export packs
+per return
+21 Library module New NAAC
+Criterion 4;
+daily
+operations
+Missing Library Catalogue,
+circulation,
+OP AC, fines, e-
+resources
+Depend
+s on
+Comple
+xity
+Impact Who
+benefits
+5, 11 M High All
+employer
+s
+4, 12 M High All
+3, 4 M V ery
+high
+Existing
+customer
+s
+Depend
+s on
+Comple
+xity
+Impact Who
+benefits
+12, 18 M High HE
+11 M Mediu
+m
+12, 17 L V ery
+high
+All
+HE
+15 M High All
+4, Fees M Mediu
+m
+All
+<<PAGE 129>>
+# Item T ype Problem
+22 Mentoring
+module
+23 Enrollment
+depth:
+documents
+check, merit
+and
+counselling,
+offers,
+application
+fees,
+WhatsApp
+24 Finance depth:
+fines, demand
+notices,
+reminders,
+scheme
+mapping, bank
+reconciliation,
+GL, fund
+accounting,
+T ally export
+25 People depth:
+onboarding,
+documents,
+exit, cadre
+ratios, leave
+policies
+26 Attendance
+capture: QR-
+T O TP ,
+biometric/RFID
+hub,
+condonation,
+parent leave
+27 Timetable
+auto-
+generation and
+substitutions
+28 Digital
+certificates: e-
+sign, QR
+verification,
+DigiLocker/NA
+D , no-dues
+29 Mitra P1: cross-
+system and
+group answers
+on a shared
+read model;
+Mitra on every
+screen;
+regional
+languages
+30 P ARAKH HPC
+and state
+report cards
+solved, and
+why P1
+New Student
+support; NAAC
+Improve +
+New
+Admission
+decisions;
+college sales
+Improve Leakage;
+double entry;
+audit
+Improve HR lifecycle;
+AICTE
+deficiency
+Improve Proxy
+attendance;
+exam eligibility
+Improve W eeks of
+manual work
+Improve Credential
+queues; NAD
+Improve Demo answer
+took 20+ s;
+CampX Smart
+Analysis parity
+New Schools in
+adopting
+states
+Status
+today
+CampX ref Implementatio
+n
+Missing Mentoring Allocation,
+check-ins,
+escalation
+P artial Enrollment New modules
+on rule packs
+P artial Finance Sub-ledgers
+into GL
+P artial People HR sub-
+modules
+P artial Attendanc
+e
+Device hub in
+Integrations
+P artial Timetablin
+g
+P artial Student
+Credential
+s
+P artial Medha
+chat,
+Smart
+Analysis
+Constraint
+solver; Mitra
+drafts
+Documents &
+e-Sign service
+Reporting
+store; tool
+registry; policy
+guard
+Missing None T emplates per
+state
+Depend
+s on
+Comple
+xity
+Impact Who
+4 S Mediu
+m
+benefits
+All
+5, 11, 31 L High All
+11 L High All
+11 M Mediu
+m
+All
+32 M Mediu
+m
+All
+3 M High All
+12 M Mediu
+All
+m
+6, 10 L High All
+5, 12 M High Schools
+<<PAGE 130>>
+# Item T ype Problem
+Status
+today
+CampX ref Implementatio
+n
+Depend
+s on
+Comple
+Impact Who
+xity
+benefits
+solved, and
+why P1
+31 Communicatio
+ns: WhatsApp,
+languages,
+read receipts,
+parent–
+teacher
+messages
+Improve P arents live on
+WhatsApp
+P artial Communic
+ation
+MSG91 or
+similar
+— M High All
+32 Integrations
+Hub with L TI 1.3
+Advantage,
+OneRoster ,
+SSO
+New LMS
+interoperabilit
+y; CampX is
+certified
+Missing L TI
+Seek 1EdT ech
+certification
+6 M Mediu
+m
+HE
+Advantage
+Complete
+33 Grievances &
+Committees
+New UGC/AICTE
+committees;
+POSH
+Missing None Committee
+and case
+tracking
+11 S Mediu
+m
+HE; all
+employer
+s
+34 Child pick-up
+O TP and gate
+pass
+Improve Child safety P artial Visitors Gate app 4 S High Schools
+35 Placement
+depth and
+NIRF feed
+Improve Graduation
+outcomes in
+NIRF
+P artial Placement
+s
+Offers,
+analytics
+19 S Mediu
+HE
+m
+36 ISO 27001
+certification
+New Security
+reviews
+None ISO
+27001:2022
+Controls
+during build;
+audit
+10 M High All
+17.3 P2: competitive enhancements (Phase 4, Nov 2027–Jan 2028 and after)
+# Item T ype Problem solved Status
+CampX ref Depends
+Complexity Impact Who benefits
+today
+on
+37 Mitra Agents
+(draft → review
+→ publish) and
+Mitra W atch
+(compliance
+agents)
+New Staff time;
+inspection
+readiness
+(Campusverse's AI
+differentiator)
+P artial
+actions
+W orkflow
+Agents
+5, 11, 29 L V ery
+All
+high
+38 Student
+Companion and
+T eacher
+Assistant; voice
+New Daily value for the
+largest user groups
+Missing Learning and
+T eaching
+Assistants;
+voice
+29 L High All
+39 Early-warning
+signals with
+reasons
+New Earlier intervention Missing Not described 22, 29 M High All
+40 On-screen
+evaluation,
+scanning,
+bundling, dual
+valuation,
+moderation
+New F aster , leak-
+resistant valuation
+Missing Evaluation 12 L Medium Autonomous
+colleges,
+universities
+41 Research & PhD
+module
+New University
+research; NIRF
+research score
+Missing PhD
+Management;
+Research
+Profile
+4, People M Medium Universities
+42 Appraisals &
+Development
+New Staff development;
+Missing Performance 25 M Medium All
+NAAC
+<<PAGE 131>>
+# Item T ype Problem solved Status
+43 F acilities &
+Maintenance;
+AMC;
+procurement to
+Accounts
+44 T ransport: live
+GPS, ET A, route
+optimisation,
+self-registration,
+boarding scan
+45 Hostel and mess
+depth: mess
+attendance,
+feedback,
+complaints,
+outing passes
+46 Helpdesk SLAs,
+escalation, CSA T ,
+knowledge base
+47 Career Connect:
+internships as
+credits, Open
+Badges, alumni
+campaigns,
+events,
+mentorship,
+giving
+48 Admissions
+CRM depth:
+scoring,
+counsellor
+performance,
+IVR
+49 SCORM player
+and Course
+Studio with
+Mitra
+50 W orkforce
+Insights
+51 Dedicated cell
+(single-tenant)
+for large
+universities and
+groups
+CampX ref Depends
+Complexity Impact Who benefits
+today
+on
+New +
+Improve
+Untracked repairs;
+asset loss
+P artial F acilities;
+Maintenance
+24 M Medium All
+Improve P arent anxiety;
+route cost
+P artial T ransport 26 M High Schools
+Improve Residential
+operations
+P artial Hostel; Mess Helpdesk S Medium Residential
+Improve Lost complaints P artial Helpdesk 11 S Medium All
+Improve Careers beyond
+placements
+(differentiator)
+P artial Alumni 4, 24 M High HE; senior
+secondary
+Improve Conversion P artial CRM;
+23 M Medium All
+Reporting;
+Integrations
+Improve Content creation P artial LMS; Course
+Studio
+32, 29 M Medium All
+New Attrition and
+staffing risk
+Missing Insights 25 S Medium Groups
+New Data-isolation
+demands of large
+buyers
+Missing Enterprise
+edition
+6 M High Universities,
+groups
+52 SOC 2 T ype II New Enterprise security
+reviews
+None "SOC 2-ready" 36 M Medium All
+17.4 P3: advanced and future capabilities
+# Item Why later
+53 FFCS slot and f aculty choice Few universities use it
+<<PAGE 132>>
+# Item Why later
+54 55 Proctoring for online tests and exam
+halls
+F ace-based attendance Adults only; heavy privacy review
+Biometric data of minors; needs strong
+consent design
+Matters only for dedicated cells
+After module contracts are stable
+56 Bring-your-own AI model account 57 Public API portal and partner
+marketplace
+58 Coaching and training-centre profile;
+franchise model
+59 Insurance claims and wider care network 60 ISO 27701 and ISO 42001 Listed in the Consolidated document as
+future
+Depends on partnerships
+After ISO 27001 and SOC 2
+17.5 Phases and gates
+The phases keep the dates of the earlier Rebuild Blueprint. The drawn roadmap is below .
+Build roadmap · 5 phases, 5 gates
+Phase 0, design and freeze (Nov 2026–Jan 2027). Items 1, 2; V2 domain model, rule-
+pack schema, API contracts, design system. Gate: architecture review and counsel's
+approval of the consent design.
+Phase 1, core platform (Jan–Apr 2027). Items 3–7, 10, 11, 16. Gate: consent and
+guardian verification live before 13 May 2027.
+<<PAGE 133>>
+Phase 2, systems to parity (Apr–Jul 2027). Items 8, 9, 12–15; pilots with one school
+group and one college. Gate: parity checklist complete; first V1 tenants cut over at the
+June–July boundary .
+Phase 3, compliance and depth (Aug–Oct 2027). P1 items 17–36. Gate: all V1 tenants
+migrated; V1 retired.
+Phase 4, agents (Nov 2027–Jan 2028). First P2 items (37–39, 44, 47). Gate: NIRF data
+pack ready for the January 2028 window .
+With today's team, expect Phases 2–4 to take about twice as long. Protect the May 2027
+gate above everything else.

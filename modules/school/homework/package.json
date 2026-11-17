@@ -1,0 +1,32 @@
+{
+  "name": "@campusverse/school-homework",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@campusverse/db": "workspace:*",
+    "@campusverse/people-records": "workspace:*",
+    "@campusverse/platform-documents": "workspace:*",
+    "@campusverse/platform-events": "workspace:*",
+    "@campusverse/platform-organisation": "workspace:*",
+    "@campusverse/platform-permissions": "workspace:*",
+    "@campusverse/school-attendance": "workspace:*",
+    "@campusverse/school-enrolment": "workspace:*",
+    "@campusverse/school-setup": "workspace:*",
+    "@campusverse/shared-communications": "workspace:*",
+    "@campusverse/verse-ai": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@campusverse/config": "workspace:*",
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
+  }
+}

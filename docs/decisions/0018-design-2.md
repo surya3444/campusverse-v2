@@ -1,0 +1,17 @@
+# 0018 Design 2.0
+
+Date: 2026-11-06 · Status: accepted
+
+The owner found the first design plain. Design 2.0 keeps the calm enterprise look (light surfaces, hairlines, navy for the main action) and adds warmth, guidance and shortcuts.
+
+| Topic        | Decision                                                                                                                                                                                                          | Why                                                          |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Page frame   | Every screen opens with `PageHeader`: an icon tile in its area colour, the title, one line saying what the screen is for, and the main action on the right                                                        | People know where they are and what to do here               |
+| Area colours | Violet, teal, sky, rose and amber tints/inks mark areas (attendance teal, fees green, students sky, admissions rose, exams and notices violet, certificates amber). Tiles and avatars only, never text or buttons | Wayfinding without noise; signal colours keep their meaning  |
+| Depth        | Panels have a soft card shadow (`--shadow-card`) and `--radius-xl` for hero cards. Still no gradients or stat-card walls                                                                                          | Panels read as objects; less flat                            |
+| Empty states | `EmptyState`: icon, what this is, what to do first, and the action itself                                                                                                                                         | An empty screen is where a new school starts                 |
+| Loading      | Skeletons (`SkeletonRows`, the loading `StatePanel`) with `aria-busy`, not spinners or text                                                                                                                       | The layout doesn't jump; tests wait on `aria-busy`           |
+| Motion       | `rise` (220 ms) on headers and empty states; `shimmer` on skeletons; both off under prefers-reduced-motion                                                                                                        | Feels alive without slowing anyone                           |
+| Shortcuts    | A "New" menu in the header (attendance, fee, notice, enquiry, certificate, exam; `?new=1` opens the form). Home has quick actions and a setup checklist with progress. Ctrl K finds real students                 | Common jobs one click away from anywhere                     |
+| Sign-in      | Split screen: brand panel and a large phone + code form with a resend timer                                                                                                                                       | First impression; easier on phones                           |
+| Shell        | Sidebar grouped (People, Academics, Money, Messages, School) with an active bar and the person's avatar; one slim environment/simulation bar on every app                                                         | Fewer items to scan; the admin portal matches the school app |

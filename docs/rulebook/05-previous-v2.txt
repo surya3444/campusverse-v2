@@ -1,0 +1,177 @@
+5. Understanding the previously proposed Campusverse V2
+T wo earlier documents define V2. Neither is built; both are plans. This document keeps
+their decisions unless the CampX comparison or new f acts give a reason to change one,
+and lists each change below .
+Document What it decided Still valid?
+Campus V erse V2 — Rebuild
+Blueprint (4 Nov 2026)
+Campus V erse V2 —
+Complete Product
+Document
+Nine systems on a shared
+core; three linked trees
+(organisation, curriculum,
+cohort); rule packs per board
+and regulator;
+"V erse AI" with
+copilots, agents and
+compliance agents; privacy as
+product; clean codebase;
+phased build to Jan 2028
+27 modules (M1–M27) with
+tabs; V1 names kept; AI
+renamed Mitra; 12 core blocks;
+20 data hand-offs; regulation
+ownership table; modular
+monolith in T ypeScript; five
+apps
+Y es, except the AI name
+and some system names
+Y es; modules are now
+grouped into systems
+What the earlier V2 already covers. Of the 231 CampX features, 94 are already specified
+in these documents but not built. That makes the V2 plan the right base. The CampX
+comparison adds 13 features neither document had, plus 16 V1 items that must be
+confirmed. The 13 are:
+FFCS slot and f aculty choice.
+Proctoring, in tests and in exam halls.
+<<PAGE 21>>
+Script bundling.
+W eighted feedback scoring.
+Bulk demand notices.
+T echnician and vendor assignment.
+Helpdesk CSA T .
+Alumni campaigns.
+Application-fee waivers.
+T elephony/IVR.
+Staff attrition dashboards.
+W orkforce intelligence for HR leaders.
+Contradictions between the documents, and how to resolve them
+# Contradiction Where Resolution
+1 Module count: 22
+(overview), 25+ areas
+(demo), 27 modules (V2
+Product Document)
+2 The Product Document says
+"9 simple groups" in section
+2 and "8 groups plus Home"
+in section 5
+3 AI name:
+"V erse AI"
+(Blueprint) vs "Mitra"
+(Product Document)
+4 Blueprint systems "Learner
+Services"
+,
+"Campus
+Operations"
+,
+"Quality &
+Compliance" were dropped
+by the Product Document
+for simpler names
+Overview; Blueprint;
+Product Document
+Count V2 by system and
+module as in section 13;
+keep a V1→V2 parity list so
+nothing is lost
+V2 Product Document Replace both with the nine
+systems in section 13
+Both Keep Mitra; drop V erse AI
+(section 14 explains why)
+Both Use one-word system
+names as CampX does
+("Students"
+,
+"Operations"),
+keep "Quality &
+Compliance" because no
+shorter name is clear , and
+keep V1 module names
+inside them
+<<PAGE 22>>
+# Contradiction Where Resolution
+5 Full-and-final settlement
+"within 48 hours"
+(Blueprint) vs "2 working
+days" (Product Document)
+6 DPDP deadline written as 13
+May 2027; some law firms
+compute 14 May 2027
+Both Blueprint and outside
+sources
+Blueprint Use two working days from
+the last working day:
+Section 17(2) of the Code on
+W ages says two working
+days (LiveLaw); gratuity has
+its own timeline
+Plan for 13 May 2027. The
+Rules were notified as
+G.S.R. 846(E) dated 13 Nov
+2025 (S.S. Rana)
+Record AP AAR as optional
+with consent at admission;
+enforce it only at the step
+that needs it
+7 AP AAR: needed for CBSE
+candidate lists (L OC), but
+NCERT said in 2026 it is not
+essential for school
+admission
+8 OBE & Accreditation as one
+module (Product
+Document) vs
+Accreditation as its own
+system (Blueprint)
+9 Library placed under
+T eaching (Product
+Document); CampX places
+it in Operations
+10 P ayroll inside HR (V1 and
+V2) vs inside Finance
+(CampX)
+Both Split: OBE (attainment) in
+Academics; Accreditation
+(NAAC, NBA, NIRF) in
+Quality & Compliance
+Product Document vs
+CampX
+V2 vs CampX 11 T arget segments:
+"training
+centres" in the
+Consolidated document;
+"later" in V2
+Consolidated vs V2 Keep Library in Academics;
+it is a learning resource and
+NAAC Criterion 4 evidence.
+Fines still flow to Finance
+Keep P ayroll in People. HR
+owns pay structures, cadres
+and staff self-service;
+P ayroll posts a salary journal
+to Finance
+Keep coaching and training
+centres out of V2 scope; the
+configurable institution
+profile (section 12) makes
+them a later add-on
+<<PAGE 23>>
+# Contradiction Where Resolution
+12 Brand written as "Campus
+V erse"
+,
+"Campusverse" and
+once "Campus First"
+All documents Pick one wordmark for text.
+This document uses
+"Campusverse"
+, matching
+the domain and your latest
+brief
+Demo Remove until proven
+13 Demo login claims (500+
+institutions, 2M+ students,
+SOC 2 compliant) vs no
+evidence

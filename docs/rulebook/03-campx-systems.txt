@@ -1,0 +1,753 @@
+3. Detailed CampX system, module and feature analysis
+Y our TXT file lists 25 applications, 34 role workspaces and 54 specifications across
+CampX's five systems, plus Medha. The live site adds more (section 2), including a 55th
+specification, Timetabling. The tables below explain what each specification does, the
+institutional problem it solves and what it depends on. Every individual feature is mapped
+to Campusverse in section 7.
+<<PAGE 6>>
+3.1 Academics: "Every academic workflow, managed"
+Applications: Learning, Assessments, Examinations, OBE, PhD Management, Mentoring,
+Feedback, Events (site also lists FFCS and CBCS). Roles: Dean/HoD , F aculty , Exam
+Controller , IQAC Coordinator , Academic Coordinator , Course Coordinator , Research
+Coordinator , Feedback Coordinator , Student.
+Specification What it does Problem it
+Academic
+Configuration
+CBCS (and
+FFCS)
+Timetabling
+(site only)
+Degrees,
+programmes,
+branches,
+regulations,
+batches and
+sections in one
+versioned structure
+Elective buckets,
+majors, minors,
+value-added
+courses, credit
+limits, prerequisites
+Clash-free
+generation across
+sections, f aculty
+and rooms;
+substitutions;
+calendar sync
+Attendance F ace, fingerprint,
+RFID and QR- T O TP
+capture;
+condonation;
+automatic alerts
+solves
+Old batches
+keep old rules
+when the
+syllabus
+changes; no re-
+keying every
+year
+UGC choice-
+based credit
+rules enforced
+at registration,
+not checked by
+hand
+W eeks of
+manual
+timetabling and
+clashes after
+electives
+Proxy
+attendance; late
+discovery of
+shortages
+before exams
+Main roles Depends on
+Academic
+Coordinator ,
+Dean
+Everything in
+Academics
+Academic
+Coordinator ,
+Student
+Academic
+Configuration
+Academic
+Coordinator ,
+F aculty
+CBCS, People
+(f aculty),
+rooms
+F aculty ,
+Student
+Timetable;
+devices
+<<PAGE 7>>
+Specification What it does Problem it
+solves
+Separate LMS
+with no roster or
+grade sync
+LMS L TI 1.3, Deep
+Linking,
+Assignment &
+Grade Services,
+SCORM, quizzes,
+gradebook
+CIE Rubric-based,
+multi-component,
+multi-grade
+assessments,
+online or offline,
+proctored
+Examination Scheduling,
+eligibility checks,
+hall tickets, seating
+plans, invigilation
+duty
+Evaluation On-screen and
+physical valuation,
+scanning, bundling,
+dual valuation,
+proctoring
+Attainments CO–PO–PSO
+mapping,
+thresholds,
+NAAC/NBA/IQAC
+exports
+Feedback Course, f aculty and
+f acility surveys;
+weighted scoring;
+action-taken
+reports
+Internal marks
+scattered
+across
+spreadsheets;
+no audit trail
+Exam-cell
+manual work;
+ineligible
+students
+reaching the hall
+Slow , leak-prone
+paper valuation;
+disputes over
+marks
+Accreditation
+data rebuilt by
+hand before
+every visit
+Feedback
+collected but
+never acted on
+or proven to
+NAAC
+Main roles Depends on
+F aculty ,
+Course
+Coordinator ,
+Student
+Academic
+Configuration
+F aculty ,
+Course
+Coordinator
+Regulations;
+LMS
+Exam
+Controller
+Attendance,
+Fees
+Exam
+Controller ,
+F aculty
+Examination
+IQAC
+Coordinator ,
+Dean
+CIE,
+Examination,
+Feedback
+Feedback
+Coordinator
+Academic
+Configuration
+<<PAGE 8>>
+Specification What it does Problem it
+Mentoring Mentor allocation,
+check-ins, progress
+logs, escalation
+flags
+Student
+Credentials
+CMM, original
+degree, provisional
+certificate,
+bonafide,
+transcripts,
+digitally signed, on
+demand
+solves
+At-risk students
+noticed too late
+Queues at the
+exam branch for
+certificates
+Main roles Depends on
+F aculty
+(mentor),
+Dean
+Exam
+Controller ,
+Student
+Attendance,
+CIE
+Examination
+3.2 Finance: "Financial clarity. Zero leakage.
+"
+Applications: Fees, P ayroll, Scholarships (site adds Expenses). Roles: Finance Officer ,
+Cashier/Fee Counter , Scholarship Officer , HR Admin, Management/CFO, Student/P arent.
+Specification What it does Problem it
+solves
+Fee Structure Multi-
+P ayment
+Channels
+Concessions &
+Scholarships
+component,
+programme-
+and batch-
+wise fees with
+instalments
+UPI, cards, net
+banking; cash,
+DD , cheque
+W aivers,
+category
+concessions,
+government
+scheme
+mapping
+One fee sheet
+per batch, kept
+outside the
+system
+Cash handling
+and
+reconciliation
+errors
+Untracked
+discounts;
+missed scheme
+money
+Main roles Depends on
+Finance Officer Academic
+Configuration
+Cashier ,
+Student/P arent
+P ayment
+gateways
+Scholarship
+Officer
+Fee Structure
+<<PAGE 9>>
+Specification What it does Problem it
+solves
+Fines & Late
+Fees
+Rule-based
+penalties,
+auto-applied,
+waiver
+approvals
+Refunds Policy-driven
+refunds with
+approvals and
+audit trail
+Receipts &
+Demand
+Notices
+Auto-
+numbered
+receipts, bulk
+demand
+notices, dues
+reminders
+Reconciliation Automated
+bank matching
+with exception
+flagging
+Reports &
+Ledgers
+Day book,
+collection MIS,
+outstanding
+dues, ledger
+exports
+P ayroll Inputs Attendance
+integration,
+leave
+deductions,
+allowances,
+arrears
+P ayslips &
+Statutory
+Salary
+structures,
+payslips, Form
+16, PF/ESI
+returns
+Inconsistent
+penalties;
+disputes
+Refunds paid
+without
+approval or
+record
+Manual
+reminder calls
+and duplicate
+receipt
+numbers
+Month-end
+matching by
+hand
+Management
+has no daily
+cash picture
+Salary errors
+from re-keyed
+attendance
+Statutory filing
+done in
+separate tools
+Main roles Depends on
+Finance Officer Fee Structure
+Finance Officer ,
+Management
+Approvals
+Cashier Communications
+Finance Officer Bank statements
+CFO Fees
+HR Admin,
+Finance Officer
+People
+(attendance,
+leave)
+Finance Officer P ayroll Inputs
+<<PAGE 10>>
+Specification What it does Problem it
+solves
+Compliance TDS, PF , ESI,
+professional
+tax aligned
+Accounting
+Integration
+GL postings,
+export to T ally
+or ERP
+Penalties for
+late or wrong
+statutory
+payments
+Double entry of
+every fee and
+salary in
+accounts
+Main roles Depends on
+Finance Officer ,
+CFO
+P ayslips &
+Statutory
+Finance Officer Fees, P ayroll
+3.3 Operations: "Campus that runs"
+Applications: Hostel, T ransport, Library , Helpdesk, Placements, Alumni (site adds Student
+Services, F acilities, Visitors). Roles: Hostel W arden, T ransport Manager , Librarian,
+Helpdesk Admin, Student, Placement Coordinator , Alumni Coordinator , IQAC Coordinator .
+Specification What it does Problem it solves Main roles Depends on
+F acilities Asset registry ,
+space allocation,
+AMC and
+warranty tracking
+Maintenance W ork orders,
+preventive
+schedules,
+technician and
+vendor
+assignment
+Hostel Room types,
+allocation,
+occupancy ,
+complaints
+Mess Meal planning,
+attendance,
+feedback
+Assets lost;
+contracts lapse
+unnoticed
+Repairs tracked
+on WhatsApp; no
+response record
+Manual room
+registers and
+complaint follow-
+up
+Food waste; no
+evidence for
+mess-fee
+decisions
+Administrative
+Finance
+Officer
+Helpdesk Admin F acilities
+Hostel W arden,
+Student
+Fees
+Hostel W arden Hostel
+<<PAGE 11>>
+Specification What it does Problem it solves Main roles Depends on
+T ransport Route
+optimisation, live
+GPS, stop-wise
+allocation, self-
+registration
+Library ISBN/MARC
+catalogue,
+circulation,
+reservations,
+fines, OP AC,
+RFID/barcode
+Student
+Services
+Bonafide, no-
+dues and
+certificate
+requests with a
+print designer
+Helpdesk Multi-department
+ticketing, SLA
+timers,
+escalations, CSA T
+Placements Recruiter CRM,
+drives, eligibility
+filters, offers,
+analytics
+P arent anxiety
+about buses;
+unbalanced
+routes
+Manual library
+registers; NAAC
+library evidence
+Office queues for
+routine
+documents
+Complaints lost
+between
+departments
+Placement data
+kept in
+spreadsheets;
+NIRF graduation
+outcomes
+No alumni
+contact; NAAC
+alumni evidence
+T ransport
+Manager ,
+Student
+Fees
+Librarian,
+Student
+Fees (fines)
+Administrative
+Officer , Student
+Academics,
+Finance
+Helpdesk Admin All systems
+Placement
+Coordinator
+Academics
+(CGP A,
+backlogs)
+Alumni Directory ,
+campaigns,
+events,
+mentorship,
+giving
+Alumni
+Coordinator
+Placements
+3.4 Enrollment: "From first enquiry to enrolled student"
+Applications: Admissions, Applicant T racking, CRM, Onboarding. Roles: Admissions Head,
+Counsellor , V erification Officer , Marketing T eam, Front Office, Applicant.
+<<PAGE 12>>
+Specification What it does Problem it
+Prospect
+Sources
+W eb forms, walk-
+ins, agent
+referrals,
+campaigns, bulk
+import
+Application
+Forms
+Multi-step,
+programme-wise
+forms with
+validation
+Communication WhatsApp, SMS,
+email, in-app, all
+tracked
+Document
+Management
+Digital collection,
+verification,
+status tracking
+Eligibility &
+Merit
+Rule-based
+eligibility , merit
+lists, cut-offs
+Counselling Counselling
+rounds and seat
+allocation
+Offers &
+Decisions
+Offer letters,
+provisional and
+confirmed status,
+seat allotment
+Application
+Fees
+Online collection,
+receipts, waivers
+solves
+Leads scattered
+across channels
+Incomplete
+applications
+Counsellors
+using personal
+phones; no
+history
+Lost
+certificates;
+verification
+delays
+Manual merit
+lists open to
+error and
+dispute
+Seat-matrix
+spreadsheets
+Unclear
+admission status
+for f amilies
+Separate
+payment links
+per programme
+Main roles Depends on
+Marketing,
+Front Office
+Integrations
+Applicant Academic
+Configuration
+Counsellor WhatsApp
+API, SMS
+V erification
+Officer
+Documents
+Admissions
+Head
+Application
+Forms
+Admissions
+Head
+Admissions
+Head
+Eligibility &
+Merit
+Counselling
+Applicant P ayment
+gateways
+<<PAGE 13>>
+Specification What it does Problem it
+solves
+Hot leads go
+cold
+Main roles Depends on
+CRM Features Pipeline view ,
+follow-up
+reminders,
+prospect scoring
+Reporting Funnel analytics,
+counsellor
+performance,
+source tracking
+Integrations P ayment
+gateways,
+telephony/IVR,
+WhatsApp
+Business API
+Marketing
+spend without
+return data
+Calls and chats
+outside the
+record
+Counsellor Prospect
+Sources
+Admissions
+CRM
+Head,
+Marketing
+Counsellor External
+providers
+The Onboarding application turns an admitted applicant into an enrolled student with roll
+number , section, fees and ID . It is the hand-off from Enrollment to Academics and Finance.
+3.5 People: "Y our people strategy, measured and managed"
+Applications: Onboarding, Attendance, Performance, Insights (site adds Leave
+Management, Appraisals, Research Profile). Roles: HR Director , HR Admin, Department
+Head, Staff Member , Management.
+Specification What it does Problem it solves Main roles Depends on
+Onboarding Offer letters,
+document
+checklist,
+induction, role
+assignment
+Staff &
+F aculty
+Profiles
+Master record,
+qualifications,
+research profile
+New staff waiting
+days for logins
+and documents
+F aculty data re-
+collected for
+every
+accreditation
+HR Admin Identity and
+HR Admin,
+Staff
+roles
+—
+<<PAGE 14>>
+Specification What it does Problem it solves Main roles Depends on
+Staff
+Documents
+Repository ,
+verification, expiry
+alerts
+Attendance Biometric
+integration, shifts,
+self-service check-
+in
+Leave
+Management
+Multi-level
+approvals,
+balances, policy
+configuration
+Performance Goal-based
+reviews, appraisal
+workflows, cycles
+F aculty
+Compliance
+AICTE/UGC cadre
+ratios, workload
+Research
+Profile
+Publications,
+projects,
+achievements
+Exit &
+Clearance
+Resignation, no-
+dues, relieving
+letters
+Insights Attrition,
+department
+analytics,
+workforce
+intelligence
+Expired
+documents found
+during
+inspections
+Attendance
+disputes
+affecting pay
+Leave tracked on
+paper
+Appraisals done
+once a year on
+paper
+AICTE deficiency
+found too late
+NAAC/NIRF
+research data
+collected by email
+Exit clearance
+chasing across
+departments
+Leadership
+cannot see
+staffing risks
+HR Admin Documents
+HR Admin,
+Staff
+Devices
+Department
+Head, Staff
+Approvals
+HR Director ,
+Department
+Head
+Profiles
+HR Director ,
+IQAC
+Profiles,
+Timetable
+F aculty ,
+Research
+Coordinator
+Profiles
+HR Admin All systems
+HR Director ,
+Management
+All People
+data
+3.6 How CampX's systems work together, and what Medha adds
+CampX describes a shared core that every service inherits, with context-aware access.
+The Security page says each request is tied to institution, user , role and data domain
+before business logic runs. It names the core's topics on its Blueprint page but publishes
+<<PAGE 15>>
+no detail. The visible hand-offs are:
+Enrollment → Academics and Finance at onboarding.
+Attendance and leave → P ayroll.
+Fees and attendance → exam eligibility .
+Fees and payroll → GL and T ally .
+Academics → placements eligibility .
+Events and feedback → accreditation evidence.
+Medha is a permission-aware conversational layer over all five systems, in four modes:
+Mode For What it does
+Learning Assistant Students Answers course questions and shares reference
+material
+T eaching Assistant Smart Analysis W orkflow Agents F aculty Administration Administration Helps with course and assessment work
+One click on any table returns averages, outliers
+and next steps
+Drafts a task (for example a feedback form), routes
+it for review and publishes it under the user's
+authority
+It also answers questions that span systems ("at-risk students with pending fees"), and
+accepts voice from students. It runs under three governance rules: it sees only what the
+user sees, logs every step on the shared audit trail, and runs inside the platform. The site
+does not state languages, the model used (except bring-your-own on Enterprise) or agent
+types beyond the feedback-form example.

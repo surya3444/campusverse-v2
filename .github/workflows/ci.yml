@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+
+  # Terraform is formatted and valid, and has no high or critical misconfiguration.
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.x
+      - run: terraform -chdir=infra fmt -check -recursive
+      - run: |
+          for d in bootstrap envs/test envs/live; do
+            terraform -chdir="infra/$d" init -backend=false -input=false
+            terraform -chdir="infra/$d" validate
+          done
+      - uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: config
+          scan-ref: infra
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: campusverse
+          POSTGRES_PASSWORD: campusverse
+          POSTGRES_DB: campusverse
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U campusverse" --health-interval 2s --health-retries 30
+      redis:
+        image: redis:7.2
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 2s --health-retries 30
+      s3:
+        image: adobe/s3mock:5.2.3
+        env:
+          COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: campusverse-dev
+        ports: ['9090:9090']
+    env:
+      APP_ENV: development
+      DATABASE_URL: postgres://cv_app:cv_app@localhost:5433/campusverse
+      MIGRATION_DATABASE_URL: postgres://cv_migrator:cv_migrator@localhost:5433/campusverse
+      REDIS_URL: redis://localhost:6379
+      AUTH_PEPPER: ci-only-pepper-not-a-secret-0000000000
+      FIELD_KEYS: 1:GfRl/JyNJ7Nmv8XoySKQyNAWe0qtEDb/FfvoL/eO9Us=
+      S3_BUCKET: campusverse-dev
+      S3_ENDPOINT: http://localhost:9090
+      PUBLIC_VERIFY_BASE_URL: http://localhost:3000/verify
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: psql postgres://campusverse:campusverse@localhost:5433/campusverse -v ON_ERROR_STOP=1 -f packages/db/sql/roles.local.sql
+      - run: pnpm db:migrate
+      - run: pnpm test:integration
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: campusverse
+          POSTGRES_PASSWORD: campusverse
+          POSTGRES_DB: campusverse
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U campusverse" --health-interval 2s --health-retries 30
+      redis:
+        image: redis:7.2
+        ports: ['6379:6379']
+      s3:
+        image: adobe/s3mock:5.2.3
+        env:
+          COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: campusverse-dev
+        ports: ['9090:9090']
+    env:
+      APP_ENV: development
+      DATABASE_URL: postgres://cv_app:cv_app@localhost:5433/campusverse
+      MIGRATION_DATABASE_URL: postgres://cv_migrator:cv_migrator@localhost:5433/campusverse
+      REDIS_URL: redis://localhost:6379
+      AUTH_PEPPER: ci-only-pepper-not-a-secret-0000000000
+      FIELD_KEYS: 1:GfRl/JyNJ7Nmv8XoySKQyNAWe0qtEDb/FfvoL/eO9Us=
+      S3_BUCKET: campusverse-dev
+      S3_ENDPOINT: http://localhost:9090
+      PUBLIC_VERIFY_BASE_URL: http://localhost:3000/verify
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: psql postgres://campusverse:campusverse@localhost:5433/campusverse -v ON_ERROR_STOP=1 -f packages/db/sql/roles.local.sql
+      - run: pnpm db:migrate
+      - run: pnpm --filter @campusverse/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e

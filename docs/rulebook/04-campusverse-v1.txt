@@ -1,0 +1,371 @@
+4. Understanding Campusverse V1
+V1 is wider than its documents say: the live demo runs a nine-institution university with
+OBE reports, an AI assistant, course registration, placements and Health Connect. Its
+gaps are depth and correctness, not breadth.
+Evidence used. Three sources:
+<<PAGE 16>>
+The two project documents:
+Health Connect and Career Connect;
+"Campus V erse Overview" lists 22 ERP modules plus
+"Consolidated CV" gives positioning, pillars and
+pricing.
+The logo file.
+The logged-in walkthrough of demo.campusverse.app on 4 Nov 2026, recorded in the
+earlier Rebuild Blueprint.
+The demo tenant, Marian EduCity , held 9 institutions, 24 departments, 26 programs, 84
+sections and 3,372 students for A Y 2026–27.
+Status labels used throughout this document
+Label Meaning
+Live Seen working in the 4 Nov 2026 demo
+P artial Present in the demo but missing important parts,
+or giving wrong results
+Documented In the V1 overview module list, not opened in the
+demo
+Missing Neither documented nor seen
+Not verified Claimed or expected, but not confirmed on screen
+V1 module inventory
+# V1 module
+(overview name)
+1 Organization
+Management
+Documented
+features
+Structure, users,
+roles, branches,
+logos, settings
+2 Finance
+Management
+Fee counters,
+assignments,
+paid/due reports,
+metrics, payment
+setups,
+concessions,
+refunds
+Demo evidence (4
+Nov 2026)
+Institutions,
+Campuses, Users,
+Roles, Approvals,
+Custom Fields,
+Scheduled Jobs,
+Activity Logs
+Fee Counter , Fee
+Structures,
+Scholarships,
+Approvals
+Status Known issues
+Live No consent
+records; no
+single data-
+import centre
+Live No fines,
+reminders,
+demand notices,
+bank
+reconciliation
+<<PAGE 17>>
+# V1 module
+(overview name)
+Documented
+features
+3 Admissions &
+Enrollments
+Lifecycle,
+enrolments, leads,
+web forms, live
+agent tracking
+4 Human Resources Enrolment,
+attendance, leave,
+shifts,
+departments,
+workload
+5 Communications SMS,
+announcements,
+calendars,
+notifications, DL T
+templates
+6 Attendance
+Management
+Daily attendance,
+summaries,
+holidays
+7 Certificates & ID
+Cards
+Sequence settings,
+ID cards,
+certificates
+8 Student
+Information System
+Details, profile
+updates,
+promotions, branch
+shifts
+9 Academics
+Management
+Class–teacher
+mapping,
+timetables, diaries,
+PTM, activities
+10 T ransport
+Management
+V ehicles, routes,
+route fees, trips,
+notifications
+11 Expense
+Management
+Ledger books,
+transactions,
+vouchers,
+categories
+Demo evidence (4
+Nov 2026)
+Pipeline (Kanban),
+Leads, Applications,
+Follow-ups
+Staff , Attendance,
+Leaves, Promotions,
+W orkload
+Campus Feed,
+Announcements,
+SMS, DL T
+Mark and View
+Attendance,
+Holidays
+Requests,
+T emplates, Reports
+Students, Profile,
+Promotions, Bulk
+Upload
+Academic Structure
+Explorer (8-step
+guide), Timetable
+Buses, Routes,
+Enrollments, T rips
+Budgets,
+Reimbursements
+Status Known issues
+P artial No documents
+check, merit
+lists, counselling,
+offers
+Live No onboarding,
+appraisals, exit
+Live No WhatsApp;
+no regional
+languages
+Live Day-wise only;
+no devices,
+condonation
+Live No digital
+signature,
+DigiLocker , no-
+dues
+Live No AP AAR, ABC
+or PEN fields;
+history rebuilt by
+copying each
+year
+P artial No regulations or
+batch cohort;
+timetable built
+by hand
+Live Live GPS and
+parent ET A not
+confirmed
+Live No general
+ledger , T ally
+export
+<<PAGE 18>>
+# V1 module
+(overview name)
+12 Exams &
+Gradebooks
+Documented
+features
+Structures,
+scheduling, marks
+entry/approval,
+report cards, health
+attributes
+13 Inventory
+Management
+Store items, kits,
+stock, sales,
+purchase reports
+14 Infrastructure
+Management
+Buildings, general
+and exam rooms
+15 HR P ayroll P ayroll processing,
+penalisation
+policies
+16 Visitor
+Management
+P asses, records,
+approval settings
+17 Concerns &
+Feedback
+Concern forms,
+grievances
+18 Hostel
+Management
+Hostels, rooms,
+kitchen inventory ,
+meal planning
+19 Social Post
+Management
+Media, social links,
+posts
+20 Online Classes Virtual class
+scheduling,
+attendance report
+21 Assessments T axonomy ,
+difficulty , question
+banks, library
+Demo evidence (4
+Nov 2026)
+Status Known issues
+Board presets
+(CBSE, ICSE, UGC,
+Custom), hall
+tickets
+P artial One board per
+branch; ICSE
+preset does not
+match CISCE
+scales; no state
+boards;
+developer text
+visible
+Inventory Live No AMC or
+warranty
+Inside Inventory Documented No space
+booking
+Six-step pay run;
+TDS, PF , PT , ESI
+deducted
+P artial Runs for Jan and
+Dec 2027
+already
+processed;
+"all
+paid" while latest
+run shows 0 of
+232 credited; no
+return files
+Visitors Live No child pick-up
+check
+Concerns &
+Feedback; Issues
+P artial No structured
+surveys, SLAs or
+statutory
+committees
+Hostel dashboard,
+rooms, allocations
+Live No mess
+attendance,
+complaints,
+outing passes
+Not opened Documented —
+T eaching › Live
+Classes
+Live No recording or
+L TI
+T eaching ›
+Assessments
+Documented No CO tags or
+rubrics
+<<PAGE 19>>
+# V1 module
+(overview name)
+Documented
+features
+Demo evidence (4
+Nov 2026)
+22 Lesson Delivery Lesson creation,
+term planning,
+delivery tracking
+— AI Assistant (demo
+only)
+— Course Registration
+(demo only)
+— OBE Attainment
+(demo only)
+T eaching › Lesson
+Plans
+— Branch-scoped chat
+that answers and
+acts
+— Curriculum,
+registrations,
+elective baskets
+— Programs, COs,
+Offerings, NBA C3,
+NAAC KI 2.6, NIRF
+points
+Status Known issues
+Live No syllabus
+coverage %
+P artial Cross-institution
+question still
+loading after 20 s
+P artial "E ven Semester
+2027" lists
+semesters 1, 3, 5,
+7; no credits
+P artial 0 PSOs; no
+surveys; 24 of 24
+COs "at target"
+while all POs
+below target
+— Seen in navigation Live —
+— Clubs, Courses,
+T asks, All
+Institutions (demo
+only)
+P2 Health Connect Records, visits,
+medicine stock,
+emergency ,
+telemedicine,
+counselling,
+analytics
+P3 Career Connect Jobs, Skill-Up,
+internships,
+guidance
+Records,
+cInsurance, Pharma-
+C, Check-ups,
+V accinations, Visits
+Companies, Drives,
+Job Board, Student
+Profiles, Virtual
+Placement Office,
+Alumni
+P artial Owner
+dashboard
+shows named
+students with
+overdue
+vaccinations,
+including HPV
+P artial NIRF pack says
+placements "not
+tracked"
+; paid
+courses not age-
+gated
+What V1 does well and must keep:
+The 8-step setup guide and the Academic Explorer .
+Multi-institution group views (All Institutions).
+Accreditation reports computed from records rather than typed.
+Approvals, custom fields, scheduled jobs and the activity log.
+The six-step payroll that explains each number .
+<<PAGE 20>>
+The only health and skills pillars in this market.
+Claims to verify before using them in sales. The demo login page says 500+ institutions,
+2M+ students and "SOC 2 compliant"
+. No SOC 2 report or customer list was supplied, so
+this document treats all three as unverified. Remove them from the login page until each
+can be proven.

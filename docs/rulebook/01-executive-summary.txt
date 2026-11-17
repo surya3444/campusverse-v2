@@ -1,0 +1,67 @@
+1. Executive summary
+Campusverse should be organised as nine systems on one shared Campus Core, with
+Mitra as the AI layer across all of them. That is CampX's five systems, plus four that only
+Campusverse needs: Students, Health Connect, Career Connect, and Quality &
+Compliance.
+Where Campusverse stands against CampX. This document maps all 231 features
+CampX describes in your TXT file and on campx.in:
+Campusverse classification Features Share
+Fully available in V1 52 23%
+P artially available, or available but lacking depth 56 24%
+Proposed in the earlier V2 documents, not built 94 41%
+Completely missing (not even in V2 plans) 13 6%
+Needs validation (not seen in the 4 Nov 2026 demo
+walkthrough)
+16 7%
+The main finding: Campusverse is broad but shallow where CampX is deep. V1 already
+covers more areas than CampX: schools, groups, health, Skill-Up, clubs, visitors, kits and
+parent engagement. But the college workflows that decide a university sale are thin or
+absent. These include regulations and credit rules, CIE, on-screen evaluation, transcripts,
+PSOs and surveys in OBE, library , PhD , mentoring, statutory payroll returns, bank
+reconciliation and accounting.
+Where Campusverse can win. CampX's public site does not mention schools, boards,
+report cards, health, skills, UDISE+, ABC/NAD upload or AISHE. It says it is "on path to"
+DPDP compliance. Campusverse can own six positions CampX does not hold today:
+1. One platform for a trust that runs both schools and colleges.
+2. Board-ready school academics: CBSE, CISCE, state boards, P ARAKH HPC, RTE.
+<<PAGE 2>>
+3. Student health with privacy built in.
+4. Careers beyond placements: internships, Skill-Up, micro-credentials.
+5. Government reporting from live data: UDISE+, AP AAR/ABC/NAD , AISHE, NIRF .
+6. DPDP-ready consent for minors, live before the main duties start on 13 May 2027.
+The recommended architecture (sections 12–13):
+Layer Contents
+Experience Mitra (AI layer) Nine systems Campus Core Home dashboards per role; web admin; teacher ,
+parent, student, staff and driver/warden apps
+Ask Mitra, Mitra on every screen, Mitra Agents,
+Mitra W atch, Student Companion, T eacher
+Assistant
+Enrollment · Academics · Students · Finance ·
+People · Operations · Health Connect · Career
+Connect · Quality & Compliance
+Organization and hierarchy , identity and roles, rule
+packs, approvals, communications, documents and
+e-sign, privacy and consent, activity log, reports,
+integrations
+What to build first (P0). These are the items that block everything else or carry legal risk:
+The academic engine: regulations, batches as cohorts, credits.
+The lifelong student record with AP AAR, ABC and PEN.
+Rule packs per board and regulator .
+The consent ledger and health data vault.
+Fixes to the four defects found in the demo (OBE numbers, course-registration
+semesters, future payroll runs, named health data on the owner dashboard).
+Exams depth: eligibility , transcripts, re-exams.
+Statutory payroll outputs.
+Section 17 has the full P0–P3 roadmap.
+Decisions this document recommends:
+Name the AI Mitra (formally "Campusverse Mitra") and drop "V erse AI"
+.
+<<PAGE 3>>
+Keep V1 module names and group them into systems, rather than renaming them.
+Keep P ayroll in People, not in Finance as CampX does.
+T reat the demo's "SOC 2 compliant" and "500+ institutions" claims as unverified until
+they are proven.
+Implementation status here comes from the V1 documents and the earlier logged-in demo
+walkthrough on 4 Nov 2026. It was not re-checked for this document. Anything not seen
+there is marked "needs validation"
+.

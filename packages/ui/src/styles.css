@@ -1,0 +1,246 @@
+/* Campus Verse design tokens (Design 3.0, docs/decisions/0019). The default Tailwind palette is
+   switched off: only these exist. Royal blue is the primary (the `navy-*` names are kept so every
+   screen moved at once); midnight is for dark surfaces (sidebar, welcome hero); one colour per
+   area for icon tiles and hero tints; soft accents live only inside illustrations. */
+@import 'tailwindcss';
+@source '../src';
+
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Primary deep navy (#04266D, the Campus Verse brand). White on navy-950 is 13:1; navy on cyan
+     is 6.9:1. Cyan is an accent on dark or a fill under navy text, never text on white. */
+  --color-navy-950: #04266d;
+  --color-navy-900: #031c54;
+  --color-navy-700: #1c3f86;
+  --color-navy-400: #5b7bc4;
+  --color-navy-200: #c3cde0;
+  --color-navy-100: #e6e9f0; /* primary / 10 on white */
+  --color-navy-50: #ecf0f3; /* the reference's muted */
+
+  /* Midnight: the sidebar, the welcome hero, the environment bar. */
+  --color-midnight-950: #04266d;
+  --color-midnight-900: #04266d;
+  --color-midnight-800: #1a3a7c;
+
+  /* Illustration accents (inside artwork only, never text or controls) */
+  --color-sun: #ffc857;
+  --color-coral: #ff8a7a;
+  --color-mint: #5fd3b0;
+  --color-lilac: #a99bff;
+  --color-skin: #f6c9a8;
+  --color-skin-deep: #c98d63;
+  --color-cyan-400: #0ac5ff;
+  --color-cyan-200: #9be6ff;
+
+  /* Surfaces and text */
+  --color-paper: #f9fafb;
+  --color-surface: #ffffff;
+  --color-ink: #04266d; /* text is the brand navy, as in the reference */
+  --color-ink-muted: #526c98; /* hsl(218 30% 46%): 5.2:1 on white */
+  --color-ink-faint: #9aa8bf; /* icons and dividers only, never body text */
+  --color-line: #dae0e6; /* hsl(210 20% 88%) */
+  --color-line-strong: #c9d2dc;
+
+  /* Signals: solid for marks and stripes, ink for text, tint for backgrounds */
+  --color-signal-go: #16a160; /* hsl(152 76% 36%) for bars and dots */
+  --color-signal-go-strong: #08704a; /* white text on it: 6:1 */
+  --color-signal-go-ink: #0a6b46;
+  --color-signal-go-tint: #e8f5ef;
+  --color-signal-warn: #f59f0a;
+  --color-signal-warn-ink: #8a5300;
+  --color-signal-warn-tint: #fdf4e3;
+  --color-signal-stop: #ef4444;
+  --color-signal-stop-ink: #a3283e;
+  --color-signal-stop-tint: #fcebee;
+
+  /* Area colours: icon tiles and soft tints only, never large fills. Ink on tint is 4.5:1 or more. */
+  --color-violet-ink: #5b3cc4;
+  --color-violet-tint: #f1edfd;
+  --color-teal-ink: #0b6b6e;
+  --color-teal-tint: #e3f4f4;
+  --color-sky-ink: #1a5fa0;
+  --color-sky-tint: #e7f1fb;
+  --color-rose-ink: #a32a56;
+  --color-rose-tint: #fcebf2;
+  --color-amber-ink: #8a5300;
+  --color-amber-tint: #fdf4e3;
+
+  /* Body text in Instrument Sans, headings in Plus Jakarta Sans, as on campusverse.app.
+     Regional scripts fall through to Noto per character. */
+  --font-sans:
+    var(--font-dm-sans), var(--font-noto-kannada), var(--font-noto-telugu), var(--font-noto-tamil),
+    var(--font-noto-devanagari), system-ui, sans-serif;
+  --font-display:
+    var(--font-jakarta), var(--font-noto-kannada), var(--font-noto-telugu), var(--font-noto-tamil),
+    var(--font-noto-devanagari), system-ui, sans-serif;
+
+  /* Type scale, as the reference: 12, 14, 18, 24, 30, 48 */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.75rem;
+  --text-title: 1.5rem;
+  --text-title--line-height: 2rem;
+  --text-display: 1.875rem;
+  --text-display--line-height: 2.25rem;
+  --text-hero: 3rem;
+  --text-hero--line-height: 1;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+
+  /* A barely visible lift so panels sit on the page; real elevation stays with overlays. */
+  /* The reference's shadows: xs on cards, soft on buttons and hover, soft-lg on overlays. */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  --shadow-lift: 0 2px 8px -2px rgb(0 0 0 / 0.05), 0 4px 16px -4px rgb(0 0 0 / 0.05);
+  --shadow-button: 0 2px 8px -2px rgb(0 0 0 / 0.05), 0 4px 16px -4px rgb(0 0 0 / 0.05);
+  --shadow-overlay: 0 8px 24px -4px rgb(0 0 0 / 0.08), 0 16px 48px -8px rgb(0 0 0 / 0.08);
+
+  --animate-rise: rise 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -400px 0;
+    }
+    to {
+      background-position: 400px 0;
+    }
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  /* Table headings read the same on every screen: small, uppercase, tracked, muted. Utilities on a
+     cell still win (the marks grid keeps subject names as written with data-plain). */
+  :where(thead th:not([data-plain])) {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--color-ink-muted);
+  }
+  :where(thead tr) {
+    background: color-mix(in srgb, var(--color-navy-50) 40%, white);
+  }
+  /* Regional scripts need more room for vowel signs above and below the line. */
+  :lang(kn),
+  :lang(te),
+  :lang(ta),
+  :lang(hi) {
+    line-height: 1.75;
+  }
+  :lang(ur) {
+    direction: rtl;
+  }
+  /* One focus style everywhere: a blue ring with a soft cyan halo. */
+  :focus-visible {
+    outline: 2px solid var(--color-navy-950);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: rgb(4 38 109 / 0.15);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+}
+
+/* Loading placeholders: a soft moving sheen (still for reduced motion). */
+@utility skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-navy-50) 0,
+    var(--color-navy-100) 120px,
+    var(--color-navy-50) 240px
+  );
+  background-size: 800px 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* The top of every page: white with a soft wash of the area's tint (set --hero-tint) and blue. */
+@utility hero {
+  background:
+    radial-gradient(
+      70% 140% at 100% 0%,
+      var(--hero-tint, var(--color-navy-50)) 0%,
+      transparent 62%
+    ),
+    radial-gradient(50% 120% at 0% 100%, var(--color-navy-50) 0%, transparent 70%),
+    var(--color-surface);
+}
+
+/* The dark welcome surface and sidebar. */
+@utility midnight {
+  background: var(--color-midnight-950);
+}
+
+/* A faint dot grid for hero corners. */
+@utility dots {
+  background-image: radial-gradient(rgb(4 38 109 / 0.12) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+@utility lift {
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    border-color 160ms ease;
+  &:hover {
+    box-shadow: var(--shadow-lift);
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--color-navy-950) 10%, var(--color-line));
+  }
+}

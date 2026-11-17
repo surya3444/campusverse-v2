@@ -1,0 +1,681 @@
+16. Data flow and system integration
+Each piece of data has exactly one owning system. Others read it through that system's
+API or react to its events, and never keep their own copy . Reports and Mitra read a
+separate reporting store fed by those events. The diagram shows the main hand-offs; the
+seven workflows after it give every step.
+System interaction · main hand-offs between the nine systems
+Read the middle row left to right as a student's journey . Finance, Operations and People
+feed it from below , and Health Connect passes only a status. Quality & Compliance and
+the reporting store read everything without writing back.
+<<PAGE 118>>
+16.1 Source of truth for each major entity
+Entity Owner (system › module) Main readers
+Group, institutions,
+campuses, hierarchy ,
+institution profiles
+Campus Core ›
+Organization & Hierarchy
+Every system
+Users, roles, scopes, data
+classes
+Campus Core › Identity &
+Access
+Every system, Mitra
+Grading, credit, attendance
+and exam rules
+Campus Core › Rule
+P acks
+Academics, Enrollment,
+Finance, People
+Consents and privacy
+notices
+Campus Core › Privacy &
+Consent
+Enrollment, Health Connect,
+Career Connect, Mitra
+Leads, applicants,
+applications, merit lists,
+offers
+Enrollment Students, Finance
+Learner record: identity ,
+guardians, AP AAR, ABC,
+PEN, enrolment history ,
+credits
+Students › Student
+Records
+Every system
+Programs, regulations,
+courses, batches, sections
+Academics › Academic
+Structure
+Every system
+Course registrations Academics › Course
+Registration
+Timetable, Exams, Fees
+Timetable Academics › Timetable Attendance, T eaching, People
+(workload)
+Student attendance Academics › Attendance Exams, Mentoring,
+Communications, Mitra
+Marks, results, transcripts Academics › Exams &
+Results
+Students, OBE, Career
+Connect, Quality & Compliance
+CO, PO and PSO attainment Academics › OBE Quality & Compliance
+Certificates issued Students › Certificates &
+ID Cards
+Quality & Compliance,
+DigiLocker
+<<PAGE 119>>
+Entity Dues, receipts, concessions,
+scholarships
+General ledger Owner (system › module) Main readers
+Finance › Fees;
+Scholarships &
+Concessions
+Finance › Accounts &
+Expenses
+People › HR; Staff
+Attendance & Leave
+People › P ayroll Exams (eligibility), Certificates
+(no-dues), Accounts
+Management, auditors, Quality
+& Compliance
+Academics, P ayroll, Quality &
+Compliance
+Accounts
+Operations Finance, Communications
+Staff record, attendance,
+leave
+P ay runs and statutory filings Routes, trips, rooms, stock,
+assets, work orders, visitors,
+tickets
+Health records, visits,
+counselling notes
+Career profiles, placements,
+internships, badges, alumni
+Accreditation evidence,
+returns filed, committee
+cases
+Audit events Health Connect (vault) Career Connect Status only to others ("medical
+leave")
+Quality & Compliance (NIRF),
+Students
+Quality & Compliance Management
+Campus Core › Activity
+Log
+Data Protection Officer ,
+auditors
+16.2 W orkflow 1: Admission to Career Connect
+T rigger: an applicant accepts an offer and pays the seat-confirmation fee.
+Step From → to Data created Business rules Who acts or
+1 Enrollment › Offers
+→ Students
+Learner record,
+guardian links,
+AP AAR (optional,
+with consent)
+No duplicate
+learner; consent
+captured before
+any optional use
+approves
+Admissions
+Head confirms
+Notifications
+W elcome
+message; parent-
+app invite
+<<PAGE 120>>
+Step From → to Data created Business rules Who acts or
+Notifications
+2 Students →
+Academics ›
+Academic
+Structure
+3 Academics →
+Finance › Fees
+4 Timetable →
+Attendance
+5 Attendance, Fees,
+Library → Exams &
+Results › Hall
+Tickets
+6 Assessments and
+E valuation →
+Results
+7 Results →
+Students (credit
+record) →
+Government
+Reports
+(ABC/NAD) →
+Certificates
+Batch, section,
+roll number , term-
+1 course
+enrolments
+Section strength
+limit; batch pinned
+to its regulation
+Fee plan from the
+batch; transport
+or hostel fees if
+chosen
+Concession rules;
+RTE seats carry
+no fee
+Daily or period
+attendance
+Thresholds from
+the rule pack
+Eligibility list Below threshold →
+condonation
+request; dues →
+hold as per
+institution policy
+Grades;
+SGP A/CGP A or
+board grades
+Moderation and
+grace rules from
+the regulation
+Credits,
+marksheets,
+transcripts
+Upload against
+AP AAR; signed
+documents
+8 Y ear Rollover →
+Students → Career
+Connect
+Alumni record;
+career profile
+carried forward
+Contact only with
+alumni consent
+approves
+Office Timetable
+appears in the
+student app
+Finance Officer
+Demand notice
+with payment link
+approves
+concessions
+T eacher marks Same-day
+absence alert to
+parent
+HoD or CoE
+approves
+condonation
+Hall ticket in app;
+ineligibility notice
+with reason
+CoE publishes
+with a second
+Result
+notification
+approver
+Registrar " A vailable in
+DigiLocker"
+message
+Office Alumni welcome
+Outcome: one record from enquiry to alumnus, with credits in ABC and certificates in
+DigiLocker .
+16.3 W orkflow 2: Employee onboarding to statutory reporting
+T rigger: a candidate accepts an offer .
+<<PAGE 121>>
+Step From → to Data created Business rules Who acts or
+Notifications
+1 HR › Recruitment
+& Onboarding →
+HR › Staff; Identity
+& Access
+2 HR → Staff
+Attendance &
+Leave; P ayroll
+3 Devices or app →
+Staff Attendance
+4 Staff → HoD →
+Leave; Timetable
+5 Attendance and
+Leave → P ayroll ›
+P ay Run
+6 P ayroll → Finance ›
+Accounts; bank
+7 P ayroll › Statutory
+→ return files
+8 HR › Exit → all
+systems (no-
+dues) → P ayroll
+Staff record,
+document
+checklist, login,
+role and scope
+Appointment
+letter issued
+(Labour Codes)
+Shift, leave policy ,
+salary structure
+50% wage-rule
+validator
+Daily check-ins Geofence; late
+rules
+Leave record;
+substitution
+Balance and policy Loss-of-pay days,
+arrears, gross to
+net
+No run for a future
+period; one status
+per run
+Salary journal,
+statutory
+liabilities, bank
+file
+Posting per legal
+entity
+ECR, ESI, PT , L WF ,
+24Q, Form 16
+Due-date calendar
+per state
+Clearance, final
+settlement,
+relieving letter
+W ages paid within
+two working days
+of the last working
+day
+approves
+Principal
+approves the
+hire; HR Admin
+acts
+W elcome; staff-
+app invite
+HR Head; P ayroll
+Officer
+—
+Staff Missed-punch
+alert
+HoD (levels per
+policy)
+Applicant and
+substitute
+notified
+P ayroll Officer
+runs; finance
+approver
+finalises
+P ayslips to staff
+app
+Accountant —
+P ayroll Officer Mitra W atch
+reminders before
+due dates
+HR Admin;
+P ayroll Officer
+Final settlement
+statement to the
+employee
+Outcome: one staff record drives attendance, pay , ledger and every statutory filing, with
+no re-keying.
+16.4 W orkflow 3: Attendance and performance to mentoring
+T rigger: the nightly run after attendance and marks are entered.
+<<PAGE 122>>
+Step From → to Data created Business rules Who acts or
+Notifications
+approves
+1 Attendance and
+Assessments →
+reporting store
+Attendance
+trend; CIE marks
+— T eachers
+enter
+—
+2 Mitra (early warning)
+reads attendance,
+marks, fee status,
+consented wellbeing
+check-ins
+Risk flag with
+reasons
+Educational
+purpose and child
+safety only; no
+health details; no
+automated
+sanction
+— —
+3 Mitra → Students ›
+Mentoring; HoD
+dashboard
+Mentor task with
+the reasons
+A person decides
+what happens
+Mentor T ask in My W ork
+4 Attendance › Shortage
+& Condonation
+Shortage case Rule-pack
+threshold
+HoD Student and
+parent alert in
+their language
+5 Mentoring →
+Communications;
+Health Connect
+referral (with consent)
+Meeting log;
+parent message;
+counsellor
+referral
+Counselling
+content never
+returns to
+Mentoring
+Mentor;
+Counsellor
+P arent message
+from template
+Outcome: students at risk are seen weeks earlier , every action is a human decision, and
+the trail is auditable.
+16.5 W orkflow 4: Health records to emergency and parent communication
+T rigger: consent at admission, then any health incident.
+Step From → to Data created Business rules Who acts
+Notifications
+or
+approves
+P arent Consent receipt
+1 Enrollment ›
+Consent at Entry →
+Privacy & Consent
+→ Health Connect
+2 Health Connect ›
+Health Records
+Health-record
+consent; partner-
+sharing consent
+(separate
+purposes)
+Allergies,
+conditions, blood
+group in the vault
+Each purpose
+consented
+separately
+Medical roles only Medical
+Officer
+—
+<<PAGE 123>>
+Step From → to Data created Business rules Who acts
+Notifications
+3 Any staff app SOS
+→ Health Connect ›
+Emergency
+4 Emergency → Sick-
+room or Care
+Network
+5 Health Connect →
+Attendance
+6 Emergency →
+Quality &
+Compliance; Health
+Reports
+Incident with
+student and
+location
+Visit note; referral Status "medical
+leave" only
+Incident report;
+totals
+Break-glass shows
+allergies and blood
+group to the
+responder; access
+logged and alerted
+Sharing with a
+partner needs
+consent, except
+where the law
+allows for
+emergencies
+(confirm with
+counsel)
+No diagnosis leaves
+the vault
+Names never on
+management
+dashboards
+or
+approves
+Nurse;
+Principal
+P arent alerted at
+once; principal;
+nearest partner
+hospital
+Medical
+Officer
+P arent updates
+— —
+Principal
+closes
+—
+Outcome: f aster response, informed parents, and no health detail leaking into other
+modules.
+16.6 W orkflow 5: Curriculum to accreditation reports
+T rigger: a regulation is approved for a program.
+Step From → to Data created Business rules Who acts or
+1 Academic Structure
+› Regulations and
+Subjects → OBE
+2 Course Registration
+→ offerings,
+sections; Timetable;
+Fees
+Courses with
+credits and COs;
+POs and PSOs; CO–
+PO matrix
+Old batches keep
+old versions
+Registrations Credit limits,
+prerequisites, seat
+caps
+approves
+Dean
+approves
+F aculty
+advisor
+Notifications
+—
+Registration
+confirmation
+<<PAGE 124>>
+Step From → to Data created Business rules Who acts or
+Notifications
+approves
+3 T eaching & Learning Lesson plans,
+coverage %
+— T eacher Coverage alerts
+to course
+coordinator
+4 Assessments and
+Exams → OBE
+CO-tagged marks →
+direct attainment
+E very assessed
+item tagged
+Course
+Coordinator
+Untagged-item
+warnings
+5 Feedback & Surveys
+→ OBE
+Indirect attainment W eights from the
+regulation
+IQAC Survey invites
+6 OBE (finalise gate)
+→ Accreditation
+Attainment; gap
+actions; NBA
+Criterion 3; NAAC
+metrics
+Blocks if PSOs,
+surveys or tags are
+missing
+IQAC; HoD —
+7 Accreditation ›
+E vidence and
+Readiness → export
+SAR, AQAR, NIRF
+data with linked
+evidence
+Second approver
+before submission
+IQAC;
+Principal
+Deadline
+reminders
+Outcome: accreditation numbers are produced by teaching itself , consistent and
+traceable to source.
+16.7 W orkflow 6: Admission CRM to enrollment
+T rigger: a lead arrives from any source.
+Step From → to Data created Business rules Who acts or
+Notifications
+approves
+1 W eb, walk-in,
+agent or
+campaign →
+Admissions CRM
+Lead with
+source
+Duplicate check;
+contact consent
+(guardian's if the
+applicant is a
+minor)
+Counsellor
+assigned by rule
+Acknowledgement
+via WhatsApp or DL T
+SMS
+2 CRM →
+Applications;
+Fees payments
+Application;
+application-
+fee receipt
+Eligibility pre-
+check
+Applicant Receipt
+3 Applications ›
+Documents
+Check
+V erified
+documents
+Category
+certificates
+checked
+V erification
+Officer
+Status to applicant
+4 Merit & Seat
+Allocation
+Merit list W eightage and tie-
+breaks from the
+rule pack;
+approved intake
+Admissions
+Head publishes
+Merit list published
+<<PAGE 125>>
+Step From → to Data created Business rules Who acts or
+Notifications
+5 Counselling
+Rounds
+Seat allotment Category and
+quota rules;
+supernumerary
+seats; RTE lottery
+for schools
+Within approved
+intake
+approves
+Admissions
+Head; Principal
+for management
+quota
+Allotment letter
+Office W elcome
+6 Offers → Fees
+Confirmed
+(seat fee) →
+admission,
+Enrol
+then W orkflow
+1
+Outcome: a measurable admission trail that stands up to disputes. Unconverted leads are
+purged after the cycle under the retention schedule.
+16.8 W orkflow 7: Fee collection to financial reports
+T rigger: a demand is raised from the fee plan.
+Step From → to Data created Business rules Who acts or
+Notifications
+1 Fees Dues per student Instalments;
+2 P arent app → gateway ,
+or Fee Counter
+3 Integrations Hub
+(gateway settlement) →
+Accounts › Bank
+Reconciliation
+4 Bank statement import
+→ Bank Reconciliation
+5 Fees sub-ledger →
+General Ledger
+6 GL → reports and T ally
+export
+concessions
+P ayment and auto-
+numbered receipt
+E very payment
+call is safe to
+retry
+Settlement lines Net of gateway
+charges
+Matched and
+unmatched lines
+Exceptions
+flagged
+Journal entries per
+entity and fund
+GST on taxable
+heads
+T rial balance,
+statements,
+collection MIS
+Period lock after
+close
+approves
+Finance
+Officer
+Demand
+notice
+P arent or
+Cashier
+Receipt
+— —
+Accountant
+resolves
+Exception
+alert
+Accountant —
+CFO
+Management
+report
+approves
+close
+Outcome: every rupee is traceable from the parent's phone to the trial balance, with no
+spreadsheet in between.
+<<PAGE 126>>

@@ -1,0 +1,17 @@
+# Never in an image: secrets, local data, build output, tests' artefacts.
+.env
+.env.*
+!.env.example
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/.expo
+**/test-results
+**/playwright-report
+apps/web/e2e/screenshots
+coverage
+.git
+.claude
+infra
+docs

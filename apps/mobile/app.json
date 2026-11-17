@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Campusverse",
+    "slug": "campusverse",
+    "scheme": "campusverse",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": ["android", "ios", "web"],
+    "android": { "package": "app.campusverse.mobile" },
+    "ios": { "bundleIdentifier": "app.campusverse.mobile", "supportsTablet": false },
+    "web": { "bundler": "metro", "output": "single" },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Campusverse uses your photos to attach worksheets to homework.",
+          "cameraPermission": "Campusverse uses the camera to photograph the board or a worksheet for homework."
+        }
+      ]
+    ]
+  }
+}

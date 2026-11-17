@@ -1,0 +1,330 @@
+6. CampX vs Campusverse: system comparison
+Campusverse matches CampX's breadth in every system but trails on depth in all of them.
+Finance is closest: 17 of 44 features are fully available. People is furthest behind: 3 of 30.
+Level 1: each CampX system against Campusverse today
+CampX
+system
+Features Fully
+available
+P artial or
+In V2
+lacking
+plan,
+depth
+not built
+Completely
+missing
+Needs
+validation
+Academics 63 11 19 26 5 2 P artially
+Finance 44 17 13 11 1 2 A vailable
+Operations 42 11 6 19 3 3 P artially
+Enrollment 40 8 10 17 2 3 P artially
+People 30 3 4 16 2 5 P artially
+Overall Lands in
+Campusverse system
+available
+but lacking
+depth
+available
+available
+Academics; Students
+(mentoring, events,
+certificates); Quality
+& Compliance
+(exports)
+Finance; People
+(payroll)
+Operations;
+Academics (library);
+Students (requests);
+Career Connect
+(placements, alumni)
+Enrollment; Campus
+Core
+(communications,
+integrations)
+People; Academics
+(research profile)
+available
+(weakest)
+<<PAGE 24>>
+CampX
+system
+Features Fully
+available
+P artial or
+In V2
+lacking
+plan,
+depth
+not built
+Completely
+missing
+Needs
+validation
+Overall Lands in
+Medha AI 12 2 4 5 0 1 P artially
+available
+T otal 231 52 56 94 13 16
+Campusverse system
+Mitra; Campus Core
+(activity log)
+Systems Campusverse has and CampX does not show publicly
+Campusverse capability CampX equivalent Campusverse
+today
+School academics:
+boards, report cards,
+classes and sections,
+PTM, class diary
+Multi-branch school and
+mixed school–college
+groups
+Student health: records,
+visits, vaccinations,
+insurance, pharmacy ,
+counselling
+Skills, internships, micro-
+credentials, career
+guidance
+Government reporting:
+UDISE+,
+AP AAR/ABC/NAD , board
+L OC, AISHE
+Statutory committees
+and grievance cells
+Child pick-up, gate
+passes, kits and uniform
+sales, clubs, social posts
+Recommended
+system
+None; site mentions
+higher education
+only
+P artial (CBSE and
+ICSE presets)
+Academics with
+school profile
+Group of colleges
+and multi-campus
+university groups
+only
+Live (All
+Institutions view)
+Campus Core
+(hierarchy) + Home
+None P artial (privacy
+Health Connect
+defect)
+Placements and
+alumni only
+P artial Career Connect
+Not described Missing Quality &
+Compliance
+Not described Missing Quality &
+Compliance
+Visitors only Live or partial Operations,
+Students, Campus
+Core
+Level 7: technical and architectural capabilities
+<<PAGE 25>>
+Capability CampX (as
+stated publicly)
+Multi-tenancy
+and isolation
+Each request
+bound to
+institution, user ,
+role, data
+domain;
+Enterprise is
+single-tenant
+Multi-
+institution
+management
+Group of
+colleges;
+university
+groups
+Role-based
+access
+Per institution,
+role and data
+domain
+Audit trail Full audit on
+every
+capability ,
+including AI
+W orkflow
+engine
+Configurable
+workflows and
+approvals
+Integrations L TI Advantage
+Complete;
+Google SSO;
+payment
+gateways;
+biometrics;
+legacy systems
+Public API Not described Not
+Campusverse V1 Classification Recommended
+One database
+for many
+institutions;
+isolation method
+not verified
+Needs
+validation
+Row-level
+security on
+tenant and
+hierarchy node;
+dedicated cell for
+large universities
+and groups
+All Institutions
+view across 9
+institutions
+Fully available Keep; add cross-
+branch
+comparison and
+group-level Mitra
+Roles and
+permissions
+A vailable but
+lacking depth
+Role × hierarchy
+scope × data
+class (section 10)
+Activity Logs P artial T amper-evident
+log, 180 days in
+India, AI steps
+included
+Approvals
+(designer)
+P artial One approval
+designer used by
+every module
+P ayment
+gateways; SMS
+P artial Integration hub:
+L TI 1.3, OneRoster ,
+SAML/OIDC,
+DigiLocker ,
+ABC/NAD , T ally ,
+devices, GPS,
+WhatsApp
+documented
+Completely
+missing
+OpenAPI 3.1
+contracts per
+module;
+developer portal
+later
+<<PAGE 26>>
+Capability CampX (as
+stated publicly)
+Notifications WhatsApp,
+SMS, email, in-
+app
+Document
+management
+Reporting and
+analytics
+Document
+collection and
+verification;
+signed
+credentials
+Dashboards;
+Smart Analysis
+Campusverse V1 Classification Recommended
+SMS with DL T ,
+email, push
+Uploads and
+certificate
+templates
+Dashboards and
+module reports
+Mobile W eb and mobile
+apps
+W eb; mobile not
+verified
+Security
+certification
+ISO 27001:2022;
+"SOC 2-ready"
+None evidenced Completely
+missing
+Data
+protection
+"On path to"
+DPDP
+No consent
+records
+Uptime 99.9% SLA Not stated Missing 99.9%
+P artial Add WhatsApp
+and regional
+languages
+P artial Shared
+documents and e-
+sign service with
+QR verification
+P artial Separate
+reporting store;
+report builder;
+Mitra on every
+screen
+Needs
+validation
+Completely
+missing
+Five apps:
+teacher (offline),
+parent, student,
+staff ,
+driver/warden
+ISO 27001 → SOC
+2 T ype II → ISO
+27701 → ISO
+42001
+Consent ledger ,
+health vault, data-
+rights requests
+(section 15)
+contractual,
+public status
+page
+<<PAGE 27>>
+Capability CampX (as
+stated publicly)
+Deployment SaaS and
+single-tenant
+Enterprise
+(own cloud
+possible)
+AI governance Permission-
+aware, audited,
+bring-your-own
+model
+Campusverse V1 Classification Recommended
+SaaS P artial SaaS for schools;
+dedicated cell for
+universities and
+groups
+Permission-
+aware assistant
+P artial Model-neutral
+gateway , Indian-
+region inference,
+per-agent
+evaluation
+Go-live 8 weeks Not stated — 4 weeks for a
+school, 8 for a
+college, phased
+by institute for a
+university
+Section 12 compares the two architectures side by side (five systems plus Medha, against
+nine systems plus Campus Core plus Mitra) and draws the Campusverse one.

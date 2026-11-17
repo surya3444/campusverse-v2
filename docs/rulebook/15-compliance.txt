@@ -1,0 +1,629 @@
+15. India-specific compliance and regulatory requirements
+T wo legal deadlines shape the build:
+DPDP Rules: 13 May 2027. Consent, notice, security and children's-data duties start
+then.
+Labour Codes: already in force since 21 November 2025. P ayroll must already
+comply .
+Most other items are regulator directives, board rules or accreditation frameworks. They
+bind only certain institution types, or matter because funding, autonomy or rankings
+depend on them. This section summarises public sources and is not legal advice. Have
+Indian counsel confirm the privacy and labour items before launch.
+Types used below:
+Law: an Act, Rules or Code. Binding on everyone covered.
+Regulator rule: UGC, AICTE or MoE regulation or directive. Binding on the institutions
+that regulator covers.
+Board rule: binding on schools affiliated to that board.
+<<PAGE 112>>
+Accreditation or ranking: formally voluntary , but tied to grants, autonomy or
+reputation.
+Data system: a government database institutions submit to.
+Framework or standard: guidance or a technical standard Campusverse chooses to
+meet.
+Requirement T ype Applies to What
+Source
+DPDP Act 2023
+and DPDP Rules
+2025
+DPDP: Consent
+Managers (Rule
+4)
+Law E very
+institution
+(Data
+Fiduciary);
+Campusverse
+as Processor ,
+and as
+Fiduciary for
+its own
+marketplace
+and partner
+services
+Law Anyone using
+registered
+Consent
+Managers
+Campusverse
+must do
+Itemised notices,
+consent ledger ,
+security
+safeguards,
+breach notice,
+retention and
+erasure, data-
+rights requests,
+grievance officer
+Owner module Status or key
+Campus Core ›
+Privacy &
+Consent
+date
+Rules notified
+13 Nov 2025
+(G.S.R.
+846(E)); main
+duties from
+13 May 2027
+S.S. Rana,
+Storyboard18
+Children's data
+and parental
+consent (s.9,
+Rules 10–12,
+Fourth
+Schedule)
+Law E veryone
+processing
+data of under-
+18s
+Consent API able
+to accept
+artef acts from a
+registered
+Consent
+Manager
+V erifiable
+guardian
+consent; no
+tracking,
+behavioural
+monitoring or
+targeted ads at
+children except
+where the Fourth
+Schedule
+exempts
+educational
+institutions
+(educational
+purposes, child
+safety) and their
+transport
+providers
+(location during
+travel)
+Privacy &
+Consent
+Applies one
+year after
+notification,
+i.e. from
+about 13–14
+Nov 2026
+(this week)
+From 13 May
+2027
+AMS Shardul
+Privacy &
+Consent;
+Enrollment;
+Career Connect
+(age gate); Mitra
+Fourth Schedule
+summary , SCC
+Online
+<<PAGE 113>>
+Requirement T ype Applies to What
+Campusverse
+must do
+CERT -In
+Directions (28
+Apr 2022)
+Law
+(directions
+under the IT
+Act)
+Campusverse
+as a service
+provider
+Report incidents
+within 6 hours;
+keep ICT logs for
+180 days in India;
+Indian time sync
+Four Labour
+Codes
+Law All employers W age definition
+(50% rule);
+gratuity for
+fixed-term staff;
+appointment
+letters; wages
+within two
+working days of
+exit; state rules
+for PT , L WF
+EPF , ESI,
+professional
+tax, L WF; TDS
+returns and
+Form 16
+ECR, ESI returns,
+state PT and L WF ,
+24Q, Form 16
+GST on taxable
+services
+T ax per fee head
+as configured;
+GST -ready
+receipts
+TRAI
+commercial-
+communication
+rules (DL T)
+Rights of
+Persons with
+Disabilities Act
+2016 and
+accessibility
+rules
+Law All employers
+above
+thresholds
+Law Institutions
+charging
+taxable heads
+(some
+transport,
+hostel and
+other
+services)
+Law
+(regulation)
+Anyone
+sending
+commercial
+SMS
+Law Draft 2026
+amendment
+rules would
+cover
+websites,
+apps and
+software
+offered in
+India,
+including
+private firms
+Registered
+headers and
+templates
+Accessible
+screens and
+documents;
+accessibility
+conformance
+reports
+Owner module Status or key
+Source
+date
+Activity Log;
+platform security
+In force PSA Legal
+People › P ayroll,
+HR
+P ayroll ›
+Statutory
+Finance › Fees,
+Accounts
+In force since
+21 Nov 2025;
+central and
+state rules
+still being
+finalised
+Ministry of
+Labour (PIB),
+LiveLaw on
+Section 17(2)
+In force Statute; confirm
+slabs per state
+with a payroll
+adviser
+In force Confirm
+treatment per
+fee head with a
+chartered
+accountant
+Communications In force TRAI T CCCPR
+2018
+Shared design
+system
+ThePrint, SCC
+Online
+Supreme
+Court
+ordered
+mandatory
+rules on 8
+Nov 2024;
+draft
+amendment
+rules
+published 20
+Jul 2026 for
+comment,
+with 12–18
+months to
+comply once
+final
+<<PAGE 114>>
+Requirement T ype Applies to What
+RTE Act 2009,
+Section 12(1)(c)
+POSH Act 2013
+(Internal
+Committee)
+UGC
+regulations:
+UG/PG
+minimum
+standards 2025;
+anti-ragging;
+student
+grievance
+redressal
+ABC, AP AAR
+and NAD
+upload
+AICTE Approval
+Process
+Handbook
+Law Private
+unaided
+schools
+(classes as
+notified by
+the state)
+Law All employers
+with 10+ staff
+Regulator rule Universities
+and colleges
+under UGC
+Regulator
+directive
+All HEIs
+(credit-
+awarding)
+Regulator rule T echnical
+institutions
+AISHE Data system
+(participation
+formally
+voluntary)
+All HEIs Campusverse
+must do
+25% seats
+lottery; no fee for
+those seats;
+reimbursement
+tracking
+Committee
+records, case
+handling
+Multiple entry
+and exit, two
+intakes, two
+programmes at
+once;
+committees and
+case handling
+AP AAR capture
+with consent;
+credit and
+marksheet
+upload against
+AP AAR;
+reconciliation
+Intake within
+approval; f aculty
+and space norms;
+mandatory
+disclosure;
+minors 18–20
+credits
+Y early data from
+Students, HR and
+Organization
+Owner module Status or key
+Source
+Enrollment;
+Finance
+date
+In force Statute; state
+rules vary
+Quality &
+Compliance ›
+Grievances &
+Committees
+Academic
+Structure;
+Grievances &
+Committees
+In force Statute
+In force UGC 2025
+regulations
+Government
+Reports › AP AAR,
+ABC & NAD
+Government
+Reports › AICTE;
+F aculty
+Compliance
+Government
+Reports › AISHE
+UGC deadline
+for exam-year
+2025 records
+was 30 Jun
+2026; 26.35
+crore verified
+AP AAR IDs by
+2 Jul 2026
+2024–27
+handbook
+with 2026–27
+update
+2024–25
+window ran
+15 Jul–15 Oct
+2025; 2025–
+26
+registration
+opened in
+2026
+UGC notice on
+DigiLocker , PIB
+f actsheet
+APH
+MoE letter ,
+Drishti
+<<PAGE 115>>
+Requirement T ype Applies to What
+Campusverse
+must do
+UDISE+ and
+PEN
+Data system All recognised
+schools
+Student-wise
+records, PEN (11
+digits),
+progression, T C
+with PEN and
+AP AAR; AP AAR
+generated from
+the UDISE+
+record after
+parental consent
+CBSE scheme
+of examinations
+Board rule CBSE schools T wo Class 10
+board exams
+(February
+mandatory , May
+optional for up to
+three subjects);
+L OC;
+competency-
+based questions
+CISCE and
+state boards
+Board rule Affiliated
+schools
+Board-specific
+grades, internal
+assessment,
+language rules,
+detention
+policies
+NAAC Accreditation Universities
+and colleges
+Binary
+accreditation
+plus maturity
+levels; legacy
+AQAR while
+grades remain
+valid; evidence
+for each metric
+NBA Accreditation T echnical and
+professional
+programs
+SAR Tier I/II with
+CO–PO–PSO
+attainment,
+direct and
+indirect
+NIRF Ranking
+(voluntary)
+HEIs that
+participate
+Data in the
+submission
+format from live
+records
+NEP 2020 Policy
+framework
+All 5+3+3+4 stages;
+multidisciplinary ,
+flexible
+structures
+Owner module Status or key
+date
+Government
+2025–26
+Reports › UDISE+
+report
+released 7 Jul
+2026 (data as
+of 31 Mar
+2026)
+Exams & Results;
+Board
+From the
+2026 exams
+Registration
+Rule packs;
+Exams & Results
+V aries by
+board and
+year
+Quality &
+Compliance ›
+Accreditation
+Academics › OBE;
+Accreditation
+Accreditation ›
+NIRF
+Academic
+Structure
+Announced
+Feb 2025;
+portal roll-out
+reported as
+incomplete in
+2026
+Ongoing;
+confirm
+current
+graduate-
+attribute set
+Annual
+window
+(2026
+window ran
+Jan–Mar)
+Being
+implemented
+by regulators
+and states
+Source
+Anantam on
+UDISE+ and
+PEN, Education
+for All in India
+ThePrint
+Board circulars
+per pack
+Careers360,
+Eklavvya
+IARE OBE
+booklet
+Careers360
+criteria
+Policy
+<<PAGE 116>>
+Requirement T ype Applies to What
+National Credit
+Framework
+(NCrF)
+P ARAKH
+Holistic
+Progress Card
+Framework Schools, HE,
+vocational
+Framework
+(state
+adoption)
+Schools up to
+Class 8 where
+adopted
+Campusverse
+must do
+30 notional hours
+= 1 credit; credit
+levels
+HPC with self ,
+peer and parent
+input, regional
+languages
+Owner module Status or key
+Source
+Subjects &
+Courses; Credit
+Record
+Report Cards &
+HPC
+date
+Adopted by
+UGC and
+CBSE pilots
+26 states/UT s
+adopting as
+of Apr 2025;
+Kerala, T amil
+Nadu, W est
+Bengal
+among those
+not yet
+PIB
+India TV
+A vailable NAD/DigiLocker
+DigiLocker Optional
+integration
+(expected by
+NAD)
+All issuers of
+certificates
+Push signed
+certificates and
+marksheets
+Certificates ›
+Digital Issue
+Accessibility
+standard
+Standard All screens WCAG 2.1 AA as
+the design bar
+(GIGW applies to
+government
+sites)
+Shared design
+system
+Adopt now;
+re-check
+against final
+RPwD rules
+Standard
+15.1 A compliance architecture that can change with policy
+Regulation changes every year , so compliance must be data, not code.
+1. Obligation register. Each row in the table above becomes an obligation with an owner
+module, the institution types it applies to, its evidence and its deadline.
+2. Rule packs. Each board, university and regulator publishes versioned rules with
+effective dates and test cases taken from the rulebook. A new circular means a new
+pack version, tested, then switched on per institution. Old batches keep their version.
+3. Evidence store. Every number filed or reported links back to the records and files it
+came from.
+4. Mitra Watch. Runs each obligation's check nightly and opens a task when something
+is missing.
+5. Change process. W atch the sources (UGC, AICTE, CBSE, CISCE, state boards, MeitY ,
+Labour) → draft the pack change → legal or academic review → test → release notes →
+institutions opt in by date.
+Times to plan around:
+Consent Manager rules: from mid-November 2026.
+<<PAGE 117>>
+DPDP main duties: from 13 May 2027.
+Labour Codes: now .
+Accessibility rules: once the 2026 draft is final.
+ABC/NAD uploads: each examination year .

@@ -20,6 +20,7 @@ import {
   Pill,
   RecordDrawer,
   Section,
+  Segmented,
   SkeletonRows,
   StatePanel,
   cx,
@@ -34,57 +35,22 @@ import {
   Siren,
   Stethoscope,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ApiFailure, api } from '../../../lib/api';
 import { en } from '../../../messages/en';
 import { useInstitution } from '../attendance/shared';
+import { useUrlTab } from '../common/url-tab';
+import { count, errorText, time, useStudentSearch, when, type Found } from './common';
+import { IncidentsSection, PartnersSection } from './emergencies';
+import { MedicinesSection } from './stock';
 import { fieldInput } from '../common/custom-fields';
 import { useMe } from '../common/me';
 
 const t = en.health;
 const BLOOD = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 const OUTCOMES: VisitOutcome[] = ['back_to_class', 'rested', 'sent_home', 'referred'];
-type Found = { personId: string; name: string; placement: string | null };
-
-const time = (iso: string) =>
-  new Intl.DateTimeFormat('en-IN', {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'Asia/Kolkata',
-  }).format(new Date(iso));
-const when = (iso: string) =>
-  new Intl.DateTimeFormat('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'Asia/Kolkata',
-  }).format(new Date(iso));
-const errorText = (e: unknown): string =>
-  (e instanceof ApiFailure
-    ? e.status === 403
-      ? t.errors.forbidden
-      : (t.errors[e.code] ?? t.errors.error)
-    : t.errors.error) ?? '';
-const count = (n: number | null) => (n === null ? t.fewer : n.toLocaleString('en-IN'));
-
-/** Students of this school by name, through the people module's search. */
-function useStudentSearch(institutionId: string | null, text: string) {
-  const [debounced, setDebounced] = useState('');
-  useEffect(() => {
-    const h = setTimeout(() => setDebounced(text.trim()), 200);
-    return () => clearTimeout(h);
-  }, [text]);
-  return useQuery({
-    queryKey: ['health-find', institutionId, debounced],
-    queryFn: () =>
-      api.get<Found[]>(
-        `/people/students?institutionId=${institutionId}&search=${encodeURIComponent(debounced)}`,
-      ),
-    enabled: !!institutionId && debounced.length >= 2,
-  });
-}
+type Tab = 'records' | 'medicines' | 'emergencies';
 
 export function HealthView() {
   const { can } = useMe();
@@ -93,6 +59,16 @@ export function HealthView() {
   const medical = can('health.record.read');
   const reports = can('health.report.read');
   const emergency = can('health.emergency.open');
+  const stock = can('health.stock.manage');
+  const incidentsOk = can('health.emergency.manage');
+  const raise = can('health.emergency.raise');
+  const tabs: Tab[] = [
+    'records',
+    ...(stock ? (['medicines'] as const) : []),
+    ...(incidentsOk ? (['emergencies'] as const) : []),
+  ];
+  const [tab, setTab] = useUrlTab<Tab>(['records', 'medicines', 'emergencies'], 'records');
+  const shown: Tab = tabs.includes(tab) ? tab : 'records';
   const [openId, setOpenId] = useState<string | null>(null);
   const [breaking, setBreaking] = useState(false);
   const totals = useQuery({
@@ -100,7 +76,7 @@ export function HealthView() {
     queryFn: () => api.get<HealthTotals>(`/health/totals?institutionId=${id}`),
     enabled: !!id && reports,
   });
-  const nothing = !medical && !reports && !emergency;
+  const nothing = !medical && !reports && !emergency && !stock && !incidentsOk;
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,20 +87,49 @@ export function HealthView() {
         title={t.title}
         description={t.lead}
         actions={
-          emergency ? (
-            <Button variant="danger" onClick={() => setBreaking(true)} disabled={!id}>
-              <Siren aria-hidden />
-              {t.emergency.action}
-            </Button>
+          emergency || raise ? (
+            <span className="flex flex-wrap gap-2">
+              {raise && (
+                <Link
+                  href="/emergency"
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-signal-stop-ink px-4 text-body font-medium text-white shadow-[var(--shadow-button)] hover:bg-signal-stop-ink/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-950"
+                >
+                  <Siren aria-hidden className="size-4" />
+                  {t.sos}
+                </Link>
+              )}
+              {emergency && (
+                <Button variant="secondary" onClick={() => setBreaking(true)} disabled={!id}>
+                  <ShieldAlert aria-hidden />
+                  {t.emergency.action}
+                </Button>
+              )}
+            </span>
           ) : undefined
         }
-      />
+      >
+        {tabs.length > 1 && (
+          <Segmented
+            label={t.tabsLabel}
+            value={shown}
+            onChange={setTab}
+            options={tabs.map((v) => ({ value: v, label: t.tabs[v] ?? v }))}
+          />
+        )}
+      </PageHeader>
       {nothing ? (
         <StatePanel
           kind="denied"
           title={t.errors.forbidden ?? en.states.denied.title}
           body={t.errors.deniedBody ?? ''}
         />
+      ) : shown === 'medicines' && id ? (
+        <MedicinesSection institutionId={id} />
+      ) : shown === 'emergencies' && id ? (
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <IncidentsSection institutionId={id} />
+          <PartnersSection institutionId={id} />
+        </div>
       ) : (
         <>
           {reports &&

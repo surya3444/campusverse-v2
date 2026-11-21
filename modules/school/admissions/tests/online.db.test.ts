@@ -1,6 +1,6 @@
 // Online application forms (docs/specs/ONLINE_APPLICATIONS.md): the office sets up a form, a
-// family applies after the mobile check, duplicates and closed forms are handled, the family
-// looks up its status, and form codes never work for sign-in.
+// family proves its mobile first and applies with the session, duplicates and closed forms are
+// handled, the family looks up its status, and form codes never work for sign-in.
 import { loadEnv } from '@campusverse/config';
 import { createDb, createRedis, withTenant } from '@campusverse/db';
 import { seedAdmin, seedTenant, type SeededTenant } from '@campusverse/db/seed';
@@ -16,6 +16,7 @@ import {
   publicForm,
   requestApplicationCode,
   saveAdmissionForm,
+  startApplication,
   submitOnlineApplication,
   type AdmissionsDeps,
 } from '../contract.js';
@@ -56,10 +57,16 @@ async function codeFor(p: string) {
   expect(await requestApplicationCode(db, otp, { slug, phone: p, ip: ip() })).toBe('sent');
   return sent.get(p) ?? '';
 }
-const application = (p: string, c: string, more: Record<string, unknown> = {}) => ({
+const SECRET = 'test-secret';
+async function sessionFor(p: string) {
+  return (await startApplication(db, otp, SECRET, { slug, phone: p, code: await codeFor(p) }))
+    .session;
+}
+const application = (session: string, more: Record<string, unknown> = {}) => ({
   slug,
-  phone: p,
-  code: c,
+  session,
+  details: {},
+  papers: [],
   childName: 'Synthetic Aarav Kumar',
   dateOfBirth: '2021-06-01',
   gender: 'male' as const,
@@ -93,7 +100,7 @@ describe('the online form', () => {
   it('is set up by the office, with a public link that shows only its own text', async () => {
     const input = {
       institutionId: t.institutionId,
-      yearLabel: '2028-29',
+      yearLabel: '2026-27',
       title: 'Synthetic Online School admissions',
       intro: 'Visit us on Saturdays.',
       classIds: [classId],
@@ -107,60 +114,82 @@ describe('the online form', () => {
     expect(slug).toMatch(/^synthetic-online-school-admissions-[a-z2-9]{4}$/);
     expect(await code(saveAdmissionForm(deps, office, input))).toBe('form_exists');
     const f = await publicForm(db, slug);
-    expect(f).toMatchObject({ title: input.title, accepting: true, yearLabel: '2028-29' });
+    expect(f).toMatchObject({ title: input.title, accepting: true, yearLabel: '2026-27' });
     expect(f?.classes).toEqual([expect.objectContaining({ classId, name: 'Class 5' })]);
     expect(await publicForm(db, 'no-such-school-x1y2')).toBeNull();
   });
 
-  it('takes an application after the mobile check; a wrong code saves nothing', async () => {
+  it('takes an application after the mobile check; a wrong code gives no session', async () => {
     const p = phone();
     const c = await codeFor(p);
-    expect(await code(submitOnlineApplication(db, otp, application(p, '000000')))).toBe(
+    expect(await code(startApplication(db, otp, SECRET, { slug, phone: p, code: '000000' }))).toBe(
       'invalid_code',
     );
+    const { session } = await startApplication(db, otp, SECRET, { slug, phone: p, code: c });
+    expect(await code(submitOnlineApplication(db, SECRET, application(`${session}x`)))).toBe(
+      'session_invalid',
+    );
     expect(
-      await code(submitOnlineApplication(db, otp, application(p, c, { consent: false }))),
+      await code(submitOnlineApplication(db, SECRET, application(session, { consent: false }))),
     ).toBe('consent_required');
-    const r = await submitOnlineApplication(db, otp, application(p, c));
+    const r = await submitOnlineApplication(
+      db,
+      SECRET,
+      application(session, { details: { addressLine: '1 Synthetic Road', pincode: '560001' } }),
+    );
     expect(r).toMatchObject({
       status: 'received',
       reference: expect.stringMatching(/^[A-Z2-9]{6}$/),
     });
     const rows = await withTenant(db, t.orgId, (tx) =>
-      tx.execute<{ state: string; source: string; creator: string | null; n: number }>(sql`
-        select state, source, created_by_person_id::text as creator,
+      tx.execute<{
+        state: string;
+        source: string;
+        creator: string | null;
+        n: number;
+        pin: string;
+      }>(sql`
+        select state, source, created_by_person_id::text as creator, pincode as pin,
           (select count(*)::int from audit_event e where e.org_id = a.org_id and e.entity_id = a.id
             and e.action = 'school.admission.apply_online' and e.actor_person_id is null) as n
         from school_application a where a.org_id = app_current_org() and guardian_phone = ${p}`),
     );
-    expect(rows).toEqual([{ state: 'applied', source: 'website', creator: null, n: 1 }]);
-    // The code is used up.
-    expect(
-      await code(
-        submitOnlineApplication(db, otp, application(p, c, { childName: 'Synthetic Isha' })),
-      ),
-    ).toBe('invalid_code');
+    // No papers came with it, so it waits for them.
+    expect(rows).toEqual([
+      { state: 'documents_pending', source: 'website', creator: null, n: 1, pin: '560001' },
+    ]);
 
     // The same child again: the existing reference, no second application.
-    const again = await submitOnlineApplication(db, otp, application(p, await codeFor(p)));
+    const again = await submitOnlineApplication(db, SECRET, application(session));
     expect(again).toEqual({
       status: 'duplicate',
       reference: r.status === 'received' ? r.reference : null,
     });
 
-    // Where it stands, after a fresh code: first name, class and status only.
-    const status = await applicationStatus(db, otp, { slug, phone: p, code: await codeFor(p) });
+    // Where it stands, after a fresh code: first name, class, status and the papers still needed.
+    const status = await applicationStatus(db, otp, SECRET, {
+      slug,
+      phone: p,
+      code: await codeFor(p),
+    });
     expect(status).toEqual([
       {
         reference: again.reference,
         firstName: 'Synthetic',
         className: 'Class 5',
-        status: 'received',
+        status: 'papers_needed',
         offerUntil: null,
+        papersNeeded: expect.arrayContaining([
+          { kind: 'birth_certificate', title: 'Birth certificate', note: null },
+        ]),
+        session: expect.any(String),
       },
     ]);
     // The office sees it among the form's applications.
-    expect((await admissionForms(deps, office, t.institutionId))[0]?.applications).toBe(1);
+    expect(
+      (await admissionForms(deps, office, t.institutionId)).find((f) => f.yearLabel === '2026-27')
+        ?.applications,
+    ).toBe(1);
   });
 
   it('refuses a closed form and a class it doesn’t take', async () => {
@@ -171,36 +200,28 @@ describe('the online form', () => {
         values (app_current_org(), ${t.institutionId}, '9', 'Class 9', 10) returning id::text`);
       return c!.id;
     });
+    const session = await sessionFor(p);
     expect(
-      await code(
-        submitOnlineApplication(db, otp, application(p, await codeFor(p), { classId: other })),
-      ),
+      await code(submitOnlineApplication(db, SECRET, application(session, { classId: other }))),
     ).toBe('class_not_found');
-    const [form] = await admissionForms(deps, office, t.institutionId);
-    await saveAdmissionForm(deps, office, {
+    const form = (await admissionForms(deps, office, t.institutionId)).find(
+      (f) => f.yearLabel === '2026-27',
+    );
+    const base = {
       institutionId: t.institutionId,
       formId: form!.id,
-      yearLabel: '2028-29',
+      yearLabel: '2026-27',
       title: form!.title,
       intro: form!.intro,
       classIds: form!.classIds,
-      open: false,
       closesOn: null,
-    });
+    };
+    await saveAdmissionForm(deps, office, { ...base, open: false });
     expect((await publicForm(db, slug))?.accepting).toBe(false);
-    expect(await code(submitOnlineApplication(db, otp, application(p, sent.get(p) ?? '')))).toBe(
+    expect(await code(submitOnlineApplication(db, SECRET, application(session)))).toBe(
       'form_closed',
     );
-    await saveAdmissionForm(deps, office, {
-      institutionId: t.institutionId,
-      formId: form!.id,
-      yearLabel: '2028-29',
-      title: form!.title,
-      intro: form!.intro,
-      classIds: form!.classIds,
-      open: true,
-      closesOn: null,
-    });
+    await saveAdmissionForm(deps, office, { ...base, open: true });
   });
 
   it('keeps form codes away from sign-in, and limits how many are sent', async () => {

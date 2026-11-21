@@ -21,6 +21,8 @@ A class teacher marks attendance in under a minute, even offline, and the school
 
 **Alerts:** `school.attendance.confirmed.v1` → the worker schedules `school.attendance.absence-alert` after the school's delay (default 30 min). The task alerts each still-absent student once.
 
+**Section changes:** a student's day is written once (`on conflict do nothing`): if they were marked in their old section that day, a later submission in the new section keeps that mark, and the register shows them as "Marked in Class 3-A" (`SheetStudent.markedIn`). `attendanceTaken` tells enrolment which days are taken, so a move never starts on one.
+
 **Owned tables:** `school_attendance_event` (append-only), `school_attendance_session`, `school_attendance_day` (read model), `school_attendance_conflict`, `school_leave_request`, `school_holiday`, `school_attendance_substitute`, `school_attendance_settings`, `school_attendance_notice` (append-only), `school_condonation_case` (migration 0007).
 
 **Events:** `school.attendance.submitted.v1`, `school.attendance.confirmed.v1`, `school.attendance.corrected.v1`, `school.attendance.shortage_reached.v1`, `school.attendance.holiday_declared.v1`.

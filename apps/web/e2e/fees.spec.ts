@@ -78,28 +78,29 @@ test('fees: plan, invoices, the counter and a receipt; the parent pays online on
 
   // A fee head and a one-instalment plan for Class 3.
   await page.goto('/fees/plans');
-  await page.getByRole('button', { name: 'Add head' }).click();
-  const head = page.getByRole('form', { name: 'Add head' });
+  await page.getByRole('button', { name: 'Add fee type' }).click();
+  const head = page.getByRole('form', { name: 'Add fee type' });
   await head.getByLabel('Code').fill('TUITION');
   await head.getByLabel('Name', { exact: true }).fill('Tuition');
-  await head.getByRole('button', { name: 'Add head' }).click();
+  await head.getByRole('button', { name: 'Add fee type' }).click();
   await expect(head).toBeHidden();
   await expect(page.getByText('Tuition', { exact: true })).toBeVisible();
   await noA11yViolations(page);
-  await page.getByRole('link', { name: 'New plan' }).click();
-  await page.getByLabel('Plan name').fill('Class 3 fees');
+  await page.screenshot({ path: 'e2e/screenshots/fees-how.png', fullPage: true });
+  await page.getByRole('link', { name: 'New fee structure' }).click();
+  await page.getByLabel('Fee structure name').fill('Class 3 fees');
   await page.getByText('Class 3', { exact: true }).click();
   await page.getByLabel('Tuition Amount (₹)').fill('12,000');
-  await page.getByLabel('Label', { exact: true }).fill('Annual');
+  await page.getByLabel('Instalment', { exact: true }).fill('Annual');
   await page.getByLabel('Due on').fill(iso(20));
   await page.getByRole('button', { name: 'Save draft' }).click();
   await expect(page).toHaveURL(/\/fees\/plans\/[0-9a-f-]{36}$/);
-  await page.getByRole('button', { name: 'Publish' }).click();
-  await page.getByRole('button', { name: 'Issue invoices' }).click();
+  await page.getByRole('button', { name: 'Finalise' }).click();
+  await page.getByRole('button', { name: 'Bill students' }).click();
   const canvas = page.getByRole('dialog');
-  await expect(canvas.getByText('Invoices', { exact: true })).toBeVisible();
-  await canvas.getByRole('button', { name: 'Issue invoices' }).click();
-  await expect(page.getByText('6 invoices issued.')).toBeVisible();
+  await expect(canvas.getByText('Bills', { exact: true })).toBeVisible();
+  await canvas.getByRole('button', { name: 'Bill students' }).click();
+  await expect(page.getByText('6 bills made.')).toBeVisible();
 
   // The parent's child pays online below; the counter takes cash from another family.
   const parent = await guardian(owner.orgId);

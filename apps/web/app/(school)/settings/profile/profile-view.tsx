@@ -11,6 +11,7 @@ import { fieldInput } from '../../common/custom-fields';
 import { ImageUpload } from '../../common/image-upload';
 import { useMe } from '../../common/me';
 import { SettingsFrame } from '../frame';
+import { TwoStep } from './two-step';
 
 const t = en.myProfile;
 
@@ -127,6 +128,7 @@ export function ProfileView() {
           </Section>
         </form>
       )}
+      <TwoStep />
     </SettingsFrame>
   );
 }

@@ -3,6 +3,7 @@ import type { Db } from '@campusverse/db';
 import type { Actor } from '@campusverse/platform-permissions';
 import {
   approvalDesign,
+  myDecisions,
   myWork,
   saveApprovalSteps,
   type WorkflowDeps,
@@ -39,6 +40,12 @@ export class WorkflowController {
   @Get('my-work')
   work(@Req() req: AuthedRequest) {
     return myWork(this.deps, actorOf(req));
+  }
+
+  /** What the signed-in person decided lately (My Work › Decided by me). */
+  @Get('my-decisions')
+  decisions(@Req() req: AuthedRequest) {
+    return myDecisions(this.deps, actorOf(req));
   }
 
   @Get('design')

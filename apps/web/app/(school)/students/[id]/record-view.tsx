@@ -3,6 +3,8 @@
 import type { StudentRecord } from '@campusverse/people-records';
 import { Announcer, Button, FormModal, ModalField, Pill, StatePanel } from '@campusverse/ui';
 import { RecordStamp } from '../../common/activity';
+import { AdmissionPanel } from './admission-panel';
+import { ChangeSectionDialog } from './change-section';
 import { ConsentPanel } from './consent-panel';
 import { DetailsPanel } from './details-panel';
 import { ProfileHero, ProfileTabsList } from '../../common/profile360';
@@ -27,6 +29,7 @@ import { useMe } from '../../common/me';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
+  ArrowLeftRight,
   BedDouble,
   Bus,
   Cake,
@@ -61,6 +64,7 @@ export function StudentRecordView({ id }: { id: string }) {
     queryFn: () => api.get<StudentRecord>(`/people/students/${id}`),
   });
   const [message, setMessage] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
   const d = useStudent360(id, school.institutionId ?? null);
   const onSaved = () => {
     void record.refetch();
@@ -130,6 +134,29 @@ export function StudentRecordView({ id }: { id: string }) {
           <FileBadge aria-hidden className="size-4" />
           {p.actions.certificate}
         </Link>
+        {can('school.enrolment.change') && placement && (
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setMoving(true)}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 text-body font-medium text-ink shadow-[var(--shadow-card)] hover:bg-navy-50"
+          >
+            <ArrowLeftRight aria-hidden className="size-4" />
+            {p.actions.changeSection}
+          </button>
+        )}
+        {moving && (
+          <ChangeSectionDialog
+            personId={r.person.id}
+            name={r.person.name}
+            onClose={() => setMoving(false)}
+            onDone={(m) => {
+              setMoving(false);
+              setMessage(m);
+              onSaved();
+            }}
+          />
+        )}
         {can('school.certificate.request') && placement && (
           <a
             href={`/api/v1/school/certificates/id-cards?studentId=${r.person.id}`}
@@ -213,6 +240,7 @@ export function StudentRecordView({ id }: { id: string }) {
         </Tabs.Content>
         <Tabs.Content value="personal" className="flex flex-col gap-6">
           <Overview record={r} onMessage={setMessage} />
+          <AdmissionPanel studentId={r.person.id} />
           {r.details && (
             <DetailsPanel
               studentId={r.person.id}

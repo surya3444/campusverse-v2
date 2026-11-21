@@ -36,6 +36,13 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'platform.privacy.manage' },
       { permission: 'health.report.read' },
       { permission: 'health.emergency.open' },
+      { permission: 'health.emergency.manage' },
+      { permission: 'mentoring.allocation.manage' },
+      { permission: 'mentoring.mentee.mentor' },
+      { permission: 'mentoring.escalation.counsel' },
+      { permission: 'grievance.committee.manage' },
+      { permission: 'survey.form.manage' },
+      { permission: 'assessment.bank.manage' },
       { permission: 'school.returns.read' },
       { permission: 'platform.file.upload' },
       { permission: 'platform.file.read' },
@@ -107,6 +114,10 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'hostel.outpass.decide' },
       { permission: 'expenses.bill.read' },
       { permission: 'expenses.bill.record' },
+      { permission: 'finance.remittance.record' },
+      { permission: 'finance.donation.read' },
+      { permission: 'finance.donation.record' },
+      { permission: 'finance.donation.cancel' },
       { permission: 'expenses.bill.approve' },
       { permission: 'expenses.bill.pay' },
       { permission: 'expenses.setup.manage' },
@@ -153,6 +164,13 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'academics.obe.manage' },
       { permission: 'health.report.read' },
       { permission: 'health.emergency.open' },
+      { permission: 'health.emergency.manage' },
+      { permission: 'mentoring.allocation.manage' },
+      { permission: 'mentoring.mentee.mentor' },
+      { permission: 'mentoring.escalation.counsel' },
+      { permission: 'grievance.committee.manage' },
+      { permission: 'survey.form.manage' },
+      { permission: 'assessment.bank.manage' },
       { permission: 'school.returns.read' },
       { permission: 'platform.role.read' },
       { permission: 'platform.activity.read' },
@@ -226,6 +244,10 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'hostel.outpass.decide' },
       { permission: 'expenses.bill.read' },
       { permission: 'expenses.bill.record' },
+      { permission: 'finance.remittance.record' },
+      { permission: 'finance.donation.read' },
+      { permission: 'finance.donation.record' },
+      { permission: 'finance.donation.cancel' },
       { permission: 'expenses.bill.approve' },
       { permission: 'expenses.setup.manage' },
       { permission: 'gate.visitor.bar' },
@@ -250,6 +272,8 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'academics.attendance.mark' },
       { permission: 'academics.obe.read' },
       { permission: 'people.student.read' },
+      // Only their own mentees; the module checks which.
+      { permission: 'mentoring.mentee.mentor' },
       // Only their own sections (class teacher or substitute); the module checks which.
       { permission: 'school.attendance.mark' },
       { permission: 'school.attendance.leave_decide' },
@@ -266,6 +290,7 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'gate.visit.expect' },
       { permission: 'school.syllabus.read' },
       { permission: 'school.syllabus.teach' },
+      { permission: 'assessment.bank.manage' },
     ],
   },
   office: {
@@ -292,6 +317,9 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'gate.pass.issue' },
       { permission: 'expenses.bill.read' },
       { permission: 'expenses.bill.record' },
+      { permission: 'finance.remittance.record' },
+      { permission: 'finance.donation.read' },
+      { permission: 'finance.donation.record' },
       { permission: 'expenses.bill.pay' },
       { permission: 'hostel.resident.read' },
       { permission: 'staff.attendance.read' },
@@ -357,6 +385,8 @@ export const SCHOOL_ROLES: Record<string, { name: string; grants: Grant[] }> = {
       { permission: 'health.visit.record' },
       { permission: 'health.report.read' },
       { permission: 'health.emergency.open' },
+      { permission: 'health.emergency.manage' },
+      { permission: 'health.stock.manage' },
       { permission: 'people.student.read' },
     ],
   },
@@ -417,6 +447,16 @@ for (const [key, role] of Object.entries(SCHOOL_ROLES)) {
   if (key !== 'parent') role.grants.push({ permission: 'helpdesk.ticket.raise', relation: 'self' });
   if (key !== 'parent') role.grants.push({ permission: 'people.appraisal.self', relation: 'self' });
   if (key !== 'parent') role.grants.push({ permission: 'payroll.slip.self', relation: 'self' });
+  // Anyone answers the surveys meant for them (rule book §13.4).
+  role.grants.push({ permission: 'survey.response.submit' });
+  // Anyone may raise a grievance; parents only about their own children (rule book §13.11).
+  role.grants.push(
+    key === 'parent'
+      ? { permission: 'grievance.case.raise', relation: 'guardian' }
+      : { permission: 'grievance.case.raise' },
+  );
+  // Anyone on staff may raise an SOS at their school (rule book §16.5 step 3).
+  if (key !== 'parent') role.grants.push({ permission: 'health.emergency.raise' });
 }
 
 /** Copies the templates into the current tenant. Returns role ids by key. Safe to repeat. */

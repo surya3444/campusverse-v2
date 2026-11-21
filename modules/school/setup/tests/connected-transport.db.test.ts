@@ -179,9 +179,9 @@ describe('zone fees and billing riders', () => {
     const route = await saveRoute(db, permissions, office, {
       institutionId: t.institutionId,
       name: 'Zone Two Route',
-      direction: 'drop',
+      direction: 'pickup',
       active: true,
-      stops: [{ stopId: stop.id, plannedAt: '16:00' }],
+      stops: [{ stopId: stop.id, plannedAt: '07:40' }],
     });
     const zone = (await transportSetup(db, permissions, office, t.institutionId)).zones.find(
       (z) => z.number === 2,
@@ -195,7 +195,7 @@ describe('zone fees and billing riders', () => {
       amountPaise: 1_000_000,
       instalments: [
         { label: 'Term 1', dueOn: today, shareBp: 5000 },
-        { label: 'Term 2', dueOn: '2099-06-10', shareBp: 5000 },
+        { label: 'Term 2', dueOn: '2027-03-25', shareBp: 5000 },
       ],
     });
     const r = await assignRider(
@@ -212,13 +212,14 @@ describe('zone fees and billing riders', () => {
       },
       bill,
     );
-    expect(r).toMatchObject({ invoices: 1, totalPaise: 500_000 });
+    // From then on they ride the morning bus only: one way pays half (₹2,500 of Term 2's ₹5,000).
+    expect(r).toMatchObject({ invoices: 1, totalPaise: 250_000 });
     const invoices = await q(t.orgId, (tx) =>
       tx.execute<{ label: string; total: number }>(sql`
         select label, total_paise::int as total from fee_invoice
         where student_person_id = ${t.studentId} and plan_id = ${planId}`),
     );
-    expect(invoices).toEqual([{ label: 'Term 2', total: 500_000 }]);
+    expect(invoices).toEqual([{ label: 'Term 2', total: 250_000 }]);
     const audit = await q(t.orgId, (tx) =>
       tx.execute<{ detail: { invoices: number } }>(sql`
         select detail from audit_event where action = 'transport.assignment.create'
@@ -242,5 +243,40 @@ describe('zone fees and billing riders', () => {
       bill,
     );
     expect(again.invoices).toBe(0);
+
+    // An afternoon bus from a zone-3 stop: the morning stop still decides the zone (one fee, not
+    // two), and with both trips they pay the whole zone fee.
+    const far = await saveStop(db, permissions, office, {
+      institutionId: t.institutionId,
+      name: 'Zone Three Market',
+      fareZone: 3,
+      active: true,
+    });
+    const back = await saveRoute(db, permissions, office, {
+      institutionId: t.institutionId,
+      name: 'Zone Three Route',
+      direction: 'drop',
+      active: true,
+      stops: [{ stopId: far.id, plannedAt: '16:10' }],
+    });
+    await assignRider(db, permissions, P, office, {
+      institutionId: t.institutionId,
+      personId: t.studentId,
+      routeId: back.id,
+      stopId: far.id,
+      from: later,
+    });
+    const zones = (await transportSetup(db, permissions, office, t.institutionId)).zones;
+    const three = zones.find((z) => z.number === 3)!;
+    const seen = await q(t.orgId, async (tx) => [
+      {
+        two: await audience.students(tx, t.institutionId, [zone.id], later),
+        three: await audience.students(tx, t.institutionId, [three.id], later),
+        shares: [...(await audience.shares!(tx, t.institutionId, [zone.id], [t.studentId], later))],
+      },
+    ]);
+    expect(seen[0]?.two).toContain(t.studentId);
+    expect(seen[0]?.three).not.toContain(t.studentId);
+    expect(seen[0]?.shares).toEqual([]);
   });
 });

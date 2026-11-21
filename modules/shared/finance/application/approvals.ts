@@ -397,15 +397,23 @@ export async function decideReversal(
       if (input.approve) {
         const p = await refundable(tx, r.paymentId);
         if (p.state !== 'succeeded') throw new FinanceError('not_reversible');
-        const allocations = await tx.execute<{ invoiceId: string; amount: number }>(sql`
-          select invoice_id::text as "invoiceId", sum(amount_paise)::int as amount from fee_allocation
-          where org_id = app_current_org() and payment_id = ${r.paymentId} group by invoice_id having sum(amount_paise) > 0`);
+        // Undone share by share, so money held for the university goes back down with it.
+        const allocations = await tx.execute<{
+          invoiceId: string;
+          payeeId: string | null;
+          amount: number;
+        }>(sql`
+          select invoice_id::text as "invoiceId", payee_id::text as "payeeId", sum(amount_paise)::int as amount
+          from fee_allocation
+          where org_id = app_current_org() and payment_id = ${r.paymentId}
+          group by invoice_id, payee_id having sum(amount_paise) > 0 order by invoice_id`);
         for (const a of allocations) {
           await tx.execute(sql`
-            insert into fee_allocation (org_id, payment_id, invoice_id, amount_paise)
-            values (app_current_org(), ${r.paymentId}, ${a.invoiceId}, ${-a.amount})`);
-          await refreshInvoice(tx, a.invoiceId);
+            insert into fee_allocation (org_id, payment_id, invoice_id, amount_paise, payee_id)
+            values (app_current_org(), ${r.paymentId}, ${a.invoiceId}, ${-a.amount}, ${a.payeeId})`);
         }
+        for (const invoiceId of new Set(allocations.map((a) => a.invoiceId)))
+          await refreshInvoice(tx, invoiceId);
         const last = allocations.at(-1);
         if (r.charge > 0 && last) {
           await tx.execute(sql`

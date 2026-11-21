@@ -17,6 +17,7 @@ import {
   ScrollText,
   Tags,
   UserCog,
+  UsersRound,
   type LucideIcon,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -28,6 +29,7 @@ import { en } from '../../messages/en';
 
 const NAV: { href: string; label: string; Icon: LucideIcon; owner?: boolean }[] = [
   { href: '/', label: en.nav.customers, Icon: Building2 },
+  { href: '/admins', label: en.nav.admins, Icon: UsersRound },
   { href: '/approvals', label: en.nav.approvals, Icon: CheckCheck },
   { href: '/support', label: en.nav.support, Icon: LifeBuoy },
   { href: '/health', label: en.nav.health, Icon: Activity },

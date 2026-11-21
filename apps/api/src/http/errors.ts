@@ -25,8 +25,12 @@ import { GateError } from '@campusverse/shared-gate';
 import { HostelError } from '@campusverse/shared-hostel';
 import { SyllabusError } from '@campusverse/school-syllabus';
 import { HelpdeskError } from '@campusverse/shared-helpdesk';
+import { MentoringError } from '@campusverse/shared-mentoring';
+import { GrievanceError } from '@campusverse/shared-grievances';
+import { SurveyError } from '@campusverse/shared-surveys';
+import { AssessmentError } from '@campusverse/shared-assessments';
 import { PrivacyError } from '@campusverse/platform-consent';
-import { HealthError } from '@campusverse/shared-health';
+import { EmergencyError, HealthError, StockError } from '@campusverse/shared-health';
 import { ReturnsError } from '@campusverse/school-returns';
 import { AcademicsError } from '@campusverse/academics-structure';
 import { RegistrationError } from '@campusverse/academics-registration';
@@ -130,8 +134,14 @@ export class ApiExceptionFilter implements ExceptionFilter {
       exception instanceof HostelError ||
       exception instanceof SyllabusError ||
       exception instanceof HelpdeskError ||
+      exception instanceof MentoringError ||
+      exception instanceof GrievanceError ||
+      exception instanceof SurveyError ||
+      exception instanceof AssessmentError ||
       exception instanceof PrivacyError ||
       exception instanceof HealthError ||
+      exception instanceof StockError ||
+      exception instanceof EmergencyError ||
       exception instanceof ReturnsError ||
       exception instanceof AcademicsError ||
       exception instanceof RegistrationError ||
@@ -227,7 +237,15 @@ export class ApiExceptionFilter implements ExceptionFilter {
             ].includes(exception.code)
           ? 409
           : 422;
-      body = { ...base, code: exception.code, message: exception.code.replaceAll('_', ' ') };
+      // What the screen needs to explain it: the days a register was taken, the fields to fix,
+      // the year a date falls outside.
+      const details = (exception as { details?: unknown }).details;
+      body = {
+        ...base,
+        code: exception.code,
+        message: exception.code.replaceAll('_', ' '),
+        ...(details && typeof details === 'object' ? { details } : {}),
+      };
     } else if (exception instanceof ControlError) {
       status =
         exception.code === 'forbidden'

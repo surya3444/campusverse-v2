@@ -37,6 +37,7 @@ export class TransportError extends Error {
       | 'times_out_of_order'
       | 'assignment_not_found'
       | 'stop_not_on_route'
+      | 'same_direction'
       | 'not_a_student'
       | 'stop_has_riders'
       | 'route_has_riders'

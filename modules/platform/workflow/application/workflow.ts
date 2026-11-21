@@ -407,6 +407,46 @@ export async function myWork(deps: WorkflowDeps, actor: Actor): Promise<WorkItem
   });
 }
 
+export type MyDecision = {
+  decisionId: string;
+  requestId: string;
+  process: ProcessKey;
+  subjectId: string;
+  institutionId: string;
+  institution: string;
+  summary: string;
+  amountPaise: number | null;
+  decision: 'approve' | 'reject';
+  note: string | null;
+  decidedAt: string;
+  /** Where the request stands now: still waiting for a later step, or closed. */
+  status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+  step: number;
+  steps: number;
+};
+
+/** What the signed-in person decided lately, newest first: My Work's "Decided by me". */
+export async function myDecisions(
+  deps: WorkflowDeps,
+  actor: Actor,
+  limit = 50,
+): Promise<MyDecision[]> {
+  return withTenant(deps.db, actor.orgId, async (tx) => {
+    const rows = await tx.execute<MyDecision>(sql`
+      select d.id::text as "decisionId", r.id::text as "requestId", r.process, r.subject_id::text as "subjectId",
+        r.institution_id::text as "institutionId", i.name as institution, r.summary,
+        r.amount_paise::float as "amountPaise", d.decision, d.note, d.decided_at::text as "decidedAt", r.status,
+        d.step_index + 1 as step, jsonb_array_length(r.steps) as steps
+      from approval_decision d
+      join approval_request r on r.org_id = d.org_id and r.id = d.request_id
+      join institution i on i.org_id = r.org_id and i.id = r.institution_id
+      where d.org_id = app_current_org() and d.decided_by_person_id = ${actor.personId}
+      order by d.decided_at desc
+      limit ${Math.min(Math.max(limit, 1), 200)}`);
+    return rows.filter((r) => isProcess(r.process));
+  });
+}
+
 export type ProcessPolicy = {
   process: ProcessKey;
   amounts: boolean;

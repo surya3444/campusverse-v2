@@ -13,7 +13,7 @@ import {
   KeyFigures,
   type Tone,
 } from '@campusverse/ui';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { ChevronRight, Download, Phone, Search, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -70,17 +70,39 @@ export function StudentsList() {
   const today = new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
   const onDate =
     year && year.status !== 'active' ? [year.starts, today, lastDay(year.ends)].sort()[1] : null;
+  // A view with several institutions (a campus, or the whole organisation) lists everyone in it,
+  // each with their institution; "This institution" narrows to the one in the switcher.
+  const many = schools.inView.length > 1;
+  const [span, setSpan] = useState<'view' | 'one'>('view');
+  const wide = many && span === 'view';
+  const ids = wide ? schools.inView.map((i) => i.id) : institutionId ? [institutionId] : [];
+  const names = new Map(schools.inView.map((i) => [i.id, i.name]));
   // The whole school comes at once (a few thousand rows at most), so search and filters see everyone.
-  const students = useQuery({
-    queryKey: ['students', institutionId, show, onDate],
-    queryFn: () =>
-      api.get<StudentListItem[]>(
-        `/people/students?institutionId=${institutionId}${
-          onDate ? `&onDate=${onDate}` : show === 'all' ? '&everyone=1' : ''
-        }`,
-      ),
-    enabled: !!institutionId,
-    placeholderData: (previous) => previous,
+  const students = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ['students', id, show, wide ? null : onDate],
+      queryFn: () =>
+        api.get<StudentListItem[]>(
+          `/people/students?institutionId=${id}${
+            !wide && onDate ? `&onDate=${onDate}` : show === 'all' ? '&everyone=1' : ''
+          }`,
+        ),
+    })),
+    combine: (rs) => ({
+      data:
+        rs.length > 0 && rs.every((r) => r.data)
+          ? rs.flatMap((r, n) =>
+              (r.data ?? []).map((x) => ({
+                ...x,
+                institutionId: ids[n] ?? '',
+                institution: names.get(ids[n] ?? '') ?? '',
+              })),
+            )
+          : undefined,
+      isPending: rs.length === 0 || rs.some((r) => r.isPending),
+      isError: rs.some((r) => r.isError),
+      error: rs.find((r) => r.error)?.error ?? null,
+    }),
   });
   const [limit, setLimit] = useState(PAGE);
   useEffect(() => setLimit(PAGE), [query, klass, show]);
@@ -122,8 +144,15 @@ export function StudentsList() {
                   'students',
                   institutionId ?? '',
                   `students${klass ? `-${klass}` : ''}`,
-                  [w.admissionNumber, t.name, w.placement, t.status],
+                  [
+                    ...(wide ? [en.view.institution] : []),
+                    w.admissionNumber,
+                    t.name,
+                    w.placement,
+                    t.status,
+                  ],
                   matching.map((s) => [
+                    ...(wide ? [s.institution] : []),
                     s.reference,
                     s.name,
                     s.placement,
@@ -211,7 +240,21 @@ export function StudentsList() {
                   className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-ink-muted"
                 />
               </label>
-              {isSchool && (years.data?.years.length ?? 0) > 1 && (
+              {many && (
+                <Segmented
+                  label={en.view.span}
+                  value={span}
+                  onChange={(v) => {
+                    setSpan(v);
+                    setKlass('');
+                  }}
+                  options={[
+                    { value: 'view', label: en.view.spanView(schools.inView.length) },
+                    { value: 'one', label: en.view.spanOne },
+                  ]}
+                />
+              )}
+              {!wide && isSchool && (years.data?.years.length ?? 0) > 1 && (
                 <select
                   aria-label={t.yearFilter}
                   value={
@@ -287,6 +330,11 @@ export function StudentsList() {
                         <th scope="col" className="px-6 py-3.5 text-left">
                           {t.student}
                         </th>
+                        {wide && (
+                          <th scope="col" className="px-4 py-3.5 text-left">
+                            {en.view.institution}
+                          </th>
+                        )}
                         <th scope="col" className="px-4 py-3.5 text-left">
                           {w.placement}
                         </th>
@@ -301,7 +349,7 @@ export function StudentsList() {
                     <tbody className="divide-y divide-line/60">
                       {shown.map((s) => (
                         <tr
-                          key={s.personId}
+                          key={`${s.personId}-${s.institutionId}`}
                           className="group relative transition-colors hover:bg-navy-50/40"
                         >
                           <td className="px-6 py-3.5">
@@ -328,6 +376,7 @@ export function StudentsList() {
                               </span>
                             </Link>
                           </td>
+                          {wide && <td className="px-4 py-3.5 text-ink">{s.institution}</td>}
                           <td className="px-4 py-3.5 text-ink">{s.placement ?? '—'}</td>
                           <td className="hidden px-4 py-3.5 md:table-cell">
                             {s.guardian ? (

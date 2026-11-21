@@ -3,7 +3,8 @@ import { and, eq } from 'drizzle-orm';
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { normaliseIndianMobile } from '../domain/phone.js';
 import type { Otp } from './otp.js';
-import { startSession, trustDevice, type Tokens } from './sessions.js';
+import { sessionOrChallenge, type MfaChallenge } from './mfa.js';
+import { trustDevice, type Tokens } from './sessions.js';
 
 const { account, loginIdentifier } = schema;
 
@@ -49,7 +50,7 @@ export async function signInWithPhone(
   db: Db,
   otp: Otp,
   input: { phone: string; code: string; device: DeviceInput },
-): Promise<Tokens | null> {
+): Promise<Tokens | MfaChallenge | null> {
   const phone = normaliseIndianMobile(input.phone);
   if (!phone || !/^\d{6}$/.test(input.code)) return null;
   if (!(await otp.verify(phone, input.code))) return null;
@@ -60,7 +61,7 @@ export async function signInWithPhone(
     .set({ verifiedAt: new Date() })
     .where(eq(loginIdentifier.id, found.identifierId));
   const deviceId = await trustDevice(db, found.accountId, input.device);
-  return startSession(db, found.accountId, deviceId);
+  return sessionOrChallenge(db, found.accountId, deviceId);
 }
 
 const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
@@ -74,7 +75,7 @@ let googleKeys: JWTVerifyGetKey | undefined;
 export async function signInWithGoogle(
   db: Db,
   input: { idToken: string; clientId: string; device: DeviceInput; keys?: JWTVerifyGetKey },
-): Promise<Tokens | null> {
+): Promise<Tokens | MfaChallenge | null> {
   const keys =
     input.keys ??
     (googleKeys ??= createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs')));
@@ -109,5 +110,5 @@ export async function signInWithGoogle(
   if (!found) return null;
 
   const deviceId = await trustDevice(db, found.accountId, input.device);
-  return startSession(db, found.accountId, deviceId);
+  return sessionOrChallenge(db, found.accountId, deviceId);
 }

@@ -10,6 +10,11 @@ import {
   StructureInput,
   SubjectChange,
   TeacherInput,
+  ClassToYear,
+  NextYearPlan,
+  SectionAdd,
+  SectionClosedInput,
+  SectionEdit,
 } from '@campusverse/contracts';
 import type { Db } from '@campusverse/db';
 import type { Actor } from '@campusverse/platform-permissions';
@@ -20,6 +25,12 @@ import {
   closeYear,
   reopenYear,
   setUpNextYear,
+  addClassToYear,
+  addSection,
+  removeClassFromYear,
+  removeSection,
+  setSectionClosed,
+  updateSection,
   assignTeacher,
   setOffering,
   subjectsOverview,
@@ -246,10 +257,86 @@ export class SetupController {
     });
   }
 
-  /** Year end: the next year with this year's classes, sections and subjects. */
+  /** Year end: the next year, as the school edited it (or a copy of this year's structure). */
   @Post(':institutionId/next-year')
-  nextYear(@Param('institutionId') institutionId: string, @Req() req: AuthedRequest) {
-    return setUpNextYear(this.db, this.permissions, actorOf(req), Id.parse(institutionId));
+  nextYear(
+    @Param('institutionId') institutionId: string,
+    @Body() body: unknown,
+    @Req() req: AuthedRequest,
+  ) {
+    const plan = NextYearPlan.parse((body as { plan?: unknown } | null)?.plan ?? null);
+    return setUpNextYear(
+      this.db,
+      this.permissions,
+      actorOf(req),
+      Id.parse(institutionId),
+      plan ? { classes: plan.classes } : null,
+    );
+  }
+
+  // A year's structure: classes and sections that run in it -----------------------------------
+
+  @Post('years/:yearId/sections')
+  addSection(@Param('yearId') yearId: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    return addSection(this.db, this.permissions, actorOf(req), {
+      yearId: Id.parse(yearId),
+      ...SectionAdd.parse(body),
+    });
+  }
+
+  @Post('sections/:sectionId')
+  @HttpCode(204)
+  async editSection(
+    @Param('sectionId') sectionId: string,
+    @Body() body: unknown,
+    @Req() req: AuthedRequest,
+  ) {
+    const e = SectionEdit.parse(body);
+    await updateSection(this.db, this.permissions, actorOf(req), {
+      sectionId: Id.parse(sectionId),
+      ...(e.name !== undefined ? { name: e.name } : {}),
+      ...(e.capacity !== undefined ? { capacity: e.capacity } : {}),
+    });
+  }
+
+  @Post('sections/:sectionId/remove')
+  @HttpCode(204)
+  async removeSection(@Param('sectionId') sectionId: string, @Req() req: AuthedRequest) {
+    await removeSection(this.db, this.permissions, actorOf(req), Id.parse(sectionId));
+  }
+
+  @Post('sections/:sectionId/closed')
+  @HttpCode(204)
+  async closeSection(
+    @Param('sectionId') sectionId: string,
+    @Body() body: unknown,
+    @Req() req: AuthedRequest,
+  ) {
+    await setSectionClosed(this.db, this.permissions, actorOf(req), {
+      sectionId: Id.parse(sectionId),
+      ...SectionClosedInput.parse(body),
+    });
+  }
+
+  @Post('years/:yearId/classes')
+  addClass(@Param('yearId') yearId: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    return addClassToYear(this.db, this.permissions, actorOf(req), {
+      yearId: Id.parse(yearId),
+      ...ClassToYear.parse(body),
+    });
+  }
+
+  @Post('years/:yearId/classes/:classId/remove')
+  @HttpCode(204)
+  async removeClass(
+    @Param('yearId') yearId: string,
+    @Param('classId') classId: string,
+    @Req() req: AuthedRequest,
+  ) {
+    await removeClassFromYear(this.db, this.permissions, actorOf(req), {
+      yearId: Id.parse(yearId),
+      classId: Id.parse(classId),
+    });
   }
 
   /** Multipart upload of one .xlsx file (field "file"). Returns the preview. */

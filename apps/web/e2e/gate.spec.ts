@@ -64,7 +64,21 @@ test('gate: check in and out, a gate pass, a barred visitor, an expected visit',
   await expect(dialog).toBeHidden();
   const passes = page.getByRole('region', { name: 'Passes' });
   await expect(passes.getByText('Waiting')).toBeVisible();
+  // The parent is sent a pick-up code; in simulation it shows on screen.
+  await expect(passes.getByText('The parent has been sent a pick-up code.')).toBeVisible();
+  const sms = await passes.getByText(/^Pick-up code: \d{6}$/).textContent();
+  const pickup = sms!.replace(/\D/g, '');
   await passes.getByRole('button', { name: `Left ${student.name}` }).click();
+  const ask = page.getByRole('dialog', { name: `Pick-up code for ${student.name}` });
+  await ask
+    .getByLabel('Pick-up code', { exact: true })
+    .fill(pickup === '000000' ? '111111' : '000000');
+  await ask.getByRole('button', { name: 'Let them leave' }).click();
+  await expect(ask.getByText('That code is wrong. 4 tries left.')).toBeVisible();
+  await ask.getByLabel('Pick-up code', { exact: true }).fill(pickup);
+  await noA11yViolations(page);
+  await ask.getByRole('button', { name: 'Let them leave' }).click();
+  await expect(ask).toBeHidden();
   await expect(passes.getByText(/Left at/)).toBeVisible();
   await noA11yViolations(page);
 

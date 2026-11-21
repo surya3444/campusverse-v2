@@ -1,0 +1,6 @@
+# HTTPS for the demo API (Let's Encrypt, renewed by Caddy). The admin routes stay internal.
+api.demo-v2.campusverse.app {
+	@admin path /api/v1/admin*
+	respond @admin 404
+	reverse_proxy api:4000
+}

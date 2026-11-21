@@ -75,3 +75,14 @@ export {
   type Target,
   type VersionStatus,
 } from './domain/timetable.js';
+export {
+  calendarFor,
+  makeCalendarLink,
+  myWeek,
+  stopCalendarLink,
+  type CalendarWords,
+  type MyDay,
+  type MyInvigilation,
+  type MyLesson,
+  type MyWeek,
+} from './application/mine.js';

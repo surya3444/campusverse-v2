@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@campusverse/config": "workspace:*",
+    "@campusverse/crypto": "workspace:*",
     "@campusverse/db": "workspace:*",
     "@campusverse/platform-permissions": "workspace:*",
     "drizzle-orm": "^0.45.4",

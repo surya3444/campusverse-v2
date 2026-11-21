@@ -28,6 +28,7 @@ export {
   type GroupFee,
   type GroupFeeInput,
   feeDisclosure,
+  feeYears,
   studentMoney,
   overdueOf,
   type FeeDisclosure,
@@ -87,4 +88,32 @@ export {
 } from './application/office.js';
 export { CHECK_PAYMENT, financeJobs } from './jobs/payments.js';
 export { financialYear, rupees, splitByShares } from './domain/money.js';
+export {
+  payees,
+  payeeStatement,
+  PAYEE_KINDS,
+  recordRemittance,
+  REMITTANCE_RECORDED,
+  savePayee,
+  setHeadPayee,
+  type PayeeInput,
+  type PayeeKind,
+  type PayeeStatement,
+  type PayeeSummary,
+  type PayeesView,
+  type RemittanceInput,
+} from './application/payees.js';
+export {
+  cancelDonation,
+  donationReceipt,
+  donations,
+  DONATION_CANCELLED,
+  DONATION_RECORDED,
+  recordDonation,
+  type DonationInput,
+  type DonationMethod,
+  type DonationReceipt,
+  type DonationRow,
+  type Donations,
+} from './application/donations.js';
 export { financeTools } from './application/verse.js';

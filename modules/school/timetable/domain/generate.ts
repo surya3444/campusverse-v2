@@ -15,6 +15,12 @@ export type SubjectRule = {
   maxPerDay?: number | undefined;
   /** The lesson needs one of these rooms ("Science lab"); a free one is given. */
   rooms?: string[] | undefined;
+  /** Class periods the subject never takes ("Period 1" = 1): PE not first, Maths not last. */
+  avoidPeriods?: number[] | undefined;
+  /** ISO weekdays the subject may be taught on (empty or missing: any day). */
+  days?: number[] | undefined;
+  /** Wish: the same period every day it comes (routine for young classes). */
+  samePeriod?: boolean | undefined;
 };
 export type TeacherRule = {
   /** ISO weekdays the teacher isn't in. */
@@ -24,6 +30,8 @@ export type TeacherRule = {
   /** Particular times the teacher isn't available: "weekday:period", such as "1:1" (Monday, period 1). */
   offCells?: string[] | undefined;
   maxPerDay?: number | undefined;
+  /** Most class periods in the whole week. */
+  maxPerWeek?: number | undefined;
 };
 export type Rules = {
   /** Fill the empty cells, or rebuild every section lesson (groups stay). */
@@ -34,6 +42,14 @@ export type Rules = {
   teacherMaxInARow: number;
   subjects: Record<string, SubjectRule>;
   teachers: Record<string, TeacherRule>;
+  /** Wish: the class teacher takes each section's first period (attendance, the day's start). */
+  classTeacherFirst?: boolean | undefined;
+  /** Wish: teachers' lessons together (fewer free gaps) or spread evenly over the day. */
+  teacherDay?: 'balanced' | 'compact' | undefined;
+  /** Search effort: quick (seconds), standard, thorough (longer, for tight schools). */
+  effort?: 'quick' | 'standard' | 'thorough' | undefined;
+  /** The arrangement to start from; another number gives another timetable. */
+  seed?: number | undefined;
 };
 export const DEFAULT_RULES: Rules = {
   mode: 'fill',
@@ -42,7 +58,18 @@ export const DEFAULT_RULES: Rules = {
   teacherMaxInARow: 3,
   subjects: {},
   teachers: {},
+  classTeacherFirst: false,
+  teacherDay: 'balanced',
+  effort: 'standard',
+  seed: 1,
 };
+/** Lessons tried per attempt, attempts, and time, by effort. */
+export const EFFORT = {
+  quick: { stepsPerTry: 8_000, tries: 4, timeMs: 5_000 },
+  standard: { stepsPerTry: 20_000, tries: 12, timeMs: 20_000 },
+  thorough: { stepsPerTry: 60_000, tries: 30, timeMs: 60_000 },
+} as const;
+type Wish = { met: number; of: number };
 
 export type Demand = {
   sectionId: string;
@@ -65,7 +92,11 @@ export type Generated = {
   /** Every period placed with every hard rule kept. */
   complete: boolean;
   /** Lessons placed in their subject's chosen half of the day, of those with a choice. */
-  timeWish: { met: number; of: number };
+  timeWish: Wish;
+  /** Section-days whose first period went to the class teacher, when asked for. */
+  classTeacherWish?: Wish;
+  /** Lessons of "same period" subjects at their most used period, when asked for. */
+  samePeriodWish?: Wish;
   /** Lessons tried while searching. */
   steps: number;
 };
@@ -78,6 +109,9 @@ type State = {
   subjectDay: Map<string, number>;
   sectionDay: Map<string, number>;
   room: Set<string>;
+  teacherWeek: Map<string, number>;
+  /** Periods used per section and subject ("sec:subj" → bell row → count). */
+  subjectPeriods: Map<string, Map<number, number>>;
 };
 
 /** A small seeded random number generator (mulberry32), so a run can be repeated. */
@@ -102,7 +136,9 @@ export function generate(input: {
   fixed: readonly Fixed[];
   rules: Rules;
   seed?: number;
-  /** Search effort: lessons tried per attempt, and attempts. */
+  /** Each section's class teacher, for the "class teacher first" wish. */
+  classTeachers?: Readonly<Record<string, string | null>>;
+  /** Search effort: lessons tried per attempt, and attempts (default: from rules.effort). */
   stepsPerTry?: number;
   tries?: number;
   /** Stop searching after this long (the fullest result so far stands). */
@@ -139,6 +175,20 @@ export function generate(input: {
     return rooms.find((r) => ps.every((p) => !s.room.has(rk(r, c.weekday, p)))) ?? null;
   };
 
+  const bump = (s: State, key: string, period: number, n: number) => {
+    const m = s.subjectPeriods.get(key) ?? new Map<number, number>();
+    m.set(period, (m.get(period) ?? 0) + n);
+    s.subjectPeriods.set(key, m);
+  };
+  const subjectAvoids = (subjectId: string, p: number) =>
+    !!rules.subjects[subjectId]?.avoidPeriods?.includes(ordinal(p));
+  const subjectDayOk = (subjectId: string, weekday: number) => {
+    const allowed = rules.subjects[subjectId]?.days;
+    return !allowed || allowed.length === 0 || allowed.includes(weekday);
+  };
+  const first = periods[0];
+  const classTeacher = (sectionId: string) => input.classTeachers?.[sectionId] ?? null;
+
   // Lessons to place: doubles first within a subject, then singles.
   const units: Unit[] = demands.flatMap((d, i) => {
     const doubles = Math.min(rules.subjects[d.subjectId]?.doubles ?? 0, Math.floor(d.count / 2));
@@ -159,17 +209,21 @@ export function generate(input: {
       subjectDay: new Map(),
       sectionDay: new Map(),
       room: new Set(),
+      teacherWeek: new Map(),
+      subjectPeriods: new Map(),
     };
     for (const f of input.fixed) {
       for (const id of f.sectionIds) {
         s.sec.add(`${id}:${f.weekday}:${f.period}`);
         add(s.subjectDay, `${id}:${f.subjectId}:${f.weekday}`, 1);
         add(s.sectionDay, `${id}:${f.weekday}`, 1);
+        bump(s, `${id}:${f.subjectId}`, f.period, 1);
       }
       if (f.room) s.room.add(rk(f.room, f.weekday, f.period));
       if (f.teacherPersonId) {
         s.teacher.add(`${f.teacherPersonId}:${f.weekday}:${f.period}`);
         add(s.teacherDay, `${f.teacherPersonId}:${f.weekday}`, 1);
+        add(s.teacherWeek, f.teacherPersonId, 1);
       }
     }
     return s;
@@ -189,6 +243,8 @@ export function generate(input: {
     const ps = span(c, u.size);
     if (ps.length !== u.size) return false;
     for (const p of ps) if (s.sec.has(`${d.sectionId}:${c.weekday}:${p}`)) return false;
+    if (!subjectDayOk(d.subjectId, c.weekday)) return false;
+    if (ps.some((p) => subjectAvoids(d.subjectId, p))) return false;
     if (
       (s.subjectDay.get(`${d.sectionId}:${d.subjectId}:${c.weekday}`) ?? 0) >= maxSame(d.subjectId)
     )
@@ -199,6 +255,8 @@ export function generate(input: {
       for (const p of ps)
         if (s.teacher.has(`${t}:${c.weekday}:${p}`) || offPeriod(t, p, c.weekday)) return false;
       if ((s.teacherDay.get(`${t}:${c.weekday}`) ?? 0) + ps.length > teacherMax(t)) return false;
+      const week = rules.teachers[t]?.maxPerWeek;
+      if (week !== undefined && (s.teacherWeek.get(t) ?? 0) + ps.length > week) return false;
       if (run(s, t, c.weekday, ps) > rules.teacherMaxInARow) return false;
     }
     return roomFor(s, u, c) !== null;
@@ -218,10 +276,40 @@ export function generate(input: {
         3 +
       (s.subjectDay.get(`${d.sectionId}:${d.subjectId}:${c.weekday}`) ?? 0) * 4 +
       (s.sectionDay.get(`${d.sectionId}:${c.weekday}`) ?? 0) * 0.3 +
-      (d.teacherPersonId ? (s.teacherDay.get(`${d.teacherPersonId}:${c.weekday}`) ?? 0) * 0.3 : 0) +
+      teacherCost(s, d.teacherPersonId, c, span(c, u.size)) +
+      samePeriodCost(s, d, c) +
+      firstPeriodCost(d, c, span(c, u.size)) +
       rand() * 0.5
     );
   };
+  /** Balanced: a teacher's busier days cost more. Compact: next to their other lessons is cheaper. */
+  function teacherCost(s: State, t: string | null, c: Cell, ps: number[]) {
+    if (!t) return 0;
+    const day = s.teacherDay.get(`${t}:${c.weekday}`) ?? 0;
+    if (rules.teacherDay !== 'compact') return day * 0.3;
+    if (day === 0) return 0.6;
+    const near = ps.some((p) =>
+      [periods[(index.get(p) ?? 0) - 1], periods[(index.get(p) ?? 0) + 1]].some(
+        (q) => q !== undefined && s.teacher.has(`${t}:${c.weekday}:${q}`),
+      ),
+    );
+    return near ? -0.8 : 0.4;
+  }
+  /** "Same period" subjects: away from the period they already use most costs more. */
+  function samePeriodCost(s: State, d: Demand, c: Cell) {
+    if (!rules.subjects[d.subjectId]?.samePeriod) return 0;
+    const used = s.subjectPeriods.get(`${d.sectionId}:${d.subjectId}`);
+    if (!used || used.size === 0) return 0;
+    const top = Math.max(...used.values());
+    return (used.get(c.period) ?? 0) === top ? -1 : 2;
+  }
+  /** The class teacher in a section's first period; anyone else there costs a little. */
+  function firstPeriodCost(d: Demand, c: Cell, ps: number[]) {
+    if (!rules.classTeacherFirst || first === undefined || !ps.includes(first)) return 0;
+    const ct = classTeacher(d.sectionId);
+    if (!ct) return 0;
+    return d.teacherPersonId === ct ? -3 : 2;
+  }
 
   const apply = (s: State, u: Unit, c: Cell, sign: 1 | -1, room: string | null) => {
     const d = u.d;
@@ -242,7 +330,11 @@ export function generate(input: {
     }
     add(s.subjectDay, `${d.sectionId}:${d.subjectId}:${c.weekday}`, sign);
     add(s.sectionDay, `${d.sectionId}:${c.weekday}`, sign * ps.length);
-    if (d.teacherPersonId) add(s.teacherDay, `${d.teacherPersonId}:${c.weekday}`, sign * ps.length);
+    for (const p of ps) bump(s, `${d.sectionId}:${d.subjectId}`, p, sign);
+    if (d.teacherPersonId) {
+      add(s.teacherDay, `${d.teacherPersonId}:${c.weekday}`, sign * ps.length);
+      add(s.teacherWeek, d.teacherPersonId, sign * ps.length);
+    }
   };
 
   // Groups of identical lessons (same subject, section, size): the search picks a group.
@@ -276,14 +368,62 @@ export function generate(input: {
       }))
       .filter((x) => x.missing > 0);
     const wishes = out.map((p) => wish(p, p)).filter((w) => w !== null);
+    const all = [
+      ...out.map((p) => ({ ...p, sectionIds: [p.sectionId] })),
+      ...input.fixed.map((f) => ({ ...f, room: f.room ?? null })),
+    ];
     return {
       placed: out,
       short,
       complete: short.length === 0,
       timeWish: { met: wishes.filter(Boolean).length, of: wishes.length },
+      ...(rules.classTeacherFirst ? { classTeacherWish: firstPeriodWish(all) } : {}),
+      ...(Object.values(rules.subjects).some((x) => x.samePeriod)
+        ? { samePeriodWish: samePeriodWish(all) }
+        : {}),
       steps,
     };
   };
+
+  type Lesson = Cell & { sectionIds: string[]; subjectId: string; teacherPersonId: string | null };
+  /** Of the section-days with a class teacher, how many start with them. */
+  function firstPeriodWish(all: Lesson[]): Wish {
+    let met = 0;
+    let of = 0;
+    const sections = new Set(demands.map((d) => d.sectionId));
+    for (const sectionId of sections) {
+      const ct = classTeacher(sectionId);
+      if (!ct) continue;
+      for (const weekday of days) {
+        of++;
+        const l = all.find(
+          (x) => x.weekday === weekday && x.period === first && x.sectionIds.includes(sectionId),
+        );
+        if (l?.teacherPersonId === ct) met++;
+      }
+    }
+    return { met, of };
+  }
+  /** Lessons of "same period" subjects at their section's most used period for them. */
+  function samePeriodWish(all: Lesson[]): Wish {
+    const by = new Map<string, Map<number, number>>();
+    for (const l of all) {
+      if (!rules.subjects[l.subjectId]?.samePeriod) continue;
+      for (const sec of l.sectionIds) {
+        const k = `${sec}:${l.subjectId}`;
+        const m = by.get(k) ?? new Map<number, number>();
+        m.set(l.period, (m.get(l.period) ?? 0) + 1);
+        by.set(k, m);
+      }
+    }
+    let met = 0;
+    let of = 0;
+    for (const m of by.values()) {
+      met += Math.max(...m.values());
+      of += [...m.values()].reduce((a, b) => a + b, 0);
+    }
+    return { met, of };
+  }
 
   /** One depth-first search: complete, or the fullest assignment seen when the effort runs out. */
   const search = (rand: () => number, budget: number) => {
@@ -432,7 +572,9 @@ export function generate(input: {
         const used = fixedState.teacherDay.get(`${t}:${d}`) ?? 0;
         return n + Math.max(0, Math.min(free, teacherMax(t) - used));
       }, 0);
-    return need > room;
+    const week = rules.teachers[t]?.maxPerWeek;
+    const weekLeft = week === undefined ? Infinity : week - (fixedState.teacherWeek.get(t) ?? 0);
+    return need > Math.min(room, weekLeft);
   });
 
   // Rooms booked beyond their week: subjects limited to a set of rooms need more lessons than
@@ -465,15 +607,17 @@ export function generate(input: {
 
   let best: { placed: Move[]; done: boolean } = { placed: [], done: false };
   let steps = 0;
-  const tries = overloaded || roomOverbooked ? 0 : (input.tries ?? 12);
-  const until = Date.now() + (input.timeMs ?? 20_000);
+  const effort = EFFORT[rules.effort ?? 'standard'];
+  const seed = input.seed ?? rules.seed ?? 1;
+  const tries = overloaded || roomOverbooked ? 0 : (input.tries ?? effort.tries);
+  const until = Date.now() + (input.timeMs ?? effort.timeMs);
   for (let i = 0; i < tries && !best.done && Date.now() < until; i++) {
-    const r = search(random((input.seed ?? 1) + i), input.stepsPerTry ?? 20_000);
+    const r = search(random(seed + i), input.stepsPerTry ?? effort.stepsPerTry);
     steps += r.steps;
     if (r.done || periodsIn(r.placed) > periodsIn(best.placed)) best = r;
   }
   if (!best.done) {
-    const g = greedy(random(input.seed ?? 1));
+    const g = greedy(random(seed));
     if (periodsIn(g) > periodsIn(best.placed)) best = { placed: g, done: false };
   }
   return result(best.placed, steps);

@@ -9,6 +9,7 @@ import {
   ModalField,
   PreviewCanvas,
   Section,
+  Segmented,
   SkeletonRows,
   StatePanel,
   Toolbar,
@@ -60,6 +61,23 @@ export function Riders(ctx: Ctx) {
       (!route || x.routeId === route) &&
       (!q || x.name.toLowerCase().includes(q) || (x.reference ?? '').toLowerCase().includes(q)),
   );
+  // One row per student, with their morning and afternoon trips side by side.
+  const students = [
+    ...shown
+      .reduce((m, x) => {
+        const g = m.get(x.personId) ?? {
+          personId: x.personId,
+          name: x.name,
+          label: x.label,
+          reference: x.reference,
+          pickup: null as Rider | null,
+          drop: null as Rider | null,
+        };
+        g[x.direction] = x;
+        return m.set(x.personId, g);
+      }, new Map<string, { personId: string; name: string; label: string | null; reference: string | null; pickup: Rider | null; drop: Rider | null }>())
+      .values(),
+  ];
   const routeLabel = (id: string) => {
     const x = routeName.get(id);
     return x ? `${x.name} · ${t.routes.directions[x.direction]}` : '';
@@ -68,7 +86,7 @@ export function Riders(ctx: Ctx) {
   return (
     <Section
       title={t.tabs.riders}
-      description={list.data ? r.count(riders.length) : undefined}
+      description={list.data ? r.count(new Set(riders.map((x) => x.personId)).size) : undefined}
       flush
       actions={
         <span className="flex flex-wrap gap-2">
@@ -113,7 +131,7 @@ export function Riders(ctx: Ctx) {
     >
       {riders.length > 0 && (
         <div className="border-b border-line px-5 py-3">
-          <Toolbar count={r.count(shown.length)}>
+          <Toolbar count={r.count(students.length)}>
             <label className="relative flex min-w-56 flex-1">
               <span className="sr-only">{r.search}</span>
               <Search
@@ -166,37 +184,60 @@ export function Riders(ctx: Ctx) {
           title={r.empty}
           body={routesWithStops.length === 0 ? r.needRoutes : r.emptyBody}
         />
-      ) : shown.length === 0 ? (
+      ) : students.length === 0 ? (
         <EmptyState compact art="search" title={r.noMatch} />
       ) : (
         <ul className="divide-y divide-line">
-          {shown.map((x) => (
-            <li key={x.assignmentId} className="flex flex-wrap items-center gap-3 px-5 py-3">
+          {students.map((g) => (
+            <li key={g.personId} className="flex flex-wrap items-start gap-x-6 gap-y-2 px-5 py-3">
               <span className="flex min-w-48 flex-1 flex-col">
-                <span className="text-body font-medium text-ink">{x.name}</span>
+                <span className="text-body font-medium text-ink">{g.name}</span>
                 <span className="text-caption text-ink-muted">
-                  {[x.label, x.reference].filter(Boolean).join(' · ')}
+                  {[g.label, g.reference].filter(Boolean).join(' · ')}
                 </span>
               </span>
-              <span className="flex min-w-48 flex-col">
-                <span className="text-body text-ink">{routeLabel(x.routeId)}</span>
-                <span className="text-caption text-ink-muted">
-                  {stopName.get(x.stopId)} · {r.since(date(x.from))}
-                  {x.until && ` · ${r.until(date(x.until))}`}
-                </span>
-              </span>
-              {manageRiders && !x.until && (
-                <button
-                  type="button"
-                  onClick={() => setEnding(x)}
-                  aria-haspopup="dialog"
-                  aria-label={`${r.end}: ${x.name}, ${routeLabel(x.routeId)}`}
-                  title={r.end}
-                  className="flex size-8 items-center justify-center rounded-lg text-ink-muted hover:bg-signal-stop-tint hover:text-signal-stop-ink"
-                >
-                  <UserMinus aria-hidden className="size-4" />
-                </button>
-              )}
+              <dl className="flex min-w-64 flex-[2] flex-col gap-1.5">
+                {(['pickup', 'drop'] as const).map((way) => {
+                  const x = g[way];
+                  return (
+                    <div key={way} className="flex items-center gap-2">
+                      <dt className="w-24 shrink-0 text-caption text-ink-muted">
+                        {t.routes.directions[way]}
+                      </dt>
+                      <dd className="flex min-w-0 flex-1 items-center gap-2">
+                        {x ? (
+                          <>
+                            <span className="min-w-0 flex-1">
+                              <span className="text-body text-ink">
+                                {routeName.get(x.routeId)?.name}
+                              </span>
+                              <span className="text-caption text-ink-muted">
+                                {' '}
+                                · {stopName.get(x.stopId)} · {r.since(date(x.from))}
+                                {x.until && ` · ${r.until(date(x.until))}`}
+                              </span>
+                            </span>
+                            {manageRiders && !x.until && (
+                              <button
+                                type="button"
+                                onClick={() => setEnding(x)}
+                                aria-haspopup="dialog"
+                                aria-label={`${r.end}: ${x.name}, ${routeLabel(x.routeId)}`}
+                                title={r.end}
+                                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-signal-stop-tint hover:text-signal-stop-ink"
+                              >
+                                <UserMinus aria-hidden className="size-4" />
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-caption text-ink-muted">{r.noBus}</span>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
             </li>
           ))}
         </ul>
@@ -234,8 +275,11 @@ function AddRider({ ctx, onClose, onDone }: { ctx: Ctx; onClose: () => void; onD
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
   const [student, setStudent] = useState<StudentListItem | null>(null);
-  const [routeId, setRouteId] = useState('');
-  const [stopId, setStopId] = useState('');
+  const [trips, setTrips] = useState<'both' | 'pickup' | 'drop'>('both');
+  const [ways, setWays] = useState({
+    pickup: { routeId: '', stopId: '' },
+    drop: { routeId: '', stopId: '' },
+  });
   const [from, setFrom] = useState(todayIso());
   useEffect(() => {
     const h = setTimeout(() => setQ(search.trim()), 250);
@@ -249,25 +293,50 @@ function AddRider({ ctx, onClose, onDone }: { ctx: Ctx; onClose: () => void; onD
       ),
     enabled: q.length >= 2 && !student,
   });
-  const route = routes.find((x) => x.id === routeId);
+  const wanted = (['pickup', 'drop'] as const).filter((w) => trips === 'both' || trips === w);
+  /**
+   * Choosing one trip fills the other where it can: the route of the same name the other way
+   * (Route 3 morning and Route 3 afternoon), at the same stop.
+   */
+  const choose = (way: 'pickup' | 'drop', routeId: string, stopId: string) => {
+    const other = way === 'pickup' ? 'drop' : 'pickup';
+    const named = routes.find((x) => x.id === routeId)?.name;
+    const twin = routes.find((x) => x.direction === other && x.name === named);
+    setWays((w) => {
+      const o = w[other];
+      // Only what is still empty on the other trip follows this one.
+      const target = o.routeId ? routes.find((x) => x.id === o.routeId) : twin;
+      const stopThere = !!stopId && !!target?.stops.some((s) => s.stopId === stopId);
+      return {
+        ...w,
+        [way]: { routeId, stopId },
+        [other]: target && !o.stopId ? { routeId: target.id, stopId: stopThere ? stopId : '' } : o,
+      };
+    });
+  };
+  const [first, second] = wanted.map((w) => ways[w]);
+  const ready = !!student && wanted.every((w) => ways[w].routeId && ways[w].stopId);
   const save = useMutation({
     mutationFn: () =>
       api.post('/transport/riders', {
         institutionId: ctx.institutionId,
         personId: student?.personId,
-        routeId,
-        stopId,
+        routeId: first?.routeId,
+        stopId: first?.stopId,
         from,
+        also: second ?? null,
       }),
     onSuccess: onDone,
   });
   return (
     <FormModal
       title={r.add}
+      description={r.bothNote}
       submitLabel={r.add}
       cancelLabel={en.form.cancel}
+      size="lg"
       pending={save.isPending}
-      submitDisabled={!student || !routeId || !stopId}
+      submitDisabled={!ready}
       error={save.isError ? errorText(save.error) : null}
       onClose={onClose}
       onSubmit={() => save.mutate()}
@@ -310,40 +379,68 @@ function AddRider({ ctx, onClose, onDone }: { ctx: Ctx; onClose: () => void; onD
           {[student.placement, student.reference].filter(Boolean).map((x) => ` · ${x}`)}
         </p>
       )}
-      <ModalField label={r.route}>
-        <select
-          required
-          value={routeId}
-          onChange={(e) => {
-            setRouteId(e.target.value);
-            setStopId('');
-          }}
-          className={fieldInput}
-        >
-          <option value="">{r.chooseRoute}</option>
-          {routes.map((x) => (
-            <option key={x.id} value={x.id}>
-              {x.name} · {t.routes.directions[x.direction]}
-            </option>
-          ))}
-        </select>
-      </ModalField>
-      <ModalField label={r.stop}>
-        <select
-          required
-          disabled={!route}
-          value={stopId}
-          onChange={(e) => setStopId(e.target.value)}
-          className={fieldInput}
-        >
-          <option value="">{r.chooseStop}</option>
-          {route?.stops.map((s) => (
-            <option key={s.stopId} value={s.stopId}>
-              {s.plannedAt} · {stopName.get(s.stopId)}
-            </option>
-          ))}
-        </select>
-      </ModalField>
+      <div className="sm:col-span-2">
+        <Segmented
+          label={r.trips}
+          value={trips}
+          onChange={setTrips}
+          options={(['both', 'pickup', 'drop'] as const).map((k) => ({
+            value: k,
+            label: r.tripChoices[k] ?? k,
+          }))}
+        />
+      </div>
+      {wanted.map((way) => {
+        const options = routes.filter((x) => x.direction === way);
+        const route = options.find((x) => x.id === ways[way].routeId);
+        return (
+          <fieldset
+            key={way}
+            className="grid gap-3 rounded-xl border border-line p-3 sm:col-span-2 sm:grid-cols-2"
+          >
+            <legend className="px-1 text-caption font-semibold text-ink">
+              {way === 'pickup' ? r.morning : r.afternoon}
+            </legend>
+            {options.length === 0 ? (
+              <p className="text-caption text-signal-warn-ink sm:col-span-2">{r.noRoutesThatWay}</p>
+            ) : (
+              <>
+                <ModalField label={r.route}>
+                  <select
+                    required
+                    value={ways[way].routeId}
+                    onChange={(e) => choose(way, e.target.value, '')}
+                    className={fieldInput}
+                  >
+                    <option value="">{r.chooseRoute}</option>
+                    {options.map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                  </select>
+                </ModalField>
+                <ModalField label={r.stop}>
+                  <select
+                    required
+                    disabled={!route}
+                    value={ways[way].stopId}
+                    onChange={(e) => choose(way, ways[way].routeId, e.target.value)}
+                    className={fieldInput}
+                  >
+                    <option value="">{r.chooseStop}</option>
+                    {route?.stops.map((s) => (
+                      <option key={s.stopId} value={s.stopId}>
+                        {s.plannedAt} · {stopName.get(s.stopId)}
+                      </option>
+                    ))}
+                  </select>
+                </ModalField>
+              </>
+            )}
+          </fieldset>
+        );
+      })}
       <ModalField label={r.from} hint={r.fromHint}>
         <input
           type="date"

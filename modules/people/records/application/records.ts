@@ -317,6 +317,25 @@ async function detailsOf(tx: Tx, personId: string): Promise<StudentDetails> {
 }
 
 /**
+ * Sets register details inside the caller's transaction (enrolment carries the application's).
+ * Only non-empty values are written; the caller audits.
+ */
+export async function setStudentDetailsIn(
+  tx: Tx,
+  personId: string,
+  input: Partial<Record<keyof StudentDetails, string | null | undefined>>,
+): Promise<string[]> {
+  const set = (Object.keys(input) as (keyof StudentDetails)[]).filter(
+    (k) => k in DETAIL_COLUMNS && input[k]?.trim(),
+  );
+  for (const k of set)
+    await tx.execute(sql`
+      update student_profile set ${sql.raw(DETAIL_COLUMNS[k])} = ${input[k]?.trim() ?? null}, updated_at = now()
+      where org_id = app_current_org() and person_id = ${personId}`);
+  return set;
+}
+
+/**
  * Changes a student's register details. Only the fields given change; an empty string clears one.
  * The audit names the fields changed, never their values (category and medical notes are sensitive).
  */

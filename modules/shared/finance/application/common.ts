@@ -3,7 +3,7 @@ import { institutionInfo } from '@campusverse/platform-organisation';
 import type { Actor, createPermissions } from '@campusverse/platform-permissions';
 import type { AudiencePort } from '@campusverse/shared-communications';
 import { sql } from 'drizzle-orm';
-import { financialYear, invoiceState } from '../domain/money.js';
+import { financialYear, invoiceState, splitByPayee } from '../domain/money.js';
 import type { Gateway } from './gateway.js';
 
 export type Permissions = ReturnType<typeof createPermissions>;
@@ -19,6 +19,16 @@ export type FinanceDeps = {
   onlinePaymentsAllowed?: ((orgId: string) => Promise<boolean>) | undefined;
   /** Class and admission number beside each name, so same-name students can be told apart (school: schoolPlacement). */
   placements?: PlacementLookup[] | undefined;
+  /**
+   * Whether a family has an admission in progress (or a child just admitted) at the institution
+   * (school: admissions). Donations are refused from them: a seat is never bought.
+   */
+  admissionInProgress?:
+    | ((
+        tx: Tx,
+        input: { institutionId: string; phone: string | null; email: string | null },
+      ) => Promise<boolean>)
+    | undefined;
 };
 
 /** The part of people-records' AcademicPlacementPort finance needs. */
@@ -86,6 +96,58 @@ export async function refreshInvoice(tx: Tx, invoiceId: string): Promise<void> {
   await tx.execute(sql`
     update fee_invoice set total_paise = ${total}, paid_paise = ${paid}, state = ${state}
     where org_id = app_current_org() and id = ${invoiceId}`);
+}
+
+/**
+ * Records money paid into an invoice, one allocation row per body it is collected for: what each
+ * outside payee is still owed on this invoice (its heads' lines less what it already got) is
+ * filled first, by short name; the institution's own share (payee null) takes the rest.
+ */
+export async function allocateToInvoice(
+  tx: Tx,
+  paymentId: string,
+  invoiceId: string,
+  amountPaise: number,
+): Promise<{ payeeId: string | null; amount: number }[]> {
+  const owed = await tx.execute<{ payeeId: string; unpaid: string }>(sql`
+    with net as (
+      select h.payee_id, sum(l.amount_paise) as amount from fee_invoice_line l
+      join fee_head h on h.org_id = l.org_id and h.id = l.head_id
+      where l.org_id = app_current_org() and l.invoice_id = ${invoiceId} and h.payee_id is not null
+      group by h.payee_id),
+    paid as (
+      select payee_id, sum(amount_paise) as amount from fee_allocation
+      where org_id = app_current_org() and invoice_id = ${invoiceId} and payee_id is not null
+      group by payee_id)
+    select net.payee_id::text as "payeeId", (net.amount - coalesce(paid.amount, 0))::text as unpaid
+    from net left join paid on paid.payee_id = net.payee_id
+    join fee_payee p on p.org_id = app_current_org() and p.id = net.payee_id
+    order by p.short_name`);
+  const parts = splitByPayee(
+    amountPaise,
+    owed.map((o) => ({ payeeId: o.payeeId, unpaid: Number(o.unpaid) })),
+  );
+  for (const part of parts) {
+    await tx.execute(sql`
+      insert into fee_allocation (org_id, payment_id, invoice_id, amount_paise, payee_id)
+      values (app_current_org(), ${paymentId}, ${invoiceId}, ${part.amount}, ${part.payeeId})`);
+  }
+  return parts;
+}
+
+/** Short names of payees, for receipts and statements. */
+export async function payeeNames(
+  tx: Tx,
+  ids: string[],
+): Promise<Map<string, { name: string; shortName: string }>> {
+  if (ids.length === 0) return new Map();
+  const rows = await tx.execute<{ id: string; name: string; shortName: string }>(sql`
+    select id::text, name, short_name as "shortName" from fee_payee
+    where org_id = app_current_org() and id in (${sql.join(
+      ids.map((i) => sql`${i}::uuid`),
+      sql`, `,
+    )})`);
+  return new Map(rows.map((r) => [r.id, { name: r.name, shortName: r.shortName }]));
 }
 
 export type ReceiptKind = 'receipt' | 'reversal' | 'refund';

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile --filter @campusverse/web...",
+  "buildCommand": "next build",
+  "regions": ["bom1"]
+}

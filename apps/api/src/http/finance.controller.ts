@@ -3,12 +3,17 @@ import {
   ConcessionRequest,
   DayCloseInput,
   Decision,
+  DonationCancel,
+  DonationInput,
   FeeHeadInput,
+  FeePayeeInput,
+  HeadPayeeInput,
   FeePlanInput,
   Id,
   IdempotencyKey,
   InvoiceAdjustment,
   RefundRequest,
+  RemittanceInput,
   ReminderInput,
   ReversalRequest,
 } from '@campusverse/contracts';
@@ -16,6 +21,15 @@ import type { Actor } from '@campusverse/platform-permissions';
 import {
   financeSummary,
   adjustInvoice,
+  cancelDonation,
+  donationReceipt,
+  donations,
+  payees,
+  payeeStatement,
+  recordDonation,
+  recordRemittance,
+  savePayee,
+  setHeadPayee,
   closeDay,
   collectPayment,
   createHead,
@@ -40,6 +54,7 @@ import {
   requestRefund,
   requestReversal,
   savePlan,
+  feeYears,
   searchStudents,
   sendReminders,
   startOnlinePayment,
@@ -68,6 +83,12 @@ import { randomUUID } from 'node:crypto';
 import { FINANCE, type AuthedRequest } from './deps.js';
 import { ActorGuard } from './guards.js';
 
+/** "2026-27", or all years when left out. */
+const yearOf = (y: string | undefined) => (y && /^\d{4}-\d{2}$/.test(y) ? y : null);
+
+/** "all" for every year, a label for one, nothing for the newest. */
+const yearAsked = (y: string | undefined) => (y === 'all' ? null : (yearOf(y) ?? undefined));
+
 const actorOf = (req: AuthedRequest): Actor => {
   if (!req.actor) throw new UnauthorizedException({ code: 'unauthenticated' });
   return req.actor;
@@ -92,6 +113,83 @@ export class FinanceController {
     });
   }
 
+  /** Who a head is collected for: the institution (null) or an outside body, until first billed. */
+  @Post('heads/:id/payee')
+  @HttpCode(204)
+  async headPayee(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    await setHeadPayee(this.deps, actorOf(req), {
+      headId: Id.parse(id),
+      ...HeadPayeeInput.parse(body),
+    });
+  }
+
+  /** Fees collected for others: billed, collected, paid on and held, per payee. */
+  @Get(':institutionId/payees')
+  payees(
+    @Param('institutionId') id: string,
+    @Query('year') year: string | undefined,
+    @Req() req: AuthedRequest,
+  ) {
+    return payees(this.deps, actorOf(req), Id.parse(id), yearAsked(year));
+  }
+
+  @Post(':institutionId/payees')
+  addPayee(@Param('institutionId') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    return savePayee(this.deps, actorOf(req), {
+      institutionId: Id.parse(id),
+      ...FeePayeeInput.parse(body),
+    });
+  }
+
+  @Get('payees/:id')
+  payee(
+    @Param('id') id: string,
+    @Query('year') year: string | undefined,
+    @Req() req: AuthedRequest,
+  ) {
+    return payeeStatement(this.deps, actorOf(req), Id.parse(id), yearAsked(year));
+  }
+
+  @Post('payees/:id/remittances')
+  remit(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    return recordRemittance(this.deps, actorOf(req), {
+      payeeId: Id.parse(id),
+      ...RemittanceInput.parse(body),
+    });
+  }
+
+  /** Voluntary donations: their own receipts, never tied to a seat. */
+  @Get(':institutionId/donations')
+  donations(
+    @Param('institutionId') id: string,
+    @Query('fy') fy: string | undefined,
+    @Req() req: AuthedRequest,
+  ) {
+    return donations(this.deps, actorOf(req), Id.parse(id), yearOf(fy));
+  }
+
+  @Post(':institutionId/donations')
+  donate(@Param('institutionId') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    return recordDonation(this.deps, actorOf(req), {
+      institutionId: Id.parse(id),
+      ...DonationInput.parse(body),
+    });
+  }
+
+  @Get('donations/:id')
+  donation(@Param('id') id: string, @Req() req: AuthedRequest) {
+    return donationReceipt(this.deps, actorOf(req), Id.parse(id));
+  }
+
+  @Post('donations/:id/cancel')
+  @HttpCode(204)
+  async cancelDonation(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    await cancelDonation(this.deps, actorOf(req), {
+      donationId: Id.parse(id),
+      ...DonationCancel.parse(body),
+    });
+  }
+
   @Get(':institutionId/plans')
   plans(@Param('institutionId') id: string, @Req() req: AuthedRequest) {
     return listPlans(this.deps, actorOf(req), Id.parse(id));
@@ -103,6 +201,12 @@ export class FinanceController {
       institutionId: Id.parse(id),
       ...FeePlanInput.parse(body),
     });
+  }
+
+  /** The academic years plans bill for. */
+  @Get(':institutionId/years')
+  years(@Param('institutionId') id: string, @Req() req: AuthedRequest) {
+    return feeYears(this.deps, actorOf(req), Id.parse(id));
   }
 
   @Get('plans/:id')

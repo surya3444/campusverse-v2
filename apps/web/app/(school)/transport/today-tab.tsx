@@ -132,6 +132,7 @@ export function Today(ctx: Ctx) {
                   <Button
                     size="sm"
                     disabled={start.isPending}
+                    aria-label={d.startFor(r.name, r.direction === 'pickup' ? d.pickup : d.drop)}
                     onClick={() =>
                       r.blocked.length > 0 ? setStarting(r) : start.mutate({ routeId: r.routeId })
                     }
@@ -142,6 +143,7 @@ export function Today(ctx: Ctx) {
                 )}
                 <Link
                   href={`/transport/trip/${r.routeId}`}
+                  aria-label={d.openFor(r.name, r.direction === 'pickup' ? d.pickup : d.drop)}
                   className="inline-flex items-center rounded-lg px-3 py-1.5 text-body font-medium text-navy-950 hover:bg-navy-50"
                 >
                   {d.open}

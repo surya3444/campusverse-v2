@@ -26,6 +26,8 @@ export const SMS_SIMULATOR = Symbol('sms-simulator');
 export const STORE = Symbol('store');
 export const APPLY = Symbol('apply');
 export const HEALTH = Symbol('health');
+/** Field keys derived for authenticator secrets (two-step sign-in). */
+export const MFA_KEYS = Symbol('mfa-keys');
 
 export type Permissions = ReturnType<typeof createPermissions>;
 export type Deps = {
@@ -51,6 +53,8 @@ export type Deps = {
    */
   applyOtp?: Otp;
   applySimulator?: SmsSimulator | null;
+  /** Signs the online form's sessions and paper tickets (derived from AUTH_PEPPER). */
+  applySecret?: string;
   /** Verse AI's model; null or unset means Verse AI is off. */
   verseModel?: Model | null;
 };
@@ -64,6 +68,17 @@ export type ControlDeps = {
   simulateSms: boolean;
   /** The school web app, for links in invitations. */
   appOrigin: string;
+};
+
+/** The public online form and personal form links (school/admissions). */
+export type ApplyDeps = {
+  otp: Otp | null;
+  simulator: SmsSimulator | null;
+  /** Null: sessions can't be issued, so the form refuses to start. */
+  secret: string | null;
+  store: ObjectStore;
+  /** The school web app, for personal form links. */
+  origin: string;
 };
 
 /** What the guards attach to a request. */

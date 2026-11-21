@@ -11,9 +11,9 @@ School transport for any institution type (docs/specs/TRANSPORT.md, Milestone 18
 | `saveRoute`          | A route (pickup or drop) with its usual vehicle and stops in time order; the stops are replaced as a whole                                                                                   |
 
 | `listRiders` | Everyone riding a route on the campus on a date, with class and admission number from the placement port |
-| `assignRider`, `endRider` | Puts a student on a route from a stop from a date (`transport.assignment.manage`); any earlier route that way ends the day before. Only students of a school on the campus |
+| `assignRider`, `endRider` | Puts a student on a route from a stop from a date (`transport.assignment.manage`); with `also`, on the other trip of the day too (morning pickup and afternoon drop are two routes, usually with the same name), in one step and billed once (`same_direction` if both are the same way). Any earlier route that way ends the day before. Only students of a school on the campus |
 | `previewRiderImport`, `commitRiderImport` | A sheet of admission no., route, direction, stop: row-by-row preview (problems, seats over capacity), then the clean rows as one batch |
-| `transportAudience` | Fare zones and routes as audience groups. `combineAudiences` (communications) keeps them to the institution's own students, so fee plans and notices can target them |
+| `transportAudience` | Fee zones and routes as audience groups. `combineAudiences` (communications) keeps them to the institution's own students, so fee plans and notices can target them. A student's fee zone is the zone of their morning pickup stop, else of their afternoon drop stop: one bus fee each, never two (owner's decision, 21 Nov 2026). `shares` tells finance that a student on one trip only pays half the zone fee (`ONE_WAY_SHARE_BP`); bills already made stay as they were |
 | `todayTrips`, `tripSheet` | Every bus on the campus today (trip state, where its riders are, papers), and one route's sheet stop by stop (`transport.trip.read`) |
 | `startTrip` | Today's trip for a route (`transport.trip.attend`); starting twice returns the same trip. A vehicle without fitness, insurance or permit runs only with a reason (audited) |
 | `recordMark`, `acceptMarks` | One tap of the attendant (boarded, didn't come, dropped, nobody at stop, at school), accepted once by the device's event id; `acceptMarks` answers the offline sync batch (`transport.mark`) |
@@ -31,6 +31,8 @@ Rules that need no database live in `domain/vehicle.ts` (document status, readin
 **Owns:** `transport_vehicle`, `transport_vehicle_document` (append-only), `transport_stop`, `transport_route`, `transport_route_stop`, `transport_fare_zone`, `transport_assignment` (dated; one route per direction at a time), `transport_trip` (one per route per day, with the empty-bus check), `transport_boarding_event` (append-only; id = device event id), `transport_position` (30 days), `transport_skip` (parent's "not today"; undone rows stay). **Events:** `transport.vehicle.saved.v1`, `transport.route.saved.v1`, `transport.assignment.changed.v1`, `transport.trip.started.v1`, `transport.student.marked.v1`, `transport.trip.ended.v1`, `transport.trip.sos.v1`, `transport.ride.skipped.v1`.
 
 A route's driver and attendant must have valid safety checks (people/records `checksFailing`): a driver their licence, police verification and medical fitness, an attendant police verification. Only a change of crew is checked (`crew_checks`, with the missing checks); the crew pickers show who isn't ready.
+
+Two trips a day: a bus's morning pickup and afternoon drop are two routes with the same name. The routes screen makes the drop from the pickup (same stops reversed, same gaps between times, leaving school at a chosen time), and the students screen shows each student's two trips side by side.
 
 A stop can't leave a route while children board there, and a route with riders can't change direction.
 

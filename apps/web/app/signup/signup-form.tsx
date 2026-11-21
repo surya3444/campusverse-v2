@@ -21,13 +21,18 @@ const KINDS = [
 ] as const;
 type Kind = (typeof KINDS)[number]['value'];
 
-export function SignupForm() {
+export function SignupForm({
+  invite,
+}: {
+  /** An email invite's link: the address is fixed and no approval is needed. */
+  invite: { name: string; email: string; token: string } | null;
+}) {
   const router = useRouter();
   const [step, setStep] = useState<'details' | 'code'>('details');
   const [v, setV] = useState({
-    name: '',
+    name: invite?.name ?? '',
     phone: '',
-    email: '',
+    email: invite?.email ?? '',
     organisation: '',
     kind: 'school' as Kind,
     stateCode: 'KA',
@@ -59,6 +64,7 @@ export function SignupForm() {
       const r = await session.post<{ simulated?: { to: string; text: string } }>('signup', {
         ...v,
         email: v.email.trim() || null,
+        ...(invite ? { invite: invite.token } : {}),
       });
       setSms(r.simulated ?? null);
       setCode('');
@@ -76,7 +82,7 @@ export function SignupForm() {
         phone: v.phone,
         code,
       });
-      // New here: onboarding, already started with these answers. Already a member: sign in.
+      // New here: onboarding (or, without an invite, the wait for approval). Already a member: sign in.
       router.replace(r.profiles.length === 0 ? '/onboarding' : r.chosen ? '/' : '/login');
     });
   };
@@ -180,13 +186,16 @@ export function SignupForm() {
               type="email"
               autoComplete="email"
               value={v.email}
+              readOnly={!!invite}
               onChange={set('email')}
             />
           </label>
           <Button type="submit" size="lg" disabled={busy}>
             {t.create}
           </Button>
-          <p className="text-caption text-ink-muted">{t.terms}</p>
+          <p className="text-caption text-ink-muted">
+            {t.terms} {!invite && t.approvalNote}
+          </p>
         </form>
       ) : (
         <>

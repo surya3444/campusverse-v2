@@ -114,11 +114,13 @@ function Roster({
     let present = 0;
     let absent = 0;
     for (const st of sheet.students) {
+      if (st.markedIn) continue;
       const v = marks[st.personId] ?? st.onLeave ?? 'present';
       if (v === 'present') present++;
       else if (v === 'absent') absent++;
     }
-    return { present, absent, other: sheet.students.length - present - absent };
+    const here = sheet.students.filter((st) => !st.markedIn).length;
+    return { present, absent, other: here - present - absent };
   }, [marks, sheet.students]);
 
   const set = (st: SheetStudent, status: string) =>
@@ -176,6 +178,24 @@ function Roster({
       <p className="text-body text-ink-muted">{t.tapHint}</p>
       <ul className="grid gap-2 sm:grid-cols-2">
         {sheet.students.map((st) => {
+          // Moved here today after the old section's register was taken: that mark stands.
+          if (st.markedIn)
+            return (
+              <li
+                key={st.personId}
+                className="flex min-h-14 items-center gap-3 rounded-lg border border-dashed border-line-strong bg-paper px-4"
+              >
+                <span className="tabular w-6 shrink-0 text-caption text-ink-muted">
+                  {st.rollNumber ?? ''}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-body font-medium text-ink">
+                  {st.name}
+                </span>
+                <span className="shrink-0 text-caption text-ink-muted">
+                  {t.markedIn(st.markedIn)}
+                </span>
+              </li>
+            );
           const status = statusOf(st);
           const absent = status === 'absent';
           return (
@@ -315,7 +335,12 @@ function TakenDay({ sheet, queryKey }: { sheet: MarkingSheet; queryKey: unknown[
             >
               {t.statuses[st.status ?? 'present']}
             </span>
-            {sheet.canMark && (
+            {st.markedIn && (
+              <span className="shrink-0 text-caption text-ink-muted">
+                {t.markedIn(st.markedIn)}
+              </span>
+            )}
+            {sheet.canMark && !st.markedIn && (
               <Button
                 size="sm"
                 variant="quiet"

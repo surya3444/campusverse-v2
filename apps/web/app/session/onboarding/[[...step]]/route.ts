@@ -14,7 +14,7 @@ import {
   type Tokens,
 } from '../../../../lib/session';
 
-const STEPS = new Set(['', 'draft', 'complete']);
+const STEPS = new Set(['', 'draft', 'complete', 'another']);
 
 async function handle(req: NextRequest, { params }: { params: Promise<{ step?: string[] }> }) {
   const step = (await params).step?.join('/') ?? '';

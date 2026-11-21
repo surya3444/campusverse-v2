@@ -7,6 +7,8 @@ coverage/
 .env
 .env.*
 !.env.example
+# The demo server's secrets, carried over by deploy.sh.
+infra/demo/secrets.env
 .claude/settings.local.json
 .next/
 next-env.d.ts
@@ -24,3 +26,7 @@ apps/web/e2e/screenshots/
 
 # Load-test fixture: synthetic data, but it holds session tokens
 load/fixture.json
+
+# Vercel CLI project link (local)
+.vercel
+.env*

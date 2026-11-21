@@ -46,13 +46,21 @@ async function publicCall(req: NextRequest, path: string[]) {
 
 async function handle(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const path = (await params).path;
-  if (path[0] === 'auth') return error(404, 'not_found', 'Not found');
+  // Sign-in and tokens stay with /session; only managing two-step sign-in passes through here
+  // (it returns no tokens), and reading this login's own organisations for the switcher. Its
+  // sign-in step is /session/mfa.
+  const mfaSettings = path[0] === 'auth' && path[1] === 'mfa' && path[2] !== 'verify';
+  const profiles = path.join('/') === 'auth/profiles' && req.method === 'GET';
+  if (path[0] === 'auth' && !mfaSettings && !profiles) return error(404, 'not_found', 'Not found');
   if (req.method !== 'GET' && req.headers.get(CSRF_HEADER) !== CSRF_VALUE) {
     return error(403, 'csrf', 'Request refused.');
   }
 
   // The public online application form: no session, only the visitor's address for rate limits.
   if (path[0] === 'public' && path[1] === 'apply') return publicCall(req, path);
+  // My Timetable's calendar link: Google Calendar or Outlook fetch it with no session.
+  if (path[0] === 'public' && path[1] === 'calendar' && req.method === 'GET')
+    return publicCall(req, path);
 
   const jar = await cookies();
   const org = jar.get(COOKIE.org)?.value;

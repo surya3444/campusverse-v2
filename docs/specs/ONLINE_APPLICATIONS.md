@@ -1,6 +1,6 @@
 # Online application forms: spec
 
-Status: **step 1 built** (9 November 2026); step 2 (papers, fee, messages) when schools ask.
+Status: **step 1 built** (9 November 2026); **step 2 built** (20 November 2026, owner's brief): the mobile is checked first, then a multi-step form with the school's chosen sections and papers uploaded from the phone, personal links, and papers sent later from the status check. See docs/specs/ADMISSIONS_CRM.md. The application fee is still to come.
 
 **Sources:**
 

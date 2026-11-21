@@ -1,0 +1,17 @@
+# What the Vercel CLI must never upload: secrets, dependencies, build output and docs. Every
+# workspace package stays (the lockfile lists them all); Vercel builds apps/web (Root Directory).
+.env
+.env.*
+**/.env
+**/.env.*
+**/node_modules
+**/.next
+**/.turbo
+**/test-results
+**/playwright-report
+apps/web/e2e/screenshots
+infra
+docs
+load
+.claude
+.git

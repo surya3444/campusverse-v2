@@ -9,6 +9,7 @@ import {
   approvalDesign,
   approvalStates,
   decideApproval,
+  myDecisions,
   myWork,
   saveApprovalSteps,
   startApproval,
@@ -156,6 +157,19 @@ describe('approval engine', () => {
       'approve',
       'reject',
     ]);
+    // Decided by me: newest first, with the note and where the request stands now.
+    const mine = await myDecisions(deps, head);
+    expect(mine[0]).toMatchObject({
+      subjectId: large,
+      decision: 'reject',
+      note: 'Over budget this quarter',
+      status: 'rejected',
+      step: 2,
+      steps: 2,
+    });
+    const bursarDid = (await myDecisions(deps, bursar)).find((d) => d.subjectId === large);
+    expect(bursarDid).toMatchObject({ decision: 'approve', status: 'rejected', step: 1 });
+    expect((await myDecisions(deps, otherHead)).map((d) => d.subjectId)).not.toContain(large);
   });
 
   it('after the timer, the escalation role may decide too', async () => {

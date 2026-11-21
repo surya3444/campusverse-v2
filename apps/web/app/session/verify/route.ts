@@ -10,6 +10,7 @@ import {
   COOKIE,
   CSRF_HEADER,
   CSRF_VALUE,
+  storeMfaChallenge,
   storeProfile,
   storeTokens,
   type Tokens,
@@ -43,7 +44,14 @@ export async function POST(req: NextRequest) {
       headers: { 'content-type': 'application/json' },
     });
 
-  const { tokens, profiles } = (await res.json()) as { tokens: Tokens; profiles: Profile[] };
+  const done = (await res.json()) as
+    { tokens: Tokens; profiles: Profile[] } | { mfa: { challenge: string } };
+  // Two-step sign-in on: keep the challenge in an httpOnly cookie and ask for the app's code.
+  if ('mfa' in done) {
+    await storeMfaChallenge(done.mfa.challenge);
+    return NextResponse.json({ mfaRequired: true });
+  }
+  const { tokens, profiles } = done;
   // A new sign-in starts clean: a profile chosen by an earlier sign-in on this browser (another
   // account) must not carry over, or a new account skips onboarding and its calls are refused.
   await clearSession();

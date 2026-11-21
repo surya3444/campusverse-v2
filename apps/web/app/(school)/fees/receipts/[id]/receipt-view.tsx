@@ -21,6 +21,7 @@ type Snapshot = {
   instrumentRef?: string | null;
   lines?: { invoice: string; amountPaise: number }[];
   creditPaise?: number;
+  forOthers?: { payee: string; payeeName: string; amountPaise: number }[];
   reason?: string;
   payoutRef?: string;
 };
@@ -136,6 +137,11 @@ export function ReceiptView({ id }: { id: string }) {
             <span className="tabular text-ink">{rupees(s.balanceAfterPaise)}</span>
           </div>
         )}
+        {(s.forOthers ?? []).map((f) => (
+          <p key={f.payee} className="rounded-lg bg-paper px-3 py-2 text-caption text-ink">
+            {t.forOthersOnReceipt(rupees(f.amountPaise), f.payeeName || f.payee)}
+          </p>
+        ))}
         {!!s.creditPaise && (
           <p className="text-caption text-ink-muted">{t.credit(rupees(s.creditPaise))}</p>
         )}

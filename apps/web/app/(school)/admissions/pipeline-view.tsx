@@ -1,70 +1,205 @@
 'use client';
 
-import type { AdmissionForm, Pipeline } from '@campusverse/school-admissions';
 import {
   Announcer,
   Avatar,
   Button,
   EmptyState,
-  FormModal,
+  KeyFigures,
   PageHeader,
-  Pill,
   Progress,
   StatePanel,
   cx,
 } from '@campusverse/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Globe, Plus, UserPlus } from 'lucide-react';
+import {
+  CalendarClock,
+  FileCheck2,
+  Globe,
+  KanbanSquare,
+  Plus,
+  Search,
+  Send,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { ApiFailure, api } from '../../../lib/api';
+import { useMemo, useState } from 'react';
+import { ApiFailure } from '../../../lib/api';
 import { en } from '../../../messages/en';
 import { useInstitution } from '../attendance/shared';
-import { CustomFields, useFields, type Values } from '../common/custom-fields';
+import {
+  CLOSED,
+  Interest,
+  NewLeadDialog,
+  OPEN,
+  STAGE_DOT,
+  SendFormDialog,
+  StagePill,
+  YearPicker,
+  admissionError,
+  c,
+  daysTo,
+  relDay,
+  t,
+  useCounsellors,
+  usePipeline,
+  useYear,
+  type App,
+  type Lead,
+} from './shared';
 
-const t = en.admissions;
-export const admissionError = (e: unknown): string =>
-  t.errors[e instanceof ApiFailure ? e.code : 'error'] ?? t.errors.error ?? '';
-const field =
-  'h-10 rounded-lg border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-navy-950';
-const OPEN = [
-  'enquiry',
-  'contacted',
-  'applied',
-  'documents_pending',
-  'under_review',
-  'offered',
-  'waitlisted',
-  'confirmed',
-] as const;
-const CLOSED = ['enrolled', 'lost', 'withdrawn', 'rejected'] as const;
+const select =
+  'h-9 min-w-36 rounded-lg border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-navy-950';
 
-/** The academic year starting this April (or last April before it), and the next one. */
-export function yearLabels(today = new Date()): string[] {
-  const y = today.getUTCMonth() >= 3 ? today.getUTCFullYear() : today.getUTCFullYear() - 1;
-  const label = (n: number) => `${n}-${String((n + 1) % 100).padStart(2, '0')}`;
-  return [label(y), label(y + 1)];
+/** Filters shared by the board and the lists: search, class, owner, source, overdue only. */
+export function useFilters(apps: App[]) {
+  const [q, setQ] = useState('');
+  const [classId, setClassId] = useState('');
+  const [owner, setOwner] = useState('');
+  const [source, setSource] = useState('');
+  const [overdue, setOverdue] = useState(false);
+  const shown = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return apps.filter(
+      (a) =>
+        (!s ||
+          a.childName.toLowerCase().includes(s) ||
+          a.guardianName.toLowerCase().includes(s) ||
+          a.guardianPhone.includes(s.replace(/\D/g, '') || '~') ||
+          (a.reference ?? '').toLowerCase().includes(s)) &&
+        (!classId || a.classId === classId) &&
+        (!owner || (owner === 'none' ? !a.owner : a.owner?.personId === owner)) &&
+        (!source || a.source === source) &&
+        (!overdue || (!!a.nextFollowUp && daysTo(a.nextFollowUp) < 0)),
+    );
+  }, [apps, q, classId, owner, source, overdue]);
+  return {
+    shown,
+    state: { q, classId, owner, source, overdue },
+    set: { setQ, setClassId, setOwner, setSource, setOverdue },
+  };
 }
+
+export function Filters({
+  f,
+  classes,
+  owners,
+}: {
+  f: ReturnType<typeof useFilters>;
+  classes: { classId: string; name: string }[];
+  owners: { personId: string; name: string }[];
+}) {
+  const { state, set } = f;
+  const any = state.q || state.classId || state.owner || state.source || state.overdue;
+  return (
+    <div className="flex flex-wrap items-center gap-2.5">
+      <label className="flex h-9 w-full items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 focus-within:border-navy-950 sm:w-72">
+        <Search aria-hidden className="size-4 shrink-0 text-ink-muted" />
+        <input
+          type="search"
+          value={state.q}
+          onChange={(e) => set.setQ(e.target.value)}
+          placeholder={c.filters.search}
+          aria-label={c.filters.search}
+          className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-ink-muted"
+        />
+      </label>
+      <select
+        aria-label={c.filters.class}
+        value={state.classId}
+        onChange={(e) => set.setClassId(e.target.value)}
+        className={select}
+      >
+        <option value="">{c.filters.allClasses}</option>
+        {classes.map((k) => (
+          <option key={k.classId} value={k.classId}>
+            {k.name}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label={c.owner}
+        value={state.owner}
+        onChange={(e) => set.setOwner(e.target.value)}
+        className={select}
+      >
+        <option value="">{c.filters.anyOwner}</option>
+        <option value="none">{c.unassigned}</option>
+        {owners.map((p) => (
+          <option key={p.personId} value={p.personId}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label={t.source}
+        value={state.source}
+        onChange={(e) => set.setSource(e.target.value)}
+        className={select}
+      >
+        <option value="">{c.filters.anySource}</option>
+        {Object.entries(t.sources).map(([k, v]) => (
+          <option key={k} value={k}>
+            {v}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        aria-pressed={state.overdue}
+        onClick={() => set.setOverdue(!state.overdue)}
+        className={cx(
+          'inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-body font-medium transition-colors',
+          state.overdue
+            ? 'bg-navy-950 text-white'
+            : 'text-navy-950 ring-1 ring-line hover:bg-navy-50',
+        )}
+      >
+        <CalendarClock aria-hidden className="size-4" />
+        {c.filters.overdue}
+      </button>
+      {any && (
+        <button
+          type="button"
+          onClick={() => {
+            set.setQ('');
+            set.setClassId('');
+            set.setOwner('');
+            set.setSource('');
+            set.setOverdue(false);
+          }}
+          className="text-body font-medium text-navy-950 hover:underline"
+        >
+          {c.filters.clear}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const FUNNEL: { key: string; states: string[] }[] = [
+  { key: 'leads', states: ['enquiry', 'contacted'] },
+  { key: 'applications', states: ['applied', 'documents_pending', 'under_review'] },
+  { key: 'offers', states: ['offered', 'waitlisted', 'confirmed'] },
+  { key: 'enrolled', states: ['enrolled'] },
+];
 
 export function PipelineView() {
   const school = useInstitution();
   const id = school.institutionId;
-  const years = yearLabels();
-  const [year, setYear] = useState(years[0] ?? '');
-  const [adding, setAdding] = useState(useSearchParams().has('new'));
-  const [online, setOnline] = useState(false);
+  const [year, setYear] = useYear();
+  const params = useSearchParams();
+  const [adding, setAdding] = useState(params.has('new'));
+  const [sending, setSending] = useState<Lead | null | 'new'>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const key = ['admissions', id, year];
-  const data = useQuery({
-    queryKey: key,
-    queryFn: () => api.get<Pipeline>(`/school/admissions/${id}?year=${year}`),
-    enabled: !!id,
-  });
+  const data = usePipeline(id, year);
+  const counsellors = useCounsellors(id);
+  const apps = data.data?.applications ?? [];
+  const filters = useFilters(apps);
 
   if (school.isPending || (data.isPending && !!id))
     return <StatePanel kind="loading" title={en.states.loading.title} />;
-  if (data.isError || school.isError) {
+  if (data.isError || school.isError)
     return data.error instanceof ApiFailure && data.error.status === 403 ? (
       <StatePanel kind="denied" title={en.states.denied.title} body={en.states.denied.body} />
     ) : (
@@ -76,119 +211,84 @@ export function PipelineView() {
         onAction={() => void data.refetch()}
       />
     );
-  }
   const p = data.data;
-  const apps = p?.applications ?? [];
-  const openApps = apps.filter((a) => (OPEN as readonly string[]).includes(a.state));
-  const closedApps = apps.filter((a) => (CLOSED as readonly string[]).includes(a.state));
-  const seatClasses = (p?.classes ?? []).filter((c) => c.seats !== null || c.held > 0);
+  const n = (states: string[]) => apps.filter((a) => states.includes(a.state)).length;
+  const leads =
+    n(['enquiry', 'contacted']) +
+    n(['applied', 'documents_pending', 'under_review']) +
+    n(['offered', 'waitlisted', 'confirmed', 'enrolled']);
+  const open = filters.shown.filter((a) => (OPEN as readonly string[]).includes(a.state));
+  const closed = filters.shown.filter((a) => (CLOSED as readonly string[]).includes(a.state));
+  // Each class's places this year, taken by students already in it and families offered a seat.
+  const seatClasses = (p?.classes ?? []).filter((k) => k.running || k.held > 0);
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={UserPlus}
-        art="admissions"
-        eyebrow={en.nav.groups.people}
-        area="rose"
-        title={t.title}
-        description={t.lead}
+        icon={KanbanSquare}
+        eyebrow={en.systems.groups.enrollment}
+        title={c.pipeline.title}
+        description={c.pipeline.lead}
         actions={
           <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-caption font-medium text-ink">{t.year}</span>
-              <select value={year} onChange={(e) => setYear(e.target.value)} className={field}>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button
-              variant="secondary"
-              onClick={() => setOnline(true)}
-              aria-haspopup="dialog"
-              className="h-10"
-            >
-              <Globe aria-hidden className="size-4" />
-              {t.onlineForm}
+            <Button variant="secondary" onClick={() => setSending('new')} aria-haspopup="dialog">
+              <Send aria-hidden className="size-4" />
+              {c.send.action}
             </Button>
-            <Button onClick={() => setAdding(true)} aria-haspopup="dialog" className="h-10">
+            <Button onClick={() => setAdding(true)} aria-haspopup="dialog">
               <Plus aria-hidden className="size-4" />
-              {t.newEnquiry}
+              {c.lead.title}
             </Button>
           </>
         }
-      />
-
-      {online && id && p && (
-        <OnlineForm
-          institutionId={id}
-          institutionName={school.institutionName ?? ''}
-          year={year}
-          classes={p.classes}
-          onClose={() => setOnline(false)}
-        />
-      )}
-
-      {adding && id && p && (
-        <EnquiryForm
-          institutionId={id}
-          year={year}
-          classes={p.classes}
-          onClose={() => setAdding(false)}
-          onDone={(m) => {
-            setAdding(false);
-            setMessage(m);
-          }}
-        />
-      )}
+      >
+        <YearPicker year={year} onChange={setYear} />
+      </PageHeader>
 
       {!p || apps.length === 0 ? (
         <div className="panel">
-          <EmptyState art="admissions" title={t.empty} body={t.emptyBody} />
+          <EmptyState
+            art="admissions"
+            title={c.pipeline.emptyTitle(year)}
+            body={c.pipeline.emptyBody}
+            actions={
+              <>
+                <Button onClick={() => setAdding(true)}>{c.lead.title}</Button>
+                <Link
+                  href={`/admissions/import?year=${year}`}
+                  className="inline-flex h-10 items-center rounded-lg px-4 text-body font-medium text-navy-950 hover:bg-navy-50"
+                >
+                  {c.imports.title}
+                </Link>
+              </>
+            }
+          />
         </div>
       ) : (
         <>
-          <Funnel counts={p.counts} />
+          <KeyFigures
+            variant="strip"
+            label={t.glance}
+            figures={FUNNEL.map((f, i) => {
+              const v = n(f.states);
+              return {
+                label: c.funnel[f.key] ?? f.key,
+                value: String(v),
+                ...(i === 0
+                  ? { valueTone: 'navy' as const, note: c.funnelTotal(leads) }
+                  : { note: c.funnelShare(leads ? Math.round((v / leads) * 100) : 0) }),
+              };
+            })}
+          />
 
-          {seatClasses.length > 0 && (
-            <section aria-labelledby="seats" className="panel p-5">
-              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-                <h2 id="seats" className="text-body font-semibold text-ink">
-                  {t.seatsTitle}
-                </h2>
-                <p className="text-caption text-ink-muted">{t.seatsLead}</p>
-              </div>
-              <ul className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
-                {seatClasses.map((c) => {
-                  const ratio = c.seats ? c.held / c.seats : 0;
-                  return (
-                    <li key={c.classId} className="flex flex-col gap-1.5">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-body font-medium text-ink">{c.name}</span>
-                        <span className="tabular text-caption text-ink-muted">
-                          {ratio >= 1 ? t.full : t.seatsShort(c.held, c.seats)}
-                        </span>
-                      </div>
-                      <Progress
-                        value={c.held}
-                        max={c.seats ?? Math.max(c.held, 1)}
-                        tone={ratio >= 1 ? 'stop' : ratio >= 0.85 ? 'warn' : 'go'}
-                        label={`${c.name}: ${t.seats(c.held, c.seats)}`}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          )}
+          <Filters f={filters} classes={p.classes} owners={counsellors.data ?? []} />
 
           <section aria-labelledby="board" className="flex flex-col gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 id="board" className="text-lead font-semibold text-ink">
+              <h2 id="board" className="font-display text-lead font-semibold text-ink">
                 {t.open}
                 <span className="ml-2 text-body font-normal text-ink-muted">
-                  {t.openCount(openApps.length)}
+                  {t.openCount(open.length)}
                 </span>
               </h2>
               <p className="text-caption text-ink-muted xl:hidden">{t.scrollHint}</p>
@@ -201,12 +301,12 @@ export function PipelineView() {
             >
               <div className="flex gap-3">
                 {OPEN.map((s) => {
-                  const cards = openApps.filter((a) => a.state === s);
+                  const cards = open.filter((a) => a.state === s);
                   return (
                     <section
                       key={s}
                       aria-labelledby={`col-${s}`}
-                      className="flex w-[264px] shrink-0 snap-start flex-col gap-2.5 rounded-2xl border border-line/70 bg-navy-50/60 p-2.5"
+                      className="flex w-[272px] shrink-0 snap-start flex-col gap-2.5 rounded-2xl border border-line/70 bg-navy-50/50 p-2.5"
                     >
                       <h3
                         id={`col-${s}`}
@@ -232,501 +332,223 @@ export function PipelineView() {
             </div>
           </section>
 
-          {closedApps.length > 0 && (
-            <section aria-labelledby="closed" className="panel overflow-hidden">
-              <h2
-                id="closed"
-                className="border-b border-line px-5 py-4 text-body font-semibold text-ink"
-              >
-                {t.closed}
-              </h2>
-              <ul className="divide-y divide-line">
-                {closedApps.slice(0, 30).map((a) => (
-                  <li key={a.id}>
-                    <Link
-                      href={`/admissions/${a.id}`}
-                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-paper"
-                    >
-                      <Avatar name={a.childName} size="sm" />
-                      <span className="min-w-0 flex-1 truncate text-body font-medium text-ink">
-                        {a.childName}
-                      </span>
-                      <span className="hidden text-caption text-ink-muted sm:inline">
-                        {a.className}
-                      </span>
-                      <Pill tone={a.state === 'enrolled' ? 'go' : 'neutral'}>
-                        {t.states[a.state]}
-                      </Pill>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            {seatClasses.length > 0 && (
+              <section aria-labelledby="seats" className="panel p-5">
+                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 id="seats" className="font-display text-body font-semibold text-ink">
+                    {t.seatsTitle}
+                  </h2>
+                  <p className="text-caption text-ink-muted">{t.seatsLead}</p>
+                </div>
+                <ul className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                  {seatClasses.map((k) => {
+                    const taken = k.students + k.promised;
+                    const ratio = k.capacity ? taken / k.capacity : 0;
+                    return (
+                      <li key={k.classId} className="flex flex-col gap-1.5">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-body font-medium text-ink">{k.name}</span>
+                          <span className="tabular text-caption text-ink-muted">
+                            {ratio >= 1 ? t.full : t.seatsShort(taken, k.capacity || null)}
+                          </span>
+                        </div>
+                        <Progress
+                          value={taken}
+                          max={Math.max(k.capacity, taken, 1)}
+                          tone={ratio >= 1 ? 'stop' : ratio >= 0.85 ? 'warn' : 'go'}
+                          label={`${k.name}: ${t.seats(taken, k.capacity || null)}`}
+                        />
+                        <span className="tabular text-caption text-ink-muted">
+                          {t.seatFill(k.students, k.promised)}
+                          {k.seats !== null && ` · ${t.intake(k.held, k.seats)}`}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+            {closed.length > 0 && (
+              <section aria-labelledby="closed" className="panel overflow-hidden">
+                <h2
+                  id="closed"
+                  className="border-b border-line px-5 py-4 font-display text-body font-semibold text-ink"
+                >
+                  {t.closed}
+                </h2>
+                <ul className="divide-y divide-line">
+                  {closed.slice(0, 12).map((a) => (
+                    <li key={a.id}>
+                      <Link
+                        href={`/admissions/${a.id}`}
+                        className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-paper"
+                      >
+                        <Avatar name={a.childName} size="sm" />
+                        <span className="min-w-0 flex-1 truncate text-body font-medium text-ink">
+                          {a.childName}
+                        </span>
+                        <span className="hidden text-caption text-ink-muted sm:inline">
+                          {a.className}
+                        </span>
+                        <StagePill state={a.state} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         </>
+      )}
+
+      {adding && id && p && (
+        <NewLeadDialog
+          institutionId={id}
+          year={year}
+          classes={p.classes}
+          onClose={() => setAdding(false)}
+          onDone={(r) => {
+            setAdding(false);
+            setMessage(r.message);
+            if (r.sendForm) setSending(r.sendForm);
+          }}
+        />
+      )}
+      {sending && id && (
+        <SendFormDialog
+          institutionId={id}
+          year={year}
+          lead={sending === 'new' ? null : sending}
+          onClose={() => setSending(null)}
+        />
       )}
       <Announcer message={message} />
     </div>
   );
 }
 
-const STAGE_DOT: Record<string, string> = {
-  enquiry: 'bg-sky-ink',
-  contacted: 'bg-navy-950',
-  applied: 'bg-violet-ink',
-  documents_pending: 'bg-signal-warn',
-  under_review: 'bg-amber-ink',
-  offered: 'bg-teal-ink',
-  waitlisted: 'bg-rose-ink',
-  confirmed: 'bg-signal-go',
-};
-
-const FUNNEL: { key: string; states: string[]; bar: string }[] = [
-  { key: 'new', states: ['enquiry', 'contacted'], bar: 'bg-sky-ink' },
-  {
-    key: 'applying',
-    states: ['applied', 'documents_pending', 'under_review'],
-    bar: 'bg-violet-ink',
-  },
-  { key: 'offered', states: ['offered', 'waitlisted'], bar: 'bg-teal-ink' },
-  { key: 'confirmed', states: ['confirmed'], bar: 'bg-navy-950' },
-  { key: 'enrolled', states: ['enrolled'], bar: 'bg-signal-go' },
-];
-
-/** Where this year's families are, from first call to enrolment. */
-function Funnel({ counts }: { counts: Pipeline['counts'] }) {
-  const n = (states: string[]) =>
-    states.reduce((sum, s) => sum + ((counts as Record<string, number>)[s] ?? 0), 0);
-  const total = Math.max(
-    1,
-    FUNNEL.reduce((sum, f) => sum + n(f.states), 0),
-  );
-  return (
-    <section
-      aria-label={t.glance}
-      className="panel grid grid-cols-2 overflow-hidden sm:grid-cols-5"
-    >
-      {FUNNEL.map((f, i) => {
-        const value = n(f.states);
-        const pct = Math.round((value / total) * 100);
-        return (
-          <div
-            key={f.key}
-            className={cx(
-              'flex flex-col gap-2 border-line p-5',
-              i > 0 && 'sm:border-l',
-              i % 2 === 1 && 'max-sm:border-l',
-              i > 1 && 'max-sm:border-t',
-            )}
-          >
-            <span className="flex items-center gap-2 text-caption font-medium text-ink-muted">
-              <span aria-hidden className={cx('size-2 rounded-full', f.bar)} />
-              {t.funnel[f.key]}
-            </span>
-            <span className="tabular text-display font-bold text-ink">{value}</span>
-            <span className="h-1.5 w-full overflow-hidden rounded-full bg-navy-50">
-              <span
-                className={cx('block h-full rounded-full', f.bar)}
-                style={{ width: `${pct}%` }}
-              />
-            </span>
-            <span className="text-caption text-ink-muted">{t.share(pct)}</span>
-          </div>
-        );
-      })}
-    </section>
-  );
-}
-
-const DAY = 86_400_000;
-const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
-
-function AppCard({ a }: { a: Pipeline['applications'][number] }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const overdue = !!a.nextFollowUp && a.nextFollowUp < today;
+/** A family on the board: who, where they stand, what's next and who owns them. */
+function AppCard({ a }: { a: App }) {
+  const overdue = !!a.nextFollowUp && daysTo(a.nextFollowUp) < 0;
+  const papers =
+    a.papers.required > 0 && ['applied', 'documents_pending', 'under_review'].includes(a.state);
   return (
     <Link
       href={`/admissions/${a.id}`}
       className="group lift flex flex-col gap-3 rounded-xl border border-line bg-surface p-3.5 shadow-[var(--shadow-card)]"
     >
-      <span className="flex items-center gap-2.5">
+      <span className="flex items-start gap-2.5">
         <Avatar name={a.childName} size="sm" />
-        <span className="flex min-w-0 flex-col">
+        <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-body font-semibold text-ink group-hover:text-navy-950">
             {a.childName}
           </span>
           <span className="truncate text-caption text-ink-muted">
-            {a.className} · {t.categories[a.category]?.split(' ')[0]}
+            {[a.className, a.reference].filter(Boolean).join(' · ')}
           </span>
         </span>
+        {a.interest && <Interest value={a.interest} />}
       </span>
       {(a.sibling ||
         a.source === 'website' ||
-        (a.offerExpiresOn && a.state === 'offered') ||
-        (a.nextFollowUp && ['enquiry', 'contacted'].includes(a.state))) && (
+        papers ||
+        a.form ||
+        a.verified ||
+        a.offerExpiresOn) && (
         <span className="flex flex-wrap gap-1.5">
-          {a.source === 'website' && <Pill>{t.online}</Pill>}
-          {a.sibling && <Pill tone="go">{t.sibling}</Pill>}
-          {a.offerExpiresOn && a.state === 'offered' && (
-            <Pill tone="warn">{t.expires(a.offerExpiresOn)}</Pill>
+          {a.verified && (
+            <Chip icon={FileCheck2} tone="go">
+              {c.card.verified}
+            </Chip>
           )}
-          {a.nextFollowUp && ['enquiry', 'contacted'].includes(a.state) && (
-            <Pill tone={overdue ? 'stop' : 'neutral'}>{t.followUp(a.nextFollowUp)}</Pill>
+          {papers && !a.verified && (
+            <Chip
+              icon={FileCheck2}
+              tone={a.papers.rejected ? 'stop' : a.papers.waiting ? 'warn' : 'neutral'}
+            >
+              {c.card.papers(a.papers.verified, a.papers.required)}
+            </Chip>
+          )}
+          {a.form &&
+            a.state !== 'applied' &&
+            ['enquiry', 'contacted', 'documents_pending'].includes(a.state) && (
+              <Chip icon={Send} tone={a.form.state === 'opened' ? 'warn' : 'neutral'}>
+                {c.card.form[a.form.state]}
+              </Chip>
+            )}
+          {a.source === 'website' && <Chip icon={Globe}>{t.online}</Chip>}
+          {a.sibling && (
+            <Chip icon={Users} tone="go">
+              {t.sibling}
+            </Chip>
+          )}
+          {a.offerExpiresOn && a.state === 'offered' && (
+            <Chip icon={CalendarClock} tone="warn">
+              {c.card.offerEnds(relDay(a.offerExpiresOn))}
+            </Chip>
           )}
         </span>
       )}
       <span className="flex items-center justify-between gap-2 border-t border-line pt-2.5 text-caption text-ink-muted">
-        <span>{t.sources[a.source] ?? a.source}</span>
-        <span>{t.updated(daysSince(a.updatedAt))}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          {a.owner ? (
+            <>
+              <span
+                aria-hidden
+                className="flex size-5 shrink-0 items-center justify-center rounded-full bg-navy-950 text-[10px] font-semibold text-white"
+              >
+                {a.owner.name.trim().charAt(0).toUpperCase()}
+              </span>
+              <span className="truncate">{a.owner.name.split(' ')[0]}</span>
+            </>
+          ) : (
+            <span>{c.unassigned}</span>
+          )}
+        </span>
+        {a.nextFollowUp ? (
+          <span
+            className={cx(
+              'inline-flex shrink-0 items-center gap-1',
+              overdue && 'font-medium text-signal-stop-ink',
+            )}
+          >
+            <CalendarClock aria-hidden className="size-3.5" />
+            {overdue ? c.card.overdue(relDay(a.nextFollowUp)) : relDay(a.nextFollowUp)}
+          </span>
+        ) : (
+          <span className="shrink-0">{t.sources[a.source] ?? a.source}</span>
+        )}
       </span>
     </Link>
   );
 }
 
-function EnquiryForm({
-  institutionId,
-  year,
-  classes,
-  onClose,
-  onDone,
-}: {
-  institutionId: string;
-  year: string;
-  classes: Pipeline['classes'];
-  onClose: () => void;
-  onDone: (m: string) => void;
-}) {
-  const qc = useQueryClient();
-  const [f, setF] = useState({
-    classId: classes[0]?.classId ?? '',
-    category: 'general',
-    source: 'walk_in',
-    childName: '',
-    dateOfBirth: '',
-    guardianName: '',
-    guardianPhone: '',
-    guardianRelationship: 'mother',
-    nextFollowUp: '',
-  });
-  const set = (k: keyof typeof f) => (e: { target: { value: string } }) =>
-    setF((x) => ({ ...x, [k]: e.target.value }));
-  const fields = useFields('admission');
-  const [custom, setCustom] = useState<Values>({});
-  const save = useMutation({
-    mutationFn: () =>
-      api.post<{ id: string; siblings: { studentName: string }[] }>(
-        `/school/admissions/${institutionId}/enquiries`,
-        {
-          ...f,
-          yearLabel: year,
-          guardianPhone: `+91${f.guardianPhone.replace(/\D/g, '').slice(-10)}`,
-          dateOfBirth: f.dateOfBirth || null,
-          nextFollowUp: f.nextFollowUp || null,
-          ...(Object.keys(custom).length ? { custom } : {}),
-        },
-      ),
-    onSuccess: (r) => {
-      void qc.invalidateQueries({ queryKey: ['admissions'] });
-      onDone(
-        r.siblings.length
-          ? t.siblingFound(r.siblings.map((s) => s.studentName).join(', '))
-          : t.saved,
-      );
-    },
-  });
-  return (
-    <FormModal
-      title={t.newEnquiry}
-      description={year}
-      size="xl"
-      submitLabel={t.save}
-      cancelLabel={en.form.cancel}
-      pending={save.isPending}
-      error={save.isError ? admissionError(save.error) : null}
-      onClose={onClose}
-      onSubmit={() => save.mutate()}
-    >
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.childName}</span>
-        <input required value={f.childName} onChange={set('childName')} className={field} />
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.dateOfBirth}</span>
-        <input type="date" value={f.dateOfBirth} onChange={set('dateOfBirth')} className={field} />
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.className}</span>
-        <select value={f.classId} onChange={set('classId')} className={field}>
-          {classes.map((c) => (
-            <option key={c.classId} value={c.classId}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.guardianName}</span>
-        <input required value={f.guardianName} onChange={set('guardianName')} className={field} />
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.guardianPhone}</span>
-        <input
-          required
-          inputMode="tel"
-          value={f.guardianPhone}
-          onChange={set('guardianPhone')}
-          className={field}
-        />
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.relationship}</span>
-        <select
-          value={f.guardianRelationship}
-          onChange={set('guardianRelationship')}
-          className={field}
-        >
-          {Object.entries(t.relationships).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.source}</span>
-        <select value={f.source} onChange={set('source')} className={field}>
-          {Object.entries(t.sources).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.category}</span>
-        <select value={f.category} onChange={set('category')} className={field}>
-          {Object.entries(t.categories).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.nextFollowUp}</span>
-        <input
-          type="date"
-          value={f.nextFollowUp}
-          onChange={set('nextFollowUp')}
-          className={field}
-        />
-      </label>
-      {fields.data && fields.data.length > 0 && (
-        <div className="flex flex-col gap-4 border-t border-line pt-5 sm:col-span-2">
-          <p className="text-body font-semibold text-ink">{en.customFields.title}</p>
-          <CustomFields
-            fields={fields.data}
-            values={custom}
-            onChange={(k, v) => setCustom((c) => ({ ...c, [k]: v }))}
-            problems={
-              save.error instanceof ApiFailure && save.error.code === 'values'
-                ? ((save.error.details as { problems?: Record<string, string> } | null)?.problems ??
-                  {})
-                : {}
-            }
-            idPrefix="enquiry"
-          />
-        </div>
-      )}
-    </FormModal>
-  );
-}
+const CHIP_TONE = {
+  neutral: 'bg-navy-50 text-navy-700',
+  go: 'bg-signal-go-tint text-signal-go-ink',
+  warn: 'bg-signal-warn-tint text-signal-warn-ink',
+  stop: 'bg-signal-stop-tint text-signal-stop-ink',
+} as const;
 
-/** The school's online application form for a year: its link, then its settings. */
-function OnlineForm({
-  institutionId,
-  institutionName,
-  year,
-  classes,
-  onClose,
+export function Chip({
+  icon: Icon,
+  tone = 'neutral',
+  children,
 }: {
-  institutionId: string;
-  institutionName: string;
-  year: string;
-  classes: Pipeline['classes'];
-  onClose: () => void;
+  icon?: typeof Globe;
+  tone?: keyof typeof CHIP_TONE;
+  children: React.ReactNode;
 }) {
-  const qc = useQueryClient();
-  const forms = useQuery({
-    queryKey: ['admission-forms', institutionId],
-    queryFn: () =>
-      api.get<AdmissionForm[]>(`/school/admissions/forms?institutionId=${institutionId}`),
-  });
-  const existing = forms.data?.find((f) => f.yearLabel === year);
-  if (forms.isPending) return null;
   return (
-    <OnlineFormFields
-      key={existing?.id ?? 'new'}
-      institutionId={institutionId}
-      year={year}
-      classes={classes}
-      existing={existing}
-      defaultTitle={institutionName}
-      onClose={onClose}
-      onSaved={() => void qc.invalidateQueries({ queryKey: ['admission-forms'] })}
-    />
-  );
-}
-
-function OnlineFormFields({
-  institutionId,
-  year,
-  classes,
-  existing,
-  defaultTitle,
-  onClose,
-  onSaved,
-}: {
-  institutionId: string;
-  year: string;
-  classes: Pipeline['classes'];
-  existing: AdmissionForm | undefined;
-  defaultTitle: string;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [title, setTitle] = useState(existing?.title ?? defaultTitle);
-  const [intro, setIntro] = useState(existing?.intro ?? '');
-  const [classIds, setClassIds] = useState<string[]>(
-    existing?.classIds ?? classes.map((c) => c.classId),
-  );
-  const [open, setOpen] = useState(existing?.open ?? true);
-  const [closesOn, setClosesOn] = useState(existing?.closesOn ?? '');
-  const [copied, setCopied] = useState(false);
-  const link =
-    existing && typeof window !== 'undefined'
-      ? `${window.location.origin}/apply/${existing.slug}`
-      : null;
-  const save = useMutation({
-    mutationFn: () => {
-      const body = {
-        institutionId,
-        yearLabel: year,
-        title,
-        intro,
-        classIds,
-        open,
-        closesOn: closesOn || null,
-      };
-      return existing
-        ? api.put(`/school/admissions/forms/${existing.id}`, body)
-        : api.post('/school/admissions/forms', body);
-    },
-    onSuccess: onSaved,
-  });
-  return (
-    <FormModal
-      title={t.onlineTitle(year)}
-      description={existing ? t.onlineCount(existing.applications) : t.onlineLead}
-      submitLabel={existing ? t.onlineSave : t.onlineSetUp}
-      cancelLabel={t.onlineCancel}
-      pending={save.isPending}
-      submitDisabled={!title.trim() || classIds.length === 0}
-      error={save.error ? admissionError(save.error) : null}
-      size="lg"
-      onClose={onClose}
-      onSubmit={() => save.mutate()}
-    >
-      {link ? (
-        <div className="col-span-full flex flex-col gap-1.5">
-          <span className="flex items-center gap-2 text-caption font-medium text-ink">
-            {t.onlineLink}
-            <Pill tone={existing?.open ? 'go' : 'neutral'}>
-              {existing?.open ? t.onlineIsOpen : t.onlineIsClosed}
-            </Pill>
-          </span>
-          <span className="flex flex-wrap gap-2">
-            <input
-              readOnly
-              aria-label={t.onlineLink}
-              value={link}
-              className={cx(field, 'min-w-0 flex-1')}
-              onFocus={(e) => e.target.select()}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                void navigator.clipboard?.writeText(link).then(
-                  () => setCopied(true),
-                  () => undefined,
-                )
-              }
-            >
-              {t.onlineCopy}
-            </Button>
-          </span>
-          <span aria-live="polite" className="text-caption text-ink-muted">
-            {copied ? t.onlineCopied : ''}
-          </span>
-        </div>
-      ) : (
-        <p className="col-span-full text-body text-ink-muted">{t.onlineNone(year)}</p>
+    <span
+      className={cx(
+        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium',
+        CHIP_TONE[tone],
       )}
-      <label className="col-span-full flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.onlineFormTitle}</span>
-        <input
-          className={field}
-          maxLength={120}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <span className="text-caption text-ink-muted">{t.onlineFormTitleHint}</span>
-      </label>
-      <label className="col-span-full flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.onlineIntro}</span>
-        <textarea
-          className={cx(field, 'h-auto py-2')}
-          rows={3}
-          maxLength={600}
-          value={intro}
-          onChange={(e) => setIntro(e.target.value)}
-        />
-        <span className="text-caption text-ink-muted">{t.onlineIntroHint}</span>
-      </label>
-      <fieldset className="col-span-full flex flex-col gap-2">
-        <legend className="mb-1 text-caption font-medium text-ink">{t.onlineClasses}</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {classes.map((c) => (
-            <label key={c.classId} className="flex items-center gap-2 text-body text-ink">
-              <input
-                type="checkbox"
-                checked={classIds.includes(c.classId)}
-                onChange={(e) =>
-                  setClassIds((cur) =>
-                    e.target.checked ? [...cur, c.classId] : cur.filter((x) => x !== c.classId),
-                  )
-                }
-              />
-              {c.name}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <label className="flex items-center gap-2 text-body text-ink">
-        <input type="checkbox" checked={open} onChange={(e) => setOpen(e.target.checked)} />
-        {t.onlineOpen}
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.onlineClosesOn}</span>
-        <input
-          type="date"
-          className={field}
-          value={closesOn}
-          onChange={(e) => setClosesOn(e.target.value)}
-        />
-        <span className="text-caption text-ink-muted">{t.onlineClosesOnHint}</span>
-      </label>
-    </FormModal>
+    >
+      {Icon && <Icon aria-hidden className="size-3" />}
+      {children}
+    </span>
   );
 }

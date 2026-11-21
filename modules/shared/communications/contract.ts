@@ -53,6 +53,7 @@ export {
   UNDO_WINDOW_MS,
   type Audience,
   type AudienceGroup,
+  type AudiencePeriod,
   type AudiencePort,
   type Language,
   type NoticeDeps,

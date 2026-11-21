@@ -72,33 +72,42 @@ test('admissions to TC: an enquiry is enrolled, then leaves with a verified TC',
   })) as { id: string };
   await apiPost(page, `/finance/plans/${plan.id}/publish`);
 
-  // The enquiry.
+  // The lead.
   await page.reload();
-  await page.getByRole('button', { name: 'New enquiry' }).click();
-  await page.getByLabel("Child's name").fill('Ravi Synthetic Journey');
-  await page.getByLabel('Date of birth').fill('2018-06-15');
-  await page.getByLabel("Parent or guardian's name").fill('Lakshmi Synthetic Journey');
-  await page
+  await page.getByRole('button', { name: 'New lead' }).first().click();
+  const lead = page.getByRole('dialog', { name: 'New lead' });
+  await lead.getByLabel("Child's name").fill('Ravi Synthetic Journey');
+  await lead.getByLabel(/^Date of birth/).fill('2018-06-15');
+  await lead.getByLabel("Parent or guardian's name").fill('Lakshmi Synthetic Journey');
+  await lead
     .getByLabel('Mobile number')
     .fill(`9${Math.floor(100_000_000 + Math.random() * 899_999_999)}`);
-  await page.getByRole('button', { name: 'Save enquiry' }).click();
+  await lead.getByLabel('Send the application form after saving').uncheck();
+  await lead.getByRole('button', { name: 'Save lead' }).click();
   const card = page.getByRole('link', { name: /Ravi Synthetic Journey/ });
   await expect(card).toBeVisible();
   await noA11yViolations(page);
   await page.screenshot({ path: 'e2e/screenshots/admissions-pipeline.png', fullPage: true });
 
-  // Applied → offered (fees disclosed) → accepted → enrolled.
+  // Applied → in review → offered (fees disclosed) → accepted → enrolled.
   await card.click();
-  await page.getByLabel('Move to').selectOption('applied');
-  await page.getByRole('button', { name: 'Move', exact: true }).click();
-  await expect(page.getByText('Applied', { exact: true }).first()).toBeVisible();
+  const move = async (to: string) => {
+    await page.getByRole('combobox', { name: 'Other actions' }).selectOption(to);
+    await page.getByRole('button', { name: 'Move', exact: true }).click();
+  };
+  await move('applied');
+  await expect(page.getByText('Check the papers')).toBeVisible();
+  await move('under_review');
+  await expect(page.getByText('Offer a seat')).toBeVisible();
+  await page.getByRole('tab', { name: 'Fees' }).click();
   await expect(page.getByText('Class 3 fees')).toBeVisible();
   await page.getByRole('button', { name: 'Make offer' }).click();
-  await expect(page.getByText(/Offer made\. It ends on/).first()).toBeVisible();
+  await expect(page.getByText(/Offer made\. It ends on/).first()).toBeAttached();
   await page.getByRole('button', { name: 'Family accepted' }).click();
   await page.getByLabel('Section').selectOption({ label: 'Class 3-A' });
   await page.getByRole('button', { name: 'Enrol', exact: true }).click();
-  await expect(page.getByText(/Enrolled\. Admission number \d{4}-\d{4}\./).first()).toBeVisible();
+  await expect(page.getByText(/Enrolled\. Admission number \d{4}-\d{4}\./).first()).toBeAttached();
+  await expect(page.getByText(/In Class 3-A, roll number \d+/)).toBeVisible();
   await noA11yViolations(page);
   await page.screenshot({ path: 'e2e/screenshots/admissions-enrolled.png', fullPage: true });
 

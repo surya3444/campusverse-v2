@@ -16,6 +16,8 @@ import {
   revokeDevice,
   signInWithGoogle,
   signInWithPhone,
+  type MfaChallenge,
+  type Tokens,
 } from '../contract.js';
 
 const env = loadEnv();
@@ -45,9 +47,15 @@ async function newAccount(
   return acc!.id;
 }
 
+/** A sign-in that started a session (these accounts have no two-step sign-in), or null. */
+const sessionOf = (r: Tokens | MfaChallenge | null): Tokens | null => {
+  if (r && 'mfa' in r) throw new Error('unexpected two-step challenge');
+  return r;
+};
+
 async function phoneLogin(phone: string) {
   await requestPhoneOtp(db, otp, { phone, ip: randomIp() });
-  return signInWithPhone(db, otp, { phone, code: sent.get(phone)!, device });
+  return sessionOf(await signInWithPhone(db, otp, { phone, code: sent.get(phone)!, device }));
 }
 
 afterAll(async () => {
@@ -67,7 +75,7 @@ describe('phone OTP', () => {
     expect(sent.has(stranger)).toBe(false);
 
     const code = sent.get(phone)!;
-    const tokens = await signInWithPhone(db, otp, { phone, code, device });
+    const tokens = sessionOf(await signInWithPhone(db, otp, { phone, code, device }));
     expect(tokens?.accessToken).toBeTruthy();
     // Single use.
     expect(await signInWithPhone(db, otp, { phone, code, device })).toBeNull();
@@ -169,11 +177,13 @@ describe('sessions', () => {
     expect(await refresh(db, tokens.refreshToken)).toBeNull();
 
     await requestPhoneOtp(db, otp, { phone, ip: randomIp() });
-    const again = await signInWithPhone(db, otp, {
-      phone,
-      code: sent.get(phone)!,
-      device: { id: tokens.deviceId, label: 'Synthetic Android' },
-    });
+    const again = sessionOf(
+      await signInWithPhone(db, otp, {
+        phone,
+        code: sent.get(phone)!,
+        device: { id: tokens.deviceId, label: 'Synthetic Android' },
+      }),
+    );
     expect(again?.deviceId).not.toBe(tokens.deviceId);
   });
 
@@ -182,11 +192,13 @@ describe('sessions', () => {
     await newAccount([{ kind: 'phone', value: phone }]);
     const first = (await phoneLogin(phone))!;
     await requestPhoneOtp(db, otp, { phone, ip: randomIp() });
-    const second = await signInWithPhone(db, otp, {
-      phone,
-      code: sent.get(phone)!,
-      device: { id: first.deviceId, label: 'Synthetic Android' },
-    });
+    const second = sessionOf(
+      await signInWithPhone(db, otp, {
+        phone,
+        code: sent.get(phone)!,
+        device: { id: first.deviceId, label: 'Synthetic Android' },
+      }),
+    );
     expect(second?.deviceId).toBe(first.deviceId);
   });
 
@@ -216,8 +228,8 @@ describe('Google sign-in', () => {
         .sign(privateKey);
   });
 
-  const google = (idToken: string) =>
-    signInWithGoogle(db, { idToken, clientId: CLIENT_ID, device, keys });
+  const google = async (idToken: string) =>
+    sessionOf(await signInWithGoogle(db, { idToken, clientId: CLIENT_ID, device, keys }));
 
   it('links an invited staff email on first sign-in, then signs in by Google id', async () => {
     const email = `teacher${randomInt(1e9)}@synthetic.example`;

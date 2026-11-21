@@ -1,0 +1,31 @@
+// Public API of Academics › Feedback & Surveys (rule book §13.4; docs/specs/SURVEYS.md).
+export {
+  SurveyError,
+  addAction,
+  completeAction,
+  createSurvey,
+  setQuestions,
+  setSurveyState,
+  submitResponse,
+  surveyResults,
+  surveys,
+  surveysToAnswer,
+  type ActionRow,
+  type QuestionResult,
+  type SurveyDeps,
+  type SurveyResults,
+  type SurveyRow,
+  type SurveyToAnswer,
+} from './application/surveys.js';
+export {
+  AUDIENCES,
+  QUESTION_KINDS,
+  SURVEY_KINDS,
+  TEMPLATES,
+  weightedScore,
+  type Answer,
+  type Audience,
+  type Question,
+  type QuestionKind,
+  type SurveyKind,
+} from './domain/surveys.js';

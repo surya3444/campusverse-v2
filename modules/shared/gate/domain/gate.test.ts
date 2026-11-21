@@ -1,5 +1,6 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { collectorCheck, mobile } from './gate.js';
+import { checkCode, codeHash, collectorCheck, mobile, pickupCode } from './gate.js';
 
 describe('mobile', () => {
   it('reads what a guard types', () => {
@@ -32,5 +33,23 @@ describe('collectorCheck', () => {
       collectorCheck(guardians, { name: 'Aunt', relation: 'Aunt', phone: '+919000000009' }),
     ).toBe('ok');
     expect(collectorCheck(guardians, { guardianId: 'nobody' })).toBe('collector_not_guardian');
+  });
+});
+
+describe('pick-up codes', () => {
+  const sha = (s: string) => createHash('sha256').update(s).digest('hex');
+  const h = (c: string) => codeHash('pass-1', c, sha);
+  it('makes six digits and binds the hash to the pass', () => {
+    expect(pickupCode(42)).toBe('000042');
+    expect(pickupCode(999_999)).toBe('999999');
+    expect(codeHash('pass-2', '123456', sha)).not.toBe(h('123456'));
+  });
+  it('accepts the right code, refuses a wrong one, locks after five tries', () => {
+    const stored = h('482913');
+    expect(checkCode(stored, 0, '482 913', h)).toBe('ok');
+    expect(checkCode(stored, 0, '000000', h)).toBe('wrong_code');
+    expect(checkCode(stored, 0, undefined, h)).toBe('wrong_code');
+    expect(checkCode(stored, 5, '482913', h)).toBe('code_locked');
+    expect(checkCode(null, 0, undefined, h)).toBe('ok');
   });
 });

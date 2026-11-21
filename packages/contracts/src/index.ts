@@ -14,6 +14,12 @@ export type ApiError = {
 };
 
 export const OtpRequest = z.object({ phone: z.string().min(10).max(20) });
+const AppCode = z
+  .string()
+  .trim()
+  .regex(/^\d{3} ?\d{3}$/);
+export const MfaVerify = z.object({ challenge: z.string().min(20).max(100), code: AppCode });
+export const MfaCode = z.object({ code: AppCode });
 export const OtpVerify = z.object({
   phone: z.string().min(10).max(20),
   code: z.string().regex(/^\d{6}$/),
@@ -149,6 +155,45 @@ export const StaffExit = z.object({
   lastDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   reason: z.string().trim().min(3).max(500),
 });
+// A year's structure (school/setup)
+const StructureSectionName = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9]{1,4}$/);
+const Capacity = z.number().int().min(1).max(80);
+export const SectionAdd = z.object({
+  classId: z.uuid(),
+  name: StructureSectionName,
+  capacity: Capacity,
+});
+export const SectionEdit = z.object({
+  name: StructureSectionName.optional(),
+  capacity: Capacity.optional(),
+});
+export const SectionClosedInput = z.object({ closed: z.boolean() });
+export const ClassToYear = z.object({
+  code: z.string().regex(/^[A-Z0-9]{1,4}$/),
+  sections: z.number().int().min(1).max(26),
+  capacity: Capacity,
+});
+export const NextYearPlan = z
+  .object({
+    classes: z
+      .array(
+        z.object({
+          code: z.string().regex(/^[A-Z0-9]{1,4}$/),
+          sections: z
+            .array(z.object({ name: StructureSectionName, capacity: Capacity }))
+            .min(1)
+            .max(26),
+        }),
+      )
+      .min(1)
+      .max(20),
+  })
+  .nullable()
+  .optional();
+
 export const SectionChange = z.object({
   personId: z.uuid(),
   sectionId: z.uuid(),
@@ -264,7 +309,40 @@ export const FeeHeadInput = z.object({
   taxClass: z.enum(['education_exempt', 'taxable']),
   rteExempt: z.boolean(),
   refundable: z.boolean(),
+  payeeId: z.uuid().nullable().optional(),
 });
+// Fees collected for others (the university, a board) and voluntary donations.
+export const FeePayeeInput = z.object({
+  kind: z.enum(['university', 'board', 'government', 'other']),
+  name: z.string().trim().min(1).max(120),
+  shortName: z.string().trim().min(1).max(20),
+});
+export const HeadPayeeInput = z.object({ payeeId: z.uuid().nullable() });
+export const RemittanceInput = z.object({
+  periodLabel: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .nullable(),
+  amountPaise: z.number().int().positive().max(10_000_000_000_00),
+  paidOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  reference: z.string().trim().min(1).max(60),
+  note: z.string().trim().max(500).nullable().optional(),
+});
+export const DonationInput = z.object({
+  donorKind: z.enum(['person', 'organisation']),
+  donorName: z.string().trim().min(1).max(120),
+  donorPhone: z.string().trim().max(20).nullable().optional(),
+  donorEmail: z.string().trim().max(200).nullable().optional(),
+  donorAddress: z.string().trim().max(300).nullable().optional(),
+  fund: z.string().trim().max(60),
+  amountPaise: z.number().int().positive().max(10_000_000_000_00),
+  method: z.enum(['cash', 'cheque', 'upi', 'card', 'netbanking', 'bank_transfer']),
+  instrumentRef: z.string().trim().max(60).nullable().optional(),
+  receivedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  note: z.string().trim().max(500).nullable().optional(),
+  voluntary: z.boolean(),
+});
+export const DonationCancel = z.object({ reason: z.string().trim().min(3).max(500) });
 export const FeePlanInput = z.object({
   planId: z.uuid().optional(),
   name: z.string().trim().min(1).max(100),
@@ -285,6 +363,8 @@ export const FeePlanInput = z.object({
     .max(12),
   lateFeePaise: Paise.min(0),
   graceDays: z.number().int().min(0).max(90),
+  /** The academic year it bills for; left out, the year its first instalment falls in. */
+  periodId: z.uuid().nullable().optional(),
 });
 export const InvoiceAdjustment = z.object({
   amountPaise: Paise.refine((n) => n !== 0, 'Use a non-zero amount'),
@@ -330,6 +410,43 @@ export const ReminderInput = z.object({ minDaysOverdue: z.number().int().min(1).
 
 // Admissions and certificates
 const Phone = z.string().regex(/^\+91[6-9]\d{9}$/, 'Enter a 10-digit Indian mobile number');
+// What a family tells the school beyond the enquiry (school/admissions DETAIL_COLUMNS); empty clears.
+const opt = (max: number) => z.string().trim().max(max).nullable().optional();
+export const ApplicationDetailsInput = z
+  .object({
+    guardianEmail: opt(200),
+    secondGuardianName: opt(120),
+    secondGuardianRelationship: z
+      .enum(['mother', 'father', 'guardian', 'grandparent', 'sibling', 'other', ''])
+      .nullable()
+      .optional(),
+    secondGuardianPhone: opt(16),
+    secondGuardianEmail: opt(200),
+    bloodGroup: opt(3),
+    motherTongue: opt(40),
+    religion: opt(40),
+    socialCategory: z
+      .enum(['general', 'obc', 'sc', 'st', 'ews', 'not_stated', ''])
+      .nullable()
+      .optional(),
+    nationality: opt(40),
+    placeOfBirth: opt(80),
+    addressLine: opt(300),
+    city: opt(80),
+    pincode: opt(6),
+    stateCode: opt(2),
+    previousSchool: opt(160),
+    disability: opt(200),
+    medicalNotes: opt(500),
+  })
+  .strict();
+const Relation = z.enum(['mother', 'father', 'guardian', 'grandparent', 'sibling', 'other']);
+const Interest = z.enum(['hot', 'warm', 'cold']);
+const PaperInput = z.object({
+  kind: z.string().regex(/^[a-z][a-z0-9_]{1,40}$/),
+  title: z.string().trim().min(1).max(80),
+  required: z.boolean(),
+});
 export const EnquiryInput = z.object({
   yearLabel: z.string().regex(/^\d{4}-\d{2}$/),
   classId: z.uuid(),
@@ -346,6 +463,10 @@ export const EnquiryInput = z.object({
   nextFollowUp: isoDate.nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   custom: z.record(z.string().max(41), z.unknown()).optional(),
+  details: ApplicationDetailsInput.optional(),
+  ownerPersonId: z.uuid().nullable().optional(),
+  interest: Interest.nullable().optional(),
+  campaign: z.string().trim().max(60).nullable().optional(),
 });
 // Online application forms (docs/specs/ONLINE_APPLICATIONS.md).
 export const AdmissionFormInput = z.object({
@@ -356,15 +477,42 @@ export const AdmissionFormInput = z.object({
   classIds: z.array(z.uuid()).min(1).max(30),
   open: z.boolean(),
   closesOn: isoDate.nullable(),
+  papers: z.array(PaperInput).max(12).optional(),
+  sections: z
+    .array(z.enum(['second_guardian', 'address', 'background', 'previous_school', 'health']))
+    .max(5)
+    .optional(),
 });
 export const ApplicationCodeRequest = z.object({ phone: z.string().min(10).max(16) });
 export const ApplicationStatusRequest = z.object({
   phone: z.string().min(10).max(16),
   code: z.string().regex(/^\d{6}$/),
 });
-export const OnlineApplicationInput = z.object({
+const ApplySession = z.string().min(20).max(1000);
+const Ticket = z.string().min(20).max(200);
+export const StartApplicationInput = z.object({
   phone: z.string().min(10).max(16),
   code: z.string().regex(/^\d{6}$/),
+  invite: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{20,100}$/)
+    .nullable()
+    .optional(),
+});
+export const SendPapersInput = z.object({
+  session: ApplySession,
+  papers: z
+    .array(z.object({ kind: z.string().max(41), ticket: Ticket }))
+    .min(1)
+    .max(12),
+});
+export const OnlineApplicationInput = z.object({
+  session: ApplySession,
+  details: ApplicationDetailsInput.default({}),
+  papers: z
+    .array(z.object({ kind: z.string().max(41), ticket: Ticket }))
+    .max(12)
+    .default([]),
   childName: z.string().trim().min(1).max(200),
   dateOfBirth: isoDate,
   gender: z.enum(['female', 'male', 'other', 'not_stated']),
@@ -401,6 +549,57 @@ export const ApplicationUpdate = z.object({
     .nullable()
     .optional(),
   custom: z.record(z.string().max(41), z.unknown()).optional(),
+  details: ApplicationDetailsInput.optional(),
+  childName: z.string().trim().min(2).max(120).optional(),
+  guardianName: z.string().trim().min(2).max(120).optional(),
+  guardianPhone: Phone.optional(),
+  guardianRelationship: Relation.optional(),
+  classId: z.uuid().optional(),
+});
+export const LeadUpdate = z.object({
+  ownerPersonId: z.uuid().nullable().optional(),
+  interest: Interest.nullable().optional(),
+  campaign: z.string().trim().max(60).nullable().optional(),
+});
+export const ActivityInput = z.object({
+  kind: z.enum(['call', 'whatsapp', 'sms', 'email', 'visit', 'note']),
+  outcome: z
+    .enum(['reached', 'no_answer', 'busy', 'call_back', 'interested', 'not_interested', 'visited'])
+    .nullable()
+    .optional(),
+  note: z.string().trim().max(1000).nullable().optional(),
+  followUp: z
+    .object({ dueOn: isoDate, purpose: z.string().trim().min(2).max(200) })
+    .nullable()
+    .optional(),
+});
+export const FollowUpInput = z.object({
+  dueOn: isoDate,
+  purpose: z.string().trim().min(2).max(200),
+  assignedTo: z.uuid().nullable().optional(),
+});
+export const FollowUpDone = z.object({
+  outcome: z.string().trim().min(2).max(500),
+  next: z
+    .object({ dueOn: isoDate, purpose: z.string().trim().min(2).max(200) })
+    .nullable()
+    .optional(),
+});
+const InviteChannel = z.enum(['sms', 'whatsapp', 'email', 'link']);
+export const InviteInput = z.object({
+  yearLabel: z.string().regex(/^\d{4}-\d{2}$/),
+  applicationId: z.uuid().nullable().optional(),
+  channel: InviteChannel,
+  address: z.string().trim().max(200).nullable().optional(),
+  childName: z.string().trim().max(120).nullable().optional(),
+  guardianName: z.string().trim().max(120).nullable().optional(),
+});
+export const PapersRequestInput = z.object({ channel: InviteChannel });
+export const LeadImportOptions = z.object({
+  yearLabel: z.string().regex(/^\d{4}-\d{2}$/),
+  source: z.enum(['walk_in', 'phone', 'website', 'referral', 'other']).default('other'),
+  campaign: z.string().trim().max(60).nullable().optional(),
+  ownerPersonId: z.uuid().nullable().optional(),
 });
 export const EnrolInput = z.object({ sectionId: z.uuid(), from: isoDate });
 export const SeatsInput = z.object({
@@ -429,13 +628,50 @@ export const PortalExport = z.object({
 
 // Exams and rollover. Marks travel as text ("72.5", "AB") and are parsed exactly on the server.
 const MarkText = z.string().trim().max(10);
+const ExamPart = z.object({
+  name: z.string().trim().max(30),
+  maxMarks: z.string().regex(/^\d{1,4}(\.\d{1,2})?$/),
+});
 export const ExamCreate = z.object({
   yearId: z.uuid(),
   name: z.string().trim().min(1).max(80),
   classIds: z.array(z.uuid()).min(1).max(20),
   maxMarks: z.string().regex(/^\d{1,4}(\.\d{1,2})?$/),
+  parts: z.array(ExamPart).max(4).nullable().optional(),
   startsOn: isoDate.nullable().optional(),
   endsOn: isoDate.nullable().optional(),
+});
+export const SubjectParts = z.object({
+  classId: z.uuid(),
+  subjectId: z.uuid(),
+  parts: z.array(ExamPart).min(1).max(4),
+});
+export const CoScholasticArea = z.object({
+  id: z.uuid().nullable().optional(),
+  name: z.string().trim().min(1).max(60),
+  retired: z.boolean().optional(),
+});
+export const ReportCardSave = z.object({
+  sectionId: z.uuid(),
+  entries: z
+    .array(
+      z.object({
+        studentId: z.uuid(),
+        grades: z.record(z.uuid(), z.enum(['A', 'B', 'C']).nullable()),
+        remark: z.string().max(300).nullable(),
+      }),
+    )
+    .max(200),
+});
+export const ResultPlanSave = z.object({
+  id: z.uuid().nullable().optional(),
+  yearId: z.uuid(),
+  name: z.string().trim().min(1).max(80),
+  classIds: z.array(z.uuid()).min(1).max(20),
+  exams: z
+    .array(z.object({ examId: z.uuid(), weightBp: z.number().int().min(1).max(10_000) }))
+    .min(1)
+    .max(8),
 });
 export const MarksSave = z.object({
   sectionId: z.uuid(),
@@ -655,6 +891,22 @@ export const SelfSignup = z.object({
   organisation: z.string().trim().min(2).max(120),
   kind: z.enum(['school', 'college', 'university']),
   stateCode: StateCodeInput,
+  /** The one-time link from an email invite: the address is the invite's, approval is not needed. */
+  invite: Optional(z.string().regex(/^[A-Za-z0-9_-]{20,100}$/)),
+});
+export const InviteToken = z.string().regex(/^[A-Za-z0-9_-]{20,100}$/);
+export const EmailInvite = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.email().max(200),
+  planCode: z.string().regex(/^[a-z][a-z0-9_]{1,31}$/),
+});
+export const SignupDecision = z.discriminatedUnion('decision', [
+  z.object({ decision: z.literal('approve') }),
+  z.object({ decision: z.literal('decline'), reason: z.string().trim().min(3).max(500) }),
+]);
+export const ViewChoice = z.object({
+  level: z.enum(['organisation', 'campus', 'institution']),
+  ids: z.array(z.uuid()).max(200),
 });
 export const AdminInvite = z.object({
   name: z.string().trim().min(2).max(100),
@@ -1037,6 +1289,10 @@ export const GateReasonInput = z.object({
   reason: z.string().trim().min(3).max(300),
 });
 export const GatePlaceInput = z.object({ institutionId: Id });
+export const GatePassLeftInput = z.object({
+  institutionId: Id,
+  code: z.string().trim().max(12).optional(),
+});
 export const GatePassInput = z.object({
   institutionId: Id,
   studentId: Id,
@@ -1493,6 +1749,8 @@ export const RiderInput = z.object({
   routeId: Id,
   stopId: Id,
   from: Day,
+  // The other trip of the day (the afternoon drop for a morning pickup), saved together.
+  also: z.object({ routeId: Id, stopId: Id }).nullable().optional(),
 });
 export const EndRiderInput = z.object({ institutionId: Id, lastDay: Day });
 export const RiderImportInput = z.object({
@@ -1586,6 +1844,9 @@ export const GenerateRules = z.object({
       time: z.enum(['any', 'morning', 'afternoon']).optional(),
       maxPerDay: z.number().int().min(1).max(4).optional(),
       rooms: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
+      avoidPeriods: z.array(z.number().int().min(1).max(16)).max(16).optional(),
+      days: z.array(z.number().int().min(1).max(7)).max(7).optional(),
+      samePeriod: z.boolean().optional(),
     }),
   ),
   teachers: z.record(
@@ -1598,8 +1859,13 @@ export const GenerateRules = z.object({
         .max(112)
         .optional(),
       maxPerDay: PerDay.optional(),
+      maxPerWeek: z.number().int().min(1).max(80).optional(),
     }),
   ),
+  classTeacherFirst: z.boolean().optional(),
+  teacherDay: z.enum(['balanced', 'compact']).optional(),
+  effort: z.enum(['quick', 'standard', 'thorough']).optional(),
+  seed: z.number().int().min(1).max(1_000_000).optional(),
 });
 export const GenerateInput = z.object({ rules: GenerateRules.optional() });
 export const CoverInput = z
@@ -1735,6 +2001,54 @@ export const HealthVisitInput = z.object({
 export const HealthBreakGlassInput = z.object({
   institutionId: Id,
   reason: z.string().trim().min(10).max(500),
+});
+const DateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const Units = z.number().int().min(1).max(100000);
+export const HealthMedicineInput = z.object({
+  institutionId: Id,
+  name: z.string().trim().min(2).max(120),
+  unit: z.string().trim().min(1).max(30),
+  reorderLevel: z.number().int().min(0).max(100000).default(0),
+  active: z.boolean().default(true),
+});
+export const HealthReceiveInput = z.object({
+  institutionId: Id,
+  quantity: Units,
+  expiresOn: DateOnly,
+});
+export const HealthDispenseInput = z.object({
+  institutionId: Id,
+  quantity: Units,
+  visitId: Id.optional(),
+});
+export const HealthDiscardInput = z.object({
+  institutionId: Id,
+  batchId: Id,
+  quantity: Units,
+  reason: z.string().trim().min(3).max(300),
+});
+export const HealthSosInput = z.object({
+  institutionId: Id,
+  studentId: Id.optional(),
+  kind: z.enum(['medical', 'injury', 'fire', 'missing_child', 'other']),
+  location: z.string().trim().min(2).max(200),
+});
+export const HealthPartnerInput = z.object({
+  institutionId: Id,
+  name: z.string().trim().min(2).max(160),
+  kind: z.enum(['hospital', 'clinic', 'ambulance', 'pharmacy']),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[0-9+ -]{6,20}$/),
+  address: z.string().trim().max(300).nullable().default(null),
+  sort: z.number().int().min(0).max(999).default(0),
+  active: z.boolean().default(true),
+});
+export const HealthCloseIncidentInput = z.object({
+  institutionId: Id,
+  outcome: z.enum(['resolved_on_site', 'sent_home', 'hospital', 'false_alarm']),
+  report: z.string().trim().min(10).max(4000),
 });
 export const ConsentDecisionInput = z.object({
   noticeId: Id,

@@ -14,6 +14,8 @@ export {
   requestMarkChange,
   saveMarks,
   setRemark,
+  setSubjectParts,
+  type PartInput,
   studentResults,
   submitPaper,
   type ExamDeps,
@@ -35,3 +37,25 @@ export {
   type PaperSchedule,
 } from './application/exams.js';
 export type { PaperStats } from './domain/analysis.js';
+export {
+  AREA_GRADES,
+  coScholasticAreas,
+  DEFAULT_AREAS,
+  reportCardSheet,
+  saveArea,
+  saveReportCard,
+  type Area,
+  type AreaGrade,
+  type ReportCardSheet,
+} from './application/report-card.js';
+export {
+  FINAL_PUBLISHED,
+  publishResultPlan,
+  resultPlanDetail,
+  resultPlans,
+  saveResultPlan,
+  type ResultPlanDetail,
+  type ResultPlanInput,
+  type ResultPlanSummary,
+} from './application/final.js';
+export type { FinalSubject } from './domain/results.js';

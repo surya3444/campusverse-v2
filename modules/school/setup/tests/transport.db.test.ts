@@ -201,6 +201,53 @@ describe('riders', () => {
     expect(r?.reference).toMatch(/^ADM-/);
   });
 
+  it('puts a student on both trips of the day in one step, billed once', async () => {
+    const stop = await saveStop(db, permissions, incharge, {
+      institutionId: t.institutionId,
+      name: 'Two Trips Nagar',
+      fareZone: 4,
+      active: true,
+    });
+    const [morning, afternoon] = await Promise.all(
+      (['pickup', 'drop'] as const).map((direction) =>
+        saveRoute(db, permissions, incharge, {
+          institutionId: t.institutionId,
+          name: `Route 12 ${direction}`,
+          direction,
+          active: true,
+          stops: [{ stopId: stop.id, plannedAt: direction === 'pickup' ? '07:05' : '15:40' }],
+        }),
+      ),
+    );
+    const from = '2026-12-02';
+    await expect(
+      assignRider(db, permissions, P, incharge, {
+        institutionId: t.institutionId,
+        personId: t.studentId,
+        routeId: morning!.id,
+        stopId: stop.id,
+        from,
+        also: { routeId: morning!.id, stopId: stop.id },
+      }),
+    ).rejects.toMatchObject({ code: 'same_direction' });
+    await assignRider(db, permissions, P, incharge, {
+      institutionId: t.institutionId,
+      personId: t.studentId,
+      routeId: morning!.id,
+      stopId: stop.id,
+      from,
+      also: { routeId: afternoon!.id, stopId: stop.id },
+    });
+    const rides = (await listRiders(db, permissions, P, viewer, t.institutionId, from))
+      .filter((x) => x.personId === t.studentId)
+      .map((x) => [x.direction, x.routeId])
+      .sort();
+    expect(rides).toEqual([
+      ['drop', afternoon!.id],
+      ['pickup', morning!.id],
+    ]);
+  });
+
   it('moves a rider to another route; the old one ends the day before', async () => {
     const stop = await saveStop(db, permissions, incharge, {
       institutionId: t.institutionId,

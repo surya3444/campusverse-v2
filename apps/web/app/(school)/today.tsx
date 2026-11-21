@@ -4,7 +4,7 @@ import type { CertificateSummary } from '@campusverse/school-certificates';
 import type { AttendanceDay } from '@campusverse/school-attendance';
 import type { Approval, DayCloseView, Dues, FinanceSummary } from '@campusverse/shared-finance';
 import type { StudentListItem } from '@campusverse/people-records';
-import type { Pipeline } from '@campusverse/school-admissions';
+import type { AdmissionYear, Pipeline } from '@campusverse/school-admissions';
 import type { TrendDay } from '@campusverse/school-attendance';
 import type { CoverDay, DayPlan } from '@campusverse/school-timetable';
 import type { TodayTrip, TransportSetup } from '@campusverse/shared-transport';
@@ -40,7 +40,7 @@ import { ApiFailure, api } from '../../lib/api';
 import { en } from '../../messages/en';
 import { useInstitution } from './attendance/shared';
 import { CheckInCard } from './common/check-in';
-import { yearLabels } from './admissions/pipeline-view';
+import { defaultYear } from './admissions/shared';
 import {
   AttentionRibbon,
   DashPanel,
@@ -127,9 +127,14 @@ export function Today() {
     'roll',
     id ? `/people/students?institutionId=${id}` : null,
   );
+  const admissionYears = usePart<AdmissionYear[]>(
+    'admission-years',
+    id ? `/school/admissions/${id}/years` : null,
+  );
+  const admissionYear = defaultYear(admissionYears.data ?? []);
   const pipe = usePart<Pipeline>(
     'pipeline',
-    id ? `/school/admissions/${id}?year=${yearLabels()[0] ?? ''}` : null,
+    id && admissionYear ? `/school/admissions/${id}?year=${admissionYear}` : null,
   );
   const certs = usePart<CertificateSummary[]>(
     'certificates',

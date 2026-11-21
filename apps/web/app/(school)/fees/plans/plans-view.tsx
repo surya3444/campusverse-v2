@@ -1,6 +1,6 @@
 'use client';
 
-import type { Head, PlanSummary } from '@campusverse/shared-finance';
+import type { Head, PayeesView, PlanSummary } from '@campusverse/shared-finance';
 import {
   Button,
   EmptyState,
@@ -41,13 +41,30 @@ export function PlansView() {
   const [taxClass, setTaxClass] = useState<'education_exempt' | 'taxable'>('education_exempt');
   const [rte, setRte] = useState(true);
   const [refundable, setRefundable] = useState(false);
+  const [payeeId, setPayeeId] = useState('');
   const [adding, setAdding] = useState(false);
+  const [moving, setMoving] = useState<Head | null>(null);
+  // Bodies the institution collects for (VTU, a board): a head can be collected for one of them.
+  const payees = useQuery({
+    queryKey: ['fee-payees', id, 'all'],
+    queryFn: () => api.get<PayeesView>(`/finance/${id}/payees?year=all`),
+    enabled: !!id,
+  });
+  const bodies = payees.data?.payees ?? [];
   const add = useMutation({
     mutationFn: () =>
-      api.post(`/finance/${id}/heads`, { code, name, taxClass, rteExempt: rte, refundable }),
+      api.post(`/finance/${id}/heads`, {
+        code,
+        name,
+        taxClass,
+        rteExempt: rte,
+        refundable,
+        payeeId: payeeId || null,
+      }),
     onSuccess: () => {
       setCode('');
       setName('');
+      setPayeeId('');
       setAdding(false);
       void qc.invalidateQueries({ queryKey: ['fee-heads', id] });
     },
@@ -84,6 +101,8 @@ export function PlansView() {
         }
       />
 
+      <HowFeesWork />
+
       <Section
         id="heads"
         title={t.headsStep}
@@ -109,11 +128,25 @@ export function PlansView() {
               <li key={h.id} className="flex flex-wrap items-center gap-3 px-6 py-2.5 text-body">
                 <span className="w-24 font-mono text-caption text-ink-muted">{h.code}</span>
                 <span className="flex-1 font-medium text-ink">{h.name}</span>
+                {h.payee ? (
+                  <Pill tone="go">{en.collectedFor.collectedForPill(h.payee)}</Pill>
+                ) : null}
                 <span className="text-caption text-ink-muted">
                   {t.taxClasses[h.taxClass]}
                   {h.rteExempt && ` · ${t.rteExempt}`}
                   {h.refundable && ` · ${t.refundable}`}
                 </span>
+                {!h.used && bodies.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="quiet"
+                    onClick={() => setMoving(h)}
+                    aria-haspopup="dialog"
+                    aria-label={t.collectedForEdit(h.name)}
+                  >
+                    {t.collectedFor}
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
@@ -162,6 +195,27 @@ export function PlansView() {
                 <option value="taxable">{t.taxClasses.taxable}</option>
               </select>
             </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-caption font-medium text-ink">{t.collectedFor}</span>
+              <select
+                value={payeeId}
+                onChange={(e) => setPayeeId(e.target.value)}
+                className={fieldInput}
+              >
+                <option value="">{en.collectedFor.own}</option>
+                {bodies.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.shortName} · {b.name}
+                  </option>
+                ))}
+              </select>
+              <span className="text-caption text-ink-muted">
+                {t.collectedForHint}{' '}
+                <Link href="/fees/payees" className="font-medium text-navy-950 underline">
+                  {en.collectedFor.add}
+                </Link>
+              </span>
+            </label>
             <label className="flex items-center gap-2 text-body text-ink">
               <input type="checkbox" checked={rte} onChange={(e) => setRte(e.target.checked)} />
               {t.rteExempt}
@@ -177,6 +231,19 @@ export function PlansView() {
           </FormModal>
         )}
       </Section>
+
+      {moving && (
+        <HeadPayeeDialog
+          head={moving}
+          bodies={bodies}
+          onClose={() => setMoving(null)}
+          onDone={() => {
+            setMoving(null);
+            void qc.invalidateQueries({ queryKey: ['fee-heads', id] });
+            void qc.invalidateQueries({ queryKey: ['fee-payees'] });
+          }}
+        />
+      )}
 
       <Section id="plans" title={t.plansStep} description={t.plansStepLead} flush>
         {(plans.data ?? []).length === 0 ? (
@@ -199,6 +266,11 @@ export function PlansView() {
                     {p.name}{' '}
                     <span className="text-caption text-ink-muted">{t.version(p.version)}</span>
                   </span>
+                  {p.periodLabel && (
+                    <span className="tabular rounded-full bg-paper px-2.5 py-0.5 text-caption text-ink-muted">
+                      {p.periodLabel}
+                    </span>
+                  )}
                   <span className="tabular text-body text-ink">{rupees(p.totalPaise)}</span>
                   <Pill tone={p.state === 'published' ? 'go' : 'neutral'}>{t.states[p.state]}</Pill>
                 </Link>
@@ -208,5 +280,77 @@ export function PlansView() {
         )}
       </Section>
     </div>
+  );
+}
+
+/** Who a head is collected for, while it hasn't been billed. */
+function HeadPayeeDialog({
+  head,
+  bodies,
+  onClose,
+  onDone,
+}: {
+  head: Head;
+  bodies: PayeesView['payees'];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [payeeId, setPayeeId] = useState(head.payeeId ?? '');
+  const save = useMutation({
+    mutationFn: () => api.post(`/finance/heads/${head.id}/payee`, { payeeId: payeeId || null }),
+    onSuccess: onDone,
+  });
+  return (
+    <FormModal
+      title={t.collectedForEdit(head.name)}
+      description={t.collectedForLead}
+      submitLabel={en.form.save}
+      cancelLabel={en.form.cancel}
+      pending={save.isPending}
+      error={save.isError ? feeError(save.error) : null}
+      onClose={onClose}
+      onSubmit={() => save.mutate()}
+    >
+      <label className="col-span-full flex flex-col gap-1.5">
+        <span className="text-caption font-medium text-ink">{t.collectedFor}</span>
+        <select value={payeeId} onChange={(e) => setPayeeId(e.target.value)} className={fieldInput}>
+          <option value="">{en.collectedFor.own}</option>
+          {bodies.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.shortName} · {b.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    </FormModal>
+  );
+}
+
+/** Fees in four steps, in plain words, above the setup it explains. */
+function HowFeesWork() {
+  const h = t.how;
+  return (
+    <section aria-labelledby="how-fees" className="panel flex flex-col gap-4 p-5">
+      <h2 id="how-fees" className="font-display text-body font-semibold text-ink">
+        {h.title}
+      </h2>
+      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {h.steps.map(([title, body], i) => (
+          <li key={title} className="flex gap-3 rounded-xl bg-paper p-3">
+            <span
+              aria-hidden
+              className="tabular flex size-7 shrink-0 items-center justify-center rounded-full bg-navy-950 text-caption font-semibold text-white"
+            >
+              {i + 1}
+            </span>
+            <span className="flex flex-col gap-0.5">
+              <span className="text-body font-medium text-ink">{title}</span>
+              <span className="text-caption text-ink-muted">{body}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="text-caption text-ink-muted">{h.extras}</p>
+    </section>
   );
 }

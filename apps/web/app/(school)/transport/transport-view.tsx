@@ -795,22 +795,70 @@ const NEW_ROUTE: RouteForm = {
   stops: [],
 };
 
+const minutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+};
+const clock = (n: number) =>
+  `${String(Math.floor(n / 60) % 24).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+
+/**
+ * The same bus the other way: the morning pickup's stops in reverse for the afternoon drop (or
+ * back), same bus and crew, the first stop at `start` and the same gaps between stops.
+ */
+function otherTrip(f: RouteForm, start: string): RouteForm {
+  const last = minutes(f.stops.at(-1)?.plannedAt ?? start);
+  return {
+    name: f.name,
+    direction: f.direction === 'pickup' ? 'drop' : 'pickup',
+    vehicleId: f.vehicleId,
+    driverPersonId: f.driverPersonId,
+    attendantPersonId: f.attendantPersonId,
+    active: true,
+    stops: [...f.stops].reverse().map((x) => ({
+      stopId: x.stopId,
+      plannedAt: clock(minutes(start) + last - minutes(x.plannedAt)),
+    })),
+  };
+}
+
+const formOf = (x: Route): RouteForm => ({
+  id: x.id,
+  name: x.name,
+  direction: x.direction,
+  vehicleId: x.vehicleId ?? '',
+  driverPersonId: x.driverPersonId ?? '',
+  attendantPersonId: x.attendantPersonId ?? '',
+  active: x.active,
+  stops: x.stops.map(({ stopId, plannedAt }) => ({ stopId, plannedAt })),
+});
+
 function Routes({ institutionId, data, manageRoutes, onDone, openNew }: Ctx & { openNew: number }) {
   const r = t.routes;
   const [form, setForm] = useState<RouteForm | null>(null);
+  // A new morning route can make its afternoon drop at the same time.
+  const [alsoDrop, setAlsoDrop] = useState(true);
+  const [dropAt, setDropAt] = useState('15:30');
+  const twinOf = (x: Route) =>
+    data.routes.find((y) => y.name === x.name && y.direction !== x.direction);
   useOpenNew(openNew && data.stops.length > 0 ? openNew : 0, setForm, NEW_ROUTE);
   const crewName = new Map(data.crew.map((m) => [m.personId, m.name]));
   const stopName = new Map(data.stops.map((s) => [s.id, s.name]));
   const vehicle = new Map(data.vehicles.map((v) => [v.id, v]));
+  const post = (f: RouteForm) =>
+    api.post('/transport/routes', {
+      ...f,
+      institutionId,
+      vehicleId: f.vehicleId || null,
+      driverPersonId: f.driverPersonId || null,
+      attendantPersonId: f.attendantPersonId || null,
+    });
   const save = useMutation({
-    mutationFn: (f: RouteForm) =>
-      api.post('/transport/routes', {
-        ...f,
-        institutionId,
-        vehicleId: f.vehicleId || null,
-        driverPersonId: f.driverPersonId || null,
-        attendantPersonId: f.attendantPersonId || null,
-      }),
+    mutationFn: async (f: RouteForm) => {
+      await post(f);
+      if (!f.id && f.direction === 'pickup' && alsoDrop && f.stops.length > 0)
+        await post(otherTrip(f, dropAt));
+    },
     onSuccess: () => {
       setForm(null);
       onDone();
@@ -839,6 +887,11 @@ function Routes({ institutionId, data, manageRoutes, onDone, openNew }: Ctx & { 
           pending={save.isPending}
           error={save.error}
           onSave={() => save.mutate(form)}
+          twin={
+            !form.id && form.direction === 'pickup'
+              ? { on: alsoDrop, at: dropAt, setOn: setAlsoDrop, setAt: setDropAt }
+              : undefined
+          }
           onCancel={() => {
             save.reset();
             setForm(null);
@@ -872,22 +925,21 @@ function Routes({ institutionId, data, manageRoutes, onDone, openNew }: Ctx & { 
                   <span className="tabular text-caption text-ink-muted">
                     {r.stopCount(x.stops.length)}
                   </span>
-                  {manageRoutes && (
-                    <IconButton
-                      label={`${t.edit}: ${x.name}`}
+                  {manageRoutes && x.active && !twinOf(x) && x.stops.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      aria-haspopup="dialog"
                       onClick={() =>
-                        setForm({
-                          id: x.id,
-                          name: x.name,
-                          direction: x.direction,
-                          vehicleId: x.vehicleId ?? '',
-                          driverPersonId: x.driverPersonId ?? '',
-                          attendantPersonId: x.attendantPersonId ?? '',
-                          active: x.active,
-                          stops: x.stops.map(({ stopId, plannedAt }) => ({ stopId, plannedAt })),
-                        })
+                        setForm(otherTrip(formOf(x), x.direction === 'pickup' ? '15:30' : '07:00'))
                       }
                     >
+                      <Plus aria-hidden className="size-4" />
+                      {x.direction === 'pickup' ? r.makeDrop : r.makePickup}
+                    </Button>
+                  )}
+                  {manageRoutes && (
+                    <IconButton label={`${t.edit}: ${x.name}`} onClick={() => setForm(formOf(x))}>
                       <Pencil aria-hidden className="size-4" />
                     </IconButton>
                   )}
@@ -930,6 +982,7 @@ function RouteEditor({
   error,
   onSave,
   onCancel,
+  twin,
 }: {
   form: RouteForm;
   setForm: (f: RouteForm) => void;
@@ -940,6 +993,10 @@ function RouteEditor({
   error: unknown;
   onSave: () => void;
   onCancel: () => void;
+  /** A new morning route: also make its afternoon drop, leaving school at a time. */
+  twin?:
+    | { on: boolean; at: string; setOn: (on: boolean) => void; setAt: (at: string) => void }
+    | undefined;
 }) {
   const r = t.routes;
   const used = new Set(form.stops.map((s) => s.stopId));
@@ -1093,6 +1150,33 @@ function RouteEditor({
           </select>
         )}
       </fieldset>
+      {twin && (
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-paper px-3 py-3 sm:col-span-2">
+          <label className="flex items-start gap-2 text-body text-ink">
+            <input
+              type="checkbox"
+              checked={twin.on}
+              onChange={(e) => twin.setOn(e.target.checked)}
+              className="mt-1 size-4 accent-[#04266d]"
+            />
+            <span className="flex flex-col">
+              <span className="font-medium">{r.alsoDrop}</span>
+              <span className="text-caption text-ink-muted">{r.alsoDropHint}</span>
+            </span>
+          </label>
+          {twin.on && (
+            <label className="flex flex-wrap items-center gap-2 pl-6 text-body text-ink">
+              {r.leavesAt}
+              <input
+                type="time"
+                value={twin.at}
+                onChange={(e) => twin.setAt(e.target.value)}
+                className={cx(fieldInput, 'tabular w-32')}
+              />
+            </label>
+          )}
+        </div>
+      )}
       <ActiveToggle value={form.active} onChange={(active) => setForm({ ...form, active })} />
     </FormRow>
   );

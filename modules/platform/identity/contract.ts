@@ -17,5 +17,14 @@ export {
   type Authenticated,
   type Tokens,
 } from './application/sessions.js';
+export {
+  completeMfa,
+  confirmMfa,
+  disableMfa,
+  MfaError,
+  mfaStatus,
+  startMfaSetup,
+  type MfaChallenge,
+} from './application/mfa.js';
 export { listProfiles, resolveActor, type Profile } from './application/actor.js';
 export { ensureLogin, inviteAccount, type InviteResult } from './application/invite.js';

@@ -9,6 +9,7 @@ import { ApiFailure, api } from '../../../lib/api';
 import { en } from '../../../messages/en';
 import { useInstitution } from '../attendance/shared';
 import { field, useYears, type YearsAndClasses } from '../exams/shared';
+import { NextYearDialog } from './next-year-dialog';
 
 const t = en.yearEnd;
 const yearError = (e: unknown): string =>
@@ -43,15 +44,7 @@ export function YearEndView() {
   const [toYearId, setTo] = useState('');
   const to = toYearId || later[0]?.yearId || '';
   const [notice, setNotice] = useState('');
-  const nextYear = useMutation({
-    mutationFn: () =>
-      api.post<{ label: string; sections: number }>(`/school/setup/${id}/next-year`, {}),
-    onSuccess: (r) => {
-      setNotice(t.nextYearReady(r.label, r.sections));
-      setTo('');
-      void qc.invalidateQueries({ queryKey: ['exam-years', id] });
-    },
-  });
+  const [proposing, setProposing] = useState(false);
   const undo = useMutation({
     mutationFn: (runId: string) => api.post(`/school/rollover/runs/${runId}/undo`, {}),
     onSuccess: () => {
@@ -113,17 +106,24 @@ export function YearEndView() {
             <Button
               size="sm"
               variant="secondary"
-              disabled={nextYear.isPending}
-              onClick={() => nextYear.mutate()}
+              onClick={() => setProposing(true)}
+              aria-haspopup="dialog"
             >
               {t.setUpNextYear}
             </Button>
           </p>
         )}
-        {nextYear.error && (
-          <p role="alert" className="w-full text-caption text-signal-danger-ink">
-            {yearError(nextYear.error)}
-          </p>
+        {proposing && id && (
+          <NextYearDialog
+            institutionId={id}
+            onClose={() => setProposing(false)}
+            onDone={(r) => {
+              setProposing(false);
+              setNotice(t.nextYearReady(r.label, r.sections));
+              setTo('');
+              void qc.invalidateQueries({ queryKey: ['exam-years', id] });
+            }}
+          />
         )}
       </div>
 

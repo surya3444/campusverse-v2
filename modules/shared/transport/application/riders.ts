@@ -165,13 +165,20 @@ async function write(tx: Tx, actor: Actor, a: Assign, direction: string, batch: 
   return row?.id ?? '';
 }
 
-/** Puts a student on a route from a stop, from a date. Any earlier route that way ends the day before. */
+/**
+ * Puts a student on a route from a stop, from a date, and with `also` on the other trip of the day
+ * too (morning pickup and afternoon drop, two routes), in one step. Any earlier route each way
+ * ends the day before. Billed once: the zone fee covers both trips.
+ */
 export async function assignRider(
   db: Db,
   permissions: Permissions,
   placements: Placements,
   actor: Actor,
-  input: Assign & { institutionId: string },
+  input: Assign & {
+    institutionId: string;
+    also?: { routeId: string; stopId: string } | null | undefined;
+  },
   bill?: BillRider,
 ): Promise<{ id: string; invoices: number; totalPaise: number }> {
   const where = await withTenant(db, actor.orgId, (tx) => campusOf(tx, input.institutionId));
@@ -182,7 +189,15 @@ export async function assignRider(
     { permission: 'transport.assignment.manage', resource: { orgId: actor.orgId, place: where } },
     async (tx) => {
       const { direction } = await check(tx, placements, where.campusId, input);
+      const other = input.also
+        ? { personId: input.personId, from: input.from, ...input.also }
+        : null;
+      const otherWay = other
+        ? (await check(tx, placements, where.campusId, other)).direction
+        : null;
+      if (otherWay === direction) throw new TransportError('same_direction');
       const id = await write(tx, actor, input, direction, null);
+      if (other && otherWay) await write(tx, actor, other, otherWay, null);
       const billed = await billRider(tx, bill, placements, actor, input);
       return {
         result: { id, ...billed },
@@ -196,6 +211,7 @@ export async function assignRider(
             stopId: input.stopId,
             from: input.from,
             direction,
+            alsoRouteId: input.also?.routeId ?? null,
             invoices: billed.invoices,
           },
         },
@@ -486,6 +502,25 @@ export async function commitRiderImport(
  * route ("Route 3 · pickup riders"). Combine with the academic audience (combineAudiences), which
  * keeps the riders to students of the institution being billed or messaged.
  */
+/**
+ * Each rider's fee zone on a date: the zone of their morning pickup stop, else of their afternoon
+ * drop stop (owner's decision, 21 Nov 2026: the morning stop decides; one bus fee per student),
+ * and how many trips they take.
+ */
+async function ridersByZone(tx: Tx, campusId: string, onDate: string) {
+  return tx.execute<{ personId: string; zoneId: string | null; trips: number }>(sql`
+    select a.person_id::text as "personId",
+      (array_agg(z.id::text order by a.direction = 'pickup' desc) filter (where z.id is not null))[1] as "zoneId",
+      count(distinct a.direction)::int as trips
+    from transport_assignment a
+    join transport_route r on r.org_id = a.org_id and r.id = a.route_id
+    join transport_stop s on s.org_id = a.org_id and s.id = a.stop_id
+    left join transport_fare_zone z on z.org_id = s.org_id and z.campus_id = s.campus_id and z.number = s.fare_zone
+    where a.org_id = app_current_org() and r.campus_id = ${campusId} and a.valid_during @> ${onDate}::date
+    group by a.person_id`);
+}
+
+/** Fee zones and routes as audience groups: fee plans and notices target them. */
 export const transportAudience = {
   async groups(tx: Tx, institutionId: string): Promise<{ id: string; label: string }[]> {
     const p = await placeOf(tx, institutionId);
@@ -508,14 +543,37 @@ export const transportAudience = {
     const p = await placeOf(tx, institutionId);
     if (!p) return [];
     const ids = `{${groupIds.join(',')}}`;
-    const rows = await tx.execute<{ id: string }>(sql`
+    // A route group: everyone on that route. A zone: riders whose fee zone it is (one zone each).
+    const onRoutes = await tx.execute<{ id: string }>(sql`
       select distinct a.person_id::text as id
-      from transport_assignment a
-      join transport_route r on r.org_id = a.org_id and r.id = a.route_id
-      join transport_stop s on s.org_id = a.org_id and s.id = a.stop_id
-      left join transport_fare_zone z on z.org_id = s.org_id and z.campus_id = s.campus_id and z.number = s.fare_zone
+      from transport_assignment a join transport_route r on r.org_id = a.org_id and r.id = a.route_id
       where a.org_id = app_current_org() and r.campus_id = ${p.campusId} and a.valid_during @> ${onDate}::date
-        and (a.route_id = any(${ids}::uuid[]) or z.id = any(${ids}::uuid[]))`);
-    return rows.map((r) => r.id);
+        and a.route_id = any(${ids}::uuid[])`);
+    const wanted = new Set(groupIds);
+    const inZones = (await ridersByZone(tx, p.campusId, onDate)).filter(
+      (r) => r.zoneId && wanted.has(r.zoneId),
+    );
+    return [...new Set([...onRoutes.map((r) => r.id), ...inZones.map((r) => r.personId)])];
+  },
+  /** One-way riders (morning only or afternoon only) pay half their zone's fee (owner's decision). */
+  async shares(
+    tx: Tx,
+    institutionId: string,
+    groupIds: string[],
+    studentIds: string[],
+    onDate: string,
+  ): Promise<Map<string, number>> {
+    const p = await placeOf(tx, institutionId);
+    if (!p || groupIds.length === 0 || studentIds.length === 0) return new Map();
+    const wanted = new Set(groupIds);
+    const asked = new Set(studentIds);
+    return new Map(
+      (await ridersByZone(tx, p.campusId, onDate))
+        .filter((r) => r.trips === 1 && r.zoneId && wanted.has(r.zoneId) && asked.has(r.personId))
+        .map((r) => [r.personId, ONE_WAY_SHARE_BP]),
+    );
   },
 };
+
+/** A one-way rider's part of the zone fee: half. */
+export const ONE_WAY_SHARE_BP = 5_000;

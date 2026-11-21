@@ -17,6 +17,23 @@ export type DevSession = {
   refreshToken: string;
 };
 
+/** Approves the sign-up request from this mobile, as the super admin would (dev-only script). */
+export function approveSignup(phone: string) {
+  execSync(`pnpm --filter @campusverse/api -s dev-session --approve ${phone}`, {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  });
+}
+
+/** An email invite's one-time sign-up link token, as the super admin's "Invite by email" makes. */
+export function emailInviteToken(name: string, email: string): string {
+  const out = execSync(
+    `pnpm --filter @campusverse/api -s dev-session --email-invite "${name}" ${email}`,
+    { cwd: repoRoot, encoding: 'utf8' },
+  );
+  return (JSON.parse(out.trim().split('\n').pop() ?? '{}') as { token: string }).token;
+}
+
 /** A freshly signed-up synthetic school, with its owner signed in (dev-only script). */
 export function devSession(name = 'Synthetic Test School'): DevSession {
   const out = execSync(`pnpm --filter @campusverse/api -s dev-session "${name}"`, {

@@ -15,7 +15,7 @@ const field =
 /** Phone, then code, then (for shared phones or several schools) who you are signing in as. */
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
-  const [step, setStep] = useState<'phone' | 'code' | 'profile'>('phone');
+  const [step, setStep] = useState<'phone' | 'code' | 'app' | 'profile'>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -55,18 +55,32 @@ export function LoginForm({ next }: { next: string }) {
   const verify = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      const r = await session.post<{ profiles: Profile[]; chosen: boolean }>('verify', {
-        phone,
-        code,
-      });
-      if (r.chosen) router.replace(next);
-      // Signed in, but invited and not yet onboarded: no organisation, so no profile.
-      else if (r.profiles.length === 0) router.replace('/onboarding');
-      else {
-        setProfiles(r.profiles);
-        setStep('profile');
-      }
+      const r = await session.post<
+        { profiles: Profile[]; chosen: boolean } | { mfaRequired: true }
+      >('verify', { phone, code });
+      if ('mfaRequired' in r) {
+        // Two-step sign-in is on: the code from the authenticator app comes next.
+        setCode('');
+        setStep('app');
+      } else signedIn(r);
     });
+  };
+
+  const verifyApp = (e: FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      signedIn(await session.post<{ profiles: Profile[]; chosen: boolean }>('mfa', { code }));
+    });
+  };
+
+  const signedIn = (r: { profiles: Profile[]; chosen: boolean }) => {
+    if (r.chosen) router.replace(next);
+    // Signed in, but invited and not yet onboarded: no organisation, so no profile.
+    else if (r.profiles.length === 0) router.replace('/onboarding');
+    else {
+      setProfiles(r.profiles);
+      setStep('profile');
+    }
   };
 
   const choose = (p: Profile) =>
@@ -148,6 +162,32 @@ export function LoginForm({ next }: { next: string }) {
               {wait > 0 ? t.resendIn(wait) : t.resend}
             </Button>
           </div>
+        </form>
+      )}
+
+      {step === 'app' && (
+        <form onSubmit={verifyApp} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-body font-medium text-ink">{t.appCodeLabel}</span>
+            <input
+              className={`${field} tabular h-14 text-center font-display text-[1.75rem] tracking-[0.5em]`}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="\d{6}"
+              maxLength={6}
+              required
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            />
+            <span className="text-caption text-ink-muted">{t.appCodeHint}</span>
+          </label>
+          <Button type="submit" size="lg" disabled={busy || code.length !== 6}>
+            {t.verify}
+          </Button>
+          <Button variant="quiet" onClick={() => setStep('phone')}>
+            {t.startAgain}
+          </Button>
         </form>
       )}
 

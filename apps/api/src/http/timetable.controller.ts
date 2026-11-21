@@ -31,6 +31,10 @@ import {
   setGroupSlot,
   setSlot,
   timetableDetail,
+  calendarFor,
+  makeCalendarLink,
+  myWeek,
+  stopCalendarLink,
   updateSchedule,
 } from '@campusverse/school-timetable';
 import {
@@ -45,9 +49,11 @@ import {
   Delete,
   Query,
   Req,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { DB, PERMISSIONS, type AuthedRequest, type Permissions } from './deps.js';
 import { ActorGuard } from './guards.js';
@@ -65,6 +71,24 @@ export class TimetableController {
     @Inject(DB) private readonly db: Db,
     @Inject(PERMISSIONS) private readonly permissions: Permissions,
   ) {}
+
+  /** My Timetable: the signed-in teacher's week (Monday to Sunday) containing a date. */
+  @Get('mine')
+  mine(@Query('date') date: string | undefined, @Req() req: AuthedRequest) {
+    return myWeek(this.db, this.permissions, actorOf(req), date ?? null);
+  }
+
+  /** A private calendar link for Google Calendar or Outlook; any earlier one stops. */
+  @Post('mine/calendar')
+  calendarLink(@Req() req: AuthedRequest) {
+    return makeCalendarLink(this.db, actorOf(req));
+  }
+
+  @Post('mine/calendar/stop')
+  @HttpCode(204)
+  async stopCalendar(@Req() req: AuthedRequest) {
+    await stopCalendarLink(this.db, actorOf(req));
+  }
 
   @Get()
   list(@Query('institutionId') institutionId: string, @Req() req: AuthedRequest) {
@@ -239,5 +263,44 @@ export class TimetableController {
       timetableId: Id.parse(id),
       generationId: Id.parse(runId),
     });
+  }
+}
+
+/**
+ * My Timetable's calendar link, fetched by Google Calendar or Outlook with no session: the
+ * secret in the link is the key, and the feed checks the teacher may still read the timetable.
+ */
+@Controller('public/calendar')
+export class CalendarController {
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(PERMISSIONS) private readonly permissions: Permissions,
+  ) {}
+
+  @Get(':orgId/:file')
+  async feed(
+    @Param('orgId') orgId: string,
+    @Param('file') file: string,
+    @Res() reply: FastifyReply,
+  ) {
+    const body = await calendarFor(
+      this.db,
+      this.permissions,
+      { orgId, token: file.replace(/\.ics$/, '') },
+      {
+        name: 'My timetable · Campusverse',
+        covering: (teacher) => (teacher ? `Cover for ${teacher}` : 'Cover'),
+        covered: (by) => (by ? `Covered by ${by}` : 'Covered'),
+        invigilation: 'Invigilation',
+      },
+    );
+    if (body === null) {
+      await reply.status(404).send({ code: 'not_found', message: 'Not found' });
+      return;
+    }
+    await reply
+      .header('content-type', 'text/calendar; charset=utf-8')
+      .header('cache-control', 'private, max-age=300')
+      .send(body);
   }
 }

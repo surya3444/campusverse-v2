@@ -42,7 +42,7 @@ const recordCtx = (orgId: string, studentId: string) => `health:${orgId}:${stude
 const visitCtx = (orgId: string, studentId: string) => `health-visit:${orgId}:${studentId}`;
 
 /** The institution's place for the permission check, after checking the student belongs to it. */
-async function studentAt(
+export async function studentAt(
   tx: Tx,
   actor: Actor,
   input: { institutionId: string; studentId: string },
@@ -59,7 +59,7 @@ async function studentAt(
   return { orgId: actor.orgId, place, subjectPersonId: input.studentId };
 }
 
-async function readVault(deps: HealthDeps, tx: Tx, actor: Actor, studentId: string) {
+export async function readVault(deps: HealthDeps, tx: Tx, actor: Actor, studentId: string) {
   const [row] = await tx.execute<{ vault: Buffer; updatedAt: string; version: number }>(sql`
     select vault, updated_at::text as "updatedAt", version from health_record
     where org_id = app_current_org() and student_person_id = ${studentId}`);

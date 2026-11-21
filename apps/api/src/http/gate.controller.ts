@@ -1,4 +1,5 @@
 import {
+  GatePassLeftInput,
   Day,
   GateBarInput,
   GateCheckInInput,
@@ -27,6 +28,8 @@ import {
   liftBar,
   myExpected,
   passLeft,
+  resendPickupCode,
+  GateError,
   pickupOptions,
   visitHistory,
   visitorByPhone,
@@ -46,7 +49,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { z } from 'zod';
-import { DB, PERMISSIONS, type AuthedRequest, type Permissions } from './deps.js';
+import type { SmsSimulator } from '../simulation.js';
+import { DB, PERMISSIONS, SMS_SIMULATOR, type AuthedRequest, type Permissions } from './deps.js';
 import { ActorGuard } from './guards.js';
 
 const actorOf = (req: AuthedRequest): Actor => {
@@ -60,8 +64,19 @@ const Kind = z.enum(['staff', 'student']);
 @UseGuards(ActorGuard)
 export class GateController {
   private readonly deps: GateDeps;
-  constructor(@Inject(DB) db: Db, @Inject(PERMISSIONS) permissions: Permissions) {
+  constructor(
+    @Inject(DB) db: Db,
+    @Inject(PERMISSIONS) permissions: Permissions,
+    @Inject(SMS_SIMULATOR) private readonly sms: SmsSimulator | null,
+  ) {
     this.deps = { db, permissions, placements: [schoolPlacement, academicPlacement] };
+  }
+
+  /** The parent's pick-up code goes only to the parent; in simulation it is shown on screen. */
+  private shown(code: string) {
+    return this.sms
+      ? { simulated: { channel: 'sms' as const, to: 'guardians', text: `Pick-up code: ${code}` } }
+      : {};
   }
 
   @Get('today')
@@ -174,17 +189,29 @@ export class GateController {
   }
 
   @Post('passes')
-  issuePass(@Body() body: unknown, @Req() req: AuthedRequest) {
-    return issuePass(this.deps, actorOf(req), GatePassInput.parse(body));
+  async issuePass(@Body() body: unknown, @Req() req: AuthedRequest) {
+    const { passId, code } = await issuePass(this.deps, actorOf(req), GatePassInput.parse(body));
+    return { passId, ...this.shown(code) };
+  }
+
+  @Post('passes/:id/code')
+  async resendCode(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    const { code } = await resendPickupCode(this.deps, actorOf(req), {
+      passId: Id.parse(id),
+      ...GatePlaceInput.parse(body),
+    });
+    return this.shown(code);
   }
 
   @Post('passes/:id/left')
   @HttpCode(204)
   async left(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
-    await passLeft(this.deps, actorOf(req), {
+    const r = await passLeft(this.deps, actorOf(req), {
       passId: Id.parse(id),
-      ...GatePlaceInput.parse(body),
+      ...GatePassLeftInput.parse(body),
     });
+    // The wrong try is already counted (committed); now tell the guard.
+    if (!r.left) throw new GateError('wrong_code', { triesLeft: r.triesLeft });
   }
 
   @Post('passes/:id/cancel')

@@ -552,6 +552,7 @@ function PassLine({ p }: { p: PassRow }) {
         <Pill tone={p.state === 'left' ? 'go' : p.state === 'cancelled' ? 'neutral' : 'warn'}>
           {t.passState[p.state]}
         </Pill>
+        {p.state === 'issued' && p.locked && <Pill tone="stop">{t.code.locked}</Pill>}
       </span>
       <span className="text-caption text-ink-muted tabular-nums">
         {[
@@ -581,9 +582,19 @@ function Passes({
   const refresh = useRefresh();
   const [issuing, setIssuing] = useState(false);
   const [cancelling, setCancelling] = useState<PassRow | null>(null);
+  const [leaving, setLeaving] = useState<PassRow | null>(null);
+  const [note, setNote] = useState<{ text: string; sms: Simulated | null } | null>(null);
   const left = useMutation({
     mutationFn: (passId: string) => api.post(`/gate/passes/${passId}/left`, { institutionId }),
     onSuccess: refresh,
+  });
+  const resend = useMutation({
+    mutationFn: (passId: string) =>
+      api.post<{ simulated?: Simulated }>(`/gate/passes/${passId}/code`, { institutionId }),
+    onSuccess: (r) => {
+      setNote({ text: t.code.resent, sms: r.simulated ?? null });
+      refresh();
+    },
   });
   return (
     <Section
@@ -600,10 +611,16 @@ function Passes({
         ) : undefined
       }
     >
-      {left.isError && (
+      {(left.isError || resend.isError) && (
         <p role="alert" className="px-5 pt-3 text-caption text-signal-stop-ink">
-          {errorText(left.error)}
+          {errorText(left.error ?? resend.error)}
         </p>
+      )}
+      {note && (
+        <div role="status" className="flex flex-col gap-2 px-5 pt-3">
+          <span className="text-body text-ink">{note.text}</span>
+          {note.sms && <SimulatedSms sms={note.sms} />}
+        </div>
       )}
       {passes.length === 0 ? (
         <EmptyState compact icon={DoorOpen} title={t.noPasses} body={t.noPassesBody} />
@@ -612,9 +629,24 @@ function Passes({
           {passes.map((p) => (
             <li key={p.passId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
               <PassLine p={p} />
-              {p.state === 'issued' && manage && (
-                <Button size="sm" disabled={left.isPending} onClick={() => left.mutate(p.passId)}>
+              {p.state === 'issued' && manage && !p.locked && (
+                <Button
+                  size="sm"
+                  disabled={left.isPending}
+                  onClick={() => (p.codeNeeded ? setLeaving(p) : left.mutate(p.passId))}
+                >
                   {t.left}
+                  <span className="sr-only"> {p.student}</span>
+                </Button>
+              )}
+              {p.state === 'issued' && issue && p.codeNeeded && (
+                <Button
+                  size="sm"
+                  variant={p.locked ? 'primary' : 'quiet'}
+                  disabled={resend.isPending}
+                  onClick={() => resend.mutate(p.passId)}
+                >
+                  {t.code.resend}
                   <span className="sr-only"> {p.student}</span>
                 </Button>
               )}
@@ -632,8 +664,20 @@ function Passes({
         <PassForm
           institutionId={institutionId}
           onClose={() => setIssuing(false)}
-          onDone={() => {
+          onDone={(sms) => {
             setIssuing(false);
+            setNote({ text: t.code.sent, sms });
+            refresh();
+          }}
+        />
+      )}
+      {leaving && (
+        <CodeDialog
+          institutionId={institutionId}
+          pass={leaving}
+          onClose={() => setLeaving(null)}
+          onDone={() => {
+            setLeaving(null);
             refresh();
           }}
         />
@@ -658,6 +702,69 @@ function Passes({
   );
 }
 
+type Simulated = { to: string; text: string };
+
+function SimulatedSms({ sms }: { sms: Simulated }) {
+  return (
+    <span className="flex flex-col gap-1 rounded-md border border-signal-warn/40 bg-signal-warn-tint px-4 py-3">
+      <span className="text-caption font-semibold text-signal-warn-ink">{t.code.simulated}</span>
+      <span className="tabular text-body text-ink">{sms.text}</span>
+      <span className="text-caption text-ink-muted">{t.code.simulatedHint}</span>
+    </span>
+  );
+}
+
+/** The guard types the parent's code; a wrong code is counted and says how many tries remain. */
+function CodeDialog({
+  institutionId,
+  pass,
+  onClose,
+  onDone,
+}: {
+  institutionId: string;
+  pass: PassRow;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [code, setCode] = useState('');
+  const go = useMutation({
+    mutationFn: () => api.post(`/gate/passes/${pass.passId}/left`, { institutionId, code }),
+    onSuccess: onDone,
+  });
+  const e = go.error;
+  const message =
+    e instanceof ApiFailure && e.code === 'wrong_code'
+      ? t.code.wrong(Number((e.details as { triesLeft?: number } | null)?.triesLeft ?? 0))
+      : e
+        ? errorText(e)
+        : null;
+  return (
+    <FormModal
+      title={t.code.askTitle(pass.student)}
+      description={t.code.ask}
+      submitLabel={t.code.confirm}
+      cancelLabel={t.cancel}
+      pending={go.isPending}
+      submitDisabled={!/^\d{6}$/.test(code.replace(/\s/g, ''))}
+      error={message}
+      size="md"
+      onClose={onClose}
+      onSubmit={() => go.mutate()}
+    >
+      <ModalField label={t.code.label} wide>
+        <input
+          className={cx(fieldInput, 'tabular text-[1.25rem] tracking-[0.3em]')}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={7}
+          value={code}
+          onChange={(ev) => setCode(ev.target.value)}
+        />
+      </ModalField>
+    </FormModal>
+  );
+}
+
 function PassForm({
   institutionId,
   onClose,
@@ -665,7 +772,7 @@ function PassForm({
 }: {
   institutionId: string;
   onClose: () => void;
-  onDone: () => void;
+  onDone: (sms: Simulated | null) => void;
 }) {
   const [student, setStudent] = useState<Person | null>(null);
   const [who, setWho] = useState<string>('');
@@ -685,13 +792,13 @@ function PassForm({
   const digits = mobile(phone);
   const save = useMutation({
     mutationFn: () =>
-      api.post('/gate/passes', {
+      api.post<{ passId: string; simulated?: Simulated }>('/gate/passes', {
         institutionId,
         studentId: student?.personId,
         collector: other ? { name, relation, phone: digits } : { guardianId: who },
         reason,
       }),
-    onSuccess: onDone,
+    onSuccess: (r) => onDone(r.simulated ?? null),
   });
   const ready =
     !!student &&

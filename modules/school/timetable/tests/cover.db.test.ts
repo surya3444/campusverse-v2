@@ -5,6 +5,7 @@ import { grantPermission, seedAdmin, seedTenant, type SeededTenant } from '@camp
 import { PermissionDenied, createPermissions, type Actor } from '@campusverse/platform-permissions';
 import {
   assignCover,
+  calendarFor,
   cancelCover,
   childWeek,
   copyTimetable,
@@ -12,8 +13,11 @@ import {
   coverJobs,
   dayPlan,
   freeTeachers,
+  makeCalendarLink,
+  myWeek,
   publishTimetable,
   setSlot,
+  stopCalendarLink,
   timetableTools,
 } from '@campusverse/school-timetable';
 import { markDay } from '@campusverse/shared-staff-attendance';
@@ -228,6 +232,64 @@ describe('cover', () => {
       select title, body from notification_message where recipient_person_id = ${chitra}`);
     expect(msg.title).toBe('Cover: Class 5-A English, period 1');
     expect(msg.body).toMatch(/Chapter 4 worksheet/);
+  });
+
+  it("puts it in each teacher's own week, and in their calendar link", async () => {
+    // Teachers read the timetable through their role.
+    await grantPermission(db, t.orgId, 'principal', 'school.timetable.read');
+    for (const id of [anita, chitra, t.teacherId])
+      await withTenant(db, t.orgId, (tx) =>
+        tx.execute(sql`
+          insert into role_assignment (org_id, person_id, role_id, scope_type, scope_id)
+          select org_id, ${id}, id, 'organisation', org_id from role
+          where org_id = app_current_org() and key = 'principal' on conflict do nothing`),
+      );
+    const as = (personId: string): Actor => ({ accountId: randomUUID(), orgId: t.orgId, personId });
+    const mon = (w: Awaited<ReturnType<typeof myWeek>>) => w.days.find((d) => d.date === monday)!;
+
+    // Chitra covers the away teacher's Monday period 1; the away teacher sees it covered.
+    const covering = await myWeek(db, permissions, as(chitra), monday);
+    expect(covering.from).toBe(monday);
+    expect(mon(covering).lessons).toMatchObject([
+      { kind: 'covering', section: 'Class 5-A', startsAt: expect.any(String) },
+    ]);
+    const away = await myWeek(db, permissions, as(t.teacherId), monday);
+    expect(mon(away).lessons.find((l) => l.kind === 'covered')).toMatchObject({
+      other: 'Chitra Menon',
+    });
+    // Anita's own English in 5-A on Tuesday.
+    const own = await myWeek(db, permissions, as(anita), monday);
+    expect(own.days[1]?.lessons).toMatchObject([{ kind: 'own', section: 'Class 5-A' }]);
+    // Someone with no lessons and no timetable access sees an empty week.
+    expect((await myWeek(db, permissions, office, monday)).days.flatMap((d) => d.lessons)).toEqual(
+      [],
+    );
+
+    // The calendar link: an iCalendar of her lessons; a new link ends the old one.
+    const words = {
+      name: 'My timetable',
+      covering: (x: string | null) => `Cover for ${x ?? ''}`,
+      covered: (x: string | null) => `Covered by ${x ?? ''}`,
+      invigilation: 'Invigilation',
+    };
+    const parse = (path: string) => {
+      const [, , orgId, file] = path.split('/');
+      return { orgId: orgId ?? '', token: (file ?? '').replace(/\.ics$/, '') };
+    };
+    const first = parse((await makeCalendarLink(db, as(chitra))).path);
+    const feed = await calendarFor(db, permissions, first, words);
+    expect(feed).toMatch(/^BEGIN:VCALENDAR\r\n/);
+    expect(feed).toMatch(/SUMMARY:Cover for .*Class 5-A/);
+    expect(feed).toContain('TZID=Asia/Kolkata');
+    expect((await myWeek(db, permissions, as(chitra), monday)).feed.live).toBe(true);
+    const second = parse((await makeCalendarLink(db, as(chitra))).path);
+    expect(await calendarFor(db, permissions, first, words)).toBeNull();
+    expect(await calendarFor(db, permissions, second, words)).toMatch(/BEGIN:VEVENT/);
+    await stopCalendarLink(db, as(chitra));
+    expect(await calendarFor(db, permissions, second, words)).toBeNull();
+    expect(
+      await calendarFor(db, permissions, { orgId: t.orgId, token: 'x'.repeat(32) }, words),
+    ).toBeNull();
   });
 
   it('can combine the class instead, and take the cover back', async () => {

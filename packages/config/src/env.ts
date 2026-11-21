@@ -88,7 +88,9 @@ export function simulatingHere(source: Record<string, string | undefined> = proc
 }
 
 /** Validates config at startup. A missing or bad value throws, so the app never starts half-configured. */
-export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
+export function loadEnv(raw: Record<string, string | undefined> = process.env): Env {
+  // An empty value is unset (Compose writes optional variables as empty strings).
+  const source = Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== ''));
   const result = EnvSchema.safeParse(source);
   if (!result.success) {
     // Names only: never echo values, they may be secrets.

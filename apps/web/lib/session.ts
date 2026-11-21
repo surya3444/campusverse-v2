@@ -9,6 +9,8 @@ export const COOKIE = {
   device: 'cv_device',
   org: 'cv_org',
   person: 'cv_person',
+  /** A sign-in waiting for the authenticator code (five minutes). */
+  mfa: 'cv_mfa',
 } as const;
 
 export const API_URL = webEnv().API_URL;
@@ -35,6 +37,22 @@ export async function storeProfile(orgId: string, personId: string) {
   const jar = await cookies();
   jar.set(COOKIE.org, orgId, { ...base, maxAge: 30 * 24 * 3600 });
   jar.set(COOKIE.person, personId, { ...base, maxAge: 30 * 24 * 3600 });
+}
+
+/** Keeps a sign-in challenge until the authenticator code arrives (five minutes). */
+export async function storeMfaChallenge(challenge: string) {
+  (await cookies()).set(COOKIE.mfa, challenge, { ...base, maxAge: 300 });
+}
+
+/** The waiting challenge (kept for retries; the API counts tries and ends it after five). */
+export async function takeMfaChallenge(): Promise<string | null> {
+  const jar = await cookies();
+  const value = jar.get(COOKIE.mfa)?.value ?? null;
+  return value;
+}
+
+export async function dropMfaChallenge() {
+  (await cookies()).delete(COOKIE.mfa);
 }
 
 export async function clearSession() {

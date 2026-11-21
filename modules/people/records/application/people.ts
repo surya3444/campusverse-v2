@@ -194,6 +194,14 @@ export async function addPhone(
     on conflict (org_id, person_id, channel, address) do nothing`);
 }
 
+/** An email contact (lower case); delivery uses it once an email provider is connected. */
+export async function addEmail(tx: Tx, personId: string, email: string): Promise<void> {
+  await tx.execute(sql`
+    insert into person_contact (org_id, person_id, channel, address)
+    values (app_current_org(), ${personId}, 'email', ${email.trim().toLowerCase()})
+    on conflict (org_id, person_id, channel, address) do nothing`);
+}
+
 export async function linkGuardian(
   tx: Tx,
   input: Batch & {
@@ -338,6 +346,22 @@ export async function studentIdsAt(tx: Tx, institutionId: string): Promise<strin
     where org_id = app_current_org() and institution_id = ${institutionId} and kind = 'student'
       and valid_during @> app_today()`);
   return rows.map((r) => r.id);
+}
+
+/** Whether this person is today an unrestricted guardian of a student of the institution. */
+export async function isGuardianAt(
+  tx: Tx,
+  personId: string,
+  institutionId: string,
+): Promise<boolean> {
+  const rows = await tx.execute(sql`
+    select 1 from guardian_link g
+    join institution_membership m on m.org_id = g.org_id and m.person_id = g.student_person_id
+      and m.institution_id = ${institutionId} and m.kind = 'student' and m.valid_during @> app_today()
+    where g.org_id = app_current_org() and g.guardian_person_id = ${personId}
+      and g.valid_during @> app_today() and g.restricted_at is null
+    limit 1`);
+  return rows.length > 0;
 }
 
 /** Names to show beside "who did this" and in access lists, by person id. Call inside the tenant. */

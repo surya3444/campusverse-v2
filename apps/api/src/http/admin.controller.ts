@@ -1,6 +1,8 @@
 import {
   AdminEnrol,
   AdminInvite,
+  EmailInvite,
+  SignupDecision,
   AdminEnrolVerify,
   AdminSignIn,
   AdminSignInVerify,
@@ -26,6 +28,10 @@ import {
   cancelInvite,
   createCustomer,
   inviteAdmin,
+  inviteByEmail,
+  INVITE_LINK_DAYS,
+  decideSignup,
+  listAdmins,
   listInvites,
   createStaff,
   customerDetail,
@@ -314,6 +320,33 @@ export class AdminController {
         }
       : null;
     return { inviteId: r.inviteId, ...(simulated ? { simulated } : {}) };
+  }
+
+  /** Invites an email address: a one-time sign-up link, shown once, that needs no approval. */
+  @Post('invites/email')
+  async inviteEmail(@Body() body: unknown, @Req() req: AuthedRequest) {
+    const { inviteId, token } = await inviteByEmail(
+      this.c.db,
+      staffOf(req),
+      EmailInvite.parse(body),
+    );
+    return {
+      inviteId,
+      link: `${this.c.appOrigin}/signup?invite=${token}`,
+      days: INVITE_LINK_DAYS,
+    };
+  }
+
+  /** Approves a sign-up request, or declines it with a reason. */
+  @Post('invites/:id/decision')
+  @HttpCode(204)
+  async decideSignup(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    await decideSignup(this.c.db, staffOf(req), Id.parse(id), SignupDecision.parse(body));
+  }
+
+  @Get('admins')
+  admins(@Req() req: AuthedRequest) {
+    return listAdmins(this.c.db, staffOf(req));
   }
 
   @Get('invites')

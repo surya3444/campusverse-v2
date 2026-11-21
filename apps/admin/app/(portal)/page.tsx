@@ -167,7 +167,8 @@ function Invites() {
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="text-body text-ink">{i.name}</span>
               <span className="text-caption text-ink-muted">
-                …{i.phone.slice(-4)} · {i.planCode} · {t.invitedBy(i.invitedBy, at(i.createdAt))}
+                {i.phone ? `…${i.phone.slice(-4)}` : i.email} · {i.planCode} ·{' '}
+                {t.invitedBy(i.invitedBy, at(i.createdAt))}
               </span>
             </span>
             <Chip tone="requested">{t.inviteStatus[i.status]}</Chip>

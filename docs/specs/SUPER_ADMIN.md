@@ -28,18 +28,19 @@ Campus Verse staff only. Schools never see this portal. Two staff roles:
 
 ## Screens
 
-| Screen          | What                                                                                                                                                       |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Customers       | List with status, plan, students against the plan's limit, last activity. New customer: school name, state, board, owner name and phone (replaces the CLI) |
-| Customer        | Status, plan, flags, switches for this customer, support access, recent audit, delivery counts                                                             |
-| Plans           | Plan code, name, student limit, price per student per year (paise), included features                                                                      |
-| Feature flags   | Each flag's default and per-customer overrides                                                                                                             |
-| Approvals       | Requests waiting for a second person; approve or reject with a reason                                                                                      |
-| Support access  | Active and past grants                                                                                                                                     |
-| Audit           | Search by staff, customer, action and date                                                                                                                 |
-| Delivery health | Outbox backlog and oldest waiting event; per channel sent, delivered and failed in the last 24 hours, per customer                                         |
-| Switches        | Emergency switches, global or per customer                                                                                                                 |
-| Staff           | Staff, roles, enrolment links, disable                                                                                                                     |
+| Screen          | What                                                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Customers       | List with status, plan, students against the plan's limit, last activity. New customer: school name, state, board, owner name and phone (replaces the CLI)                                                   |
+| Admins          | Sign-up requests to approve, or decline with a reason the person sees; invite by email (a one-time 14-day link, copied or opened in mail); every admin with the organisations they run, and open invitations |
+| Customer        | Status, plan, flags, switches for this customer, support access, recent audit, delivery counts                                                                                                               |
+| Plans           | Plan code, name, student limit, price per student per year (paise), included features                                                                                                                        |
+| Feature flags   | Each flag's default and per-customer overrides                                                                                                                                                               |
+| Approvals       | Requests waiting for a second person; approve or reject with a reason                                                                                                                                        |
+| Support access  | Active and past grants                                                                                                                                                                                       |
+| Audit           | Search by staff, customer, action and date                                                                                                                                                                   |
+| Delivery health | Outbox backlog and oldest waiting event; per channel sent, delivered and failed in the last 24 hours, per customer                                                                                           |
+| Switches        | Emergency switches, global or per customer                                                                                                                                                                   |
+| Staff           | Staff, roles, enrolment links, disable                                                                                                                                                                       |
 
 ## Rules
 

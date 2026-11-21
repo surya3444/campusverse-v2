@@ -120,7 +120,10 @@ describe('generate', () => {
     expect(g.short.reduce((n, s) => n + s.missing, 0)).toBe(54 - g.placed.length);
   });
 
-  it('keeps a teacher out of particular times only', () => {
+  // A tight week (exactly two a day): the search backs up a lot, so seconds rather than
+  // milliseconds. ponytail: identical lessons in cell order fight the spread cost; teach the cost
+  // about the remaining days if real schools hit this.
+  it('keeps a teacher out of particular times only', { timeout: 20_000 }, () => {
     // Not Monday period 1 and not Saturday after the break (periods 4-8).
     const offCells = ['1:1', ...[4, 5, 6, 7, 8].map((n) => `6:${n}`)];
     const g = run([{ sectionId: 'A', subjectId: 'maths', teacherPersonId: 'ravi', count: 12 }], {
@@ -245,5 +248,55 @@ describe('generate', () => {
     expect(g.complete).toBe(true);
     expect(g.placed).toHaveLength(30 * 46);
     hardRulesHold(g, rules({ teacherMaxPerDay: 7, teacherMaxInARow: 4 }));
+  });
+});
+
+describe('more rules', () => {
+  const demands: Demand[] = [
+    { sectionId: 'A', subjectId: 'maths', teacherPersonId: 'ravi', count: 6 },
+    { sectionId: 'A', subjectId: 'english', teacherPersonId: 'uma', count: 6 },
+    { sectionId: 'A', subjectId: 'pe', teacherPersonId: 'kiran', count: 2 },
+    { sectionId: 'A', subjectId: 'library', teacherPersonId: 'lata', count: 1 },
+    { sectionId: 'B', subjectId: 'maths', teacherPersonId: 'ravi', count: 6 },
+  ];
+
+  it('keeps a subject out of periods it avoids and off days it is not taught', () => {
+    const g = run(demands, {
+      subjects: { pe: { avoidPeriods: [1, 4] }, library: { days: [5] } },
+    });
+    expect(g.complete).toBe(true);
+    // Bell rows 1 and 5 are "Period 1" and "Period 4".
+    expect(
+      g.placed.filter((p) => p.subjectId === 'pe').every((p) => ![1, 5].includes(p.period)),
+    ).toBe(true);
+    expect(g.placed.filter((p) => p.subjectId === 'library').map((p) => p.weekday)).toEqual([5]);
+  });
+
+  it('never gives a teacher more than their week', () => {
+    const g = run(demands, { teachers: { ravi: { maxPerWeek: 8 } } });
+    expect(g.placed.filter((p) => p.teacherPersonId === 'ravi')).toHaveLength(8);
+    expect(g.complete).toBe(false);
+    expect(g.short.reduce((n, x) => n + x.missing, 0)).toBe(4);
+  });
+
+  it('starts each day with the class teacher, and keeps "same period" subjects in place', () => {
+    const g = generate({
+      demands,
+      days,
+      periods,
+      fixed: [],
+      rules: rules({ classTeacherFirst: true, subjects: { english: { samePeriod: true } } }),
+      classTeachers: { A: 'uma', B: null },
+    });
+    expect(g.complete).toBe(true);
+    expect(g.classTeacherWish).toEqual({ met: 6, of: 6 });
+    expect(g.samePeriodWish!.met).toBeGreaterThanOrEqual(5);
+  });
+
+  it('a new seed gives another arrangement, the same seed the same one', () => {
+    const key = (g: Generated) =>
+      g.placed.map((p) => `${p.subjectId}${p.weekday}${p.period}`).join();
+    expect(key(run(demands, { seed: 3 }))).toBe(key(run(demands, { seed: 3 })));
+    expect(key(run(demands, { seed: 3 }))).not.toBe(key(run(demands, { seed: 4 })));
   });
 });

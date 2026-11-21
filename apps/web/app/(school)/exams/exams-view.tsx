@@ -10,6 +10,8 @@ import { useState } from 'react';
 import { ApiFailure, api } from '../../../lib/api';
 import { en } from '../../../messages/en';
 import { useInstitution } from '../attendance/shared';
+import { FinalResults } from './final-results';
+import { PartsEditor, partsReady, type Part } from './parts-editor';
 import { EXAM_CHIP, examError, field, t, useYears } from './shared';
 
 export function ExamsView() {
@@ -88,6 +90,7 @@ export function ExamsView() {
           ))}
         </ul>
       )}
+      {id && <FinalResults institutionId={id} exams={list.data ?? []} />}
     </div>
   );
 }
@@ -99,14 +102,15 @@ function CreateForm({ institutionId, onClose }: { institutionId: string; onClose
   const [yearId, setYearId] = useState('');
   const [name, setName] = useState('');
   const [classIds, setClassIds] = useState<string[]>([]);
-  const [maxMarks, setMaxMarks] = useState('100');
+  const [parts, setParts] = useState<Part[]>([{ name: '', maxMarks: '100' }]);
   const save = useMutation({
     mutationFn: () =>
       api.post<{ id: string }>(`/school/exams/institution/${institutionId}`, {
         yearId: yearId || current?.yearId,
         name,
         classIds,
-        maxMarks,
+        maxMarks: parts.length === 1 ? (parts[0]?.maxMarks ?? '100') : '100',
+        parts: parts.length > 1 ? parts : null,
       }),
     onSuccess: (r) => router.push(`/exams/${r.id}`),
   });
@@ -117,7 +121,7 @@ function CreateForm({ institutionId, onClose }: { institutionId: string; onClose
       submitLabel={t.create}
       cancelLabel={en.form.cancel}
       pending={save.isPending || ref.isPending}
-      submitDisabled={!name || classIds.length === 0}
+      submitDisabled={!name || classIds.length === 0 || !partsReady(parts)}
       error={save.isError ? examError(save.error) : null}
       onClose={onClose}
       onSubmit={() => save.mutate()}
@@ -146,17 +150,6 @@ function CreateForm({ institutionId, onClose }: { institutionId: string; onClose
           className={field}
         />
       </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-caption font-medium text-ink">{t.maxMarks}</span>
-        <input
-          required
-          inputMode="decimal"
-          pattern="\d{1,4}(\.\d{1,2})?"
-          value={maxMarks}
-          onChange={(e) => setMaxMarks(e.target.value)}
-          className={cx(field, 'tabular-nums')}
-        />
-      </label>
       <fieldset className="flex flex-col gap-1.5 sm:col-span-2">
         <legend className="mb-1.5 text-caption font-medium text-ink">{t.classes}</legend>
         <div className="flex flex-wrap gap-2">
@@ -179,6 +172,7 @@ function CreateForm({ institutionId, onClose }: { institutionId: string; onClose
           ))}
         </div>
       </fieldset>
+      <PartsEditor value={parts} onChange={setParts} />
     </FormModal>
   );
 }

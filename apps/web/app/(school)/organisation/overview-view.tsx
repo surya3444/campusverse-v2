@@ -12,13 +12,14 @@ import {
   StatePanel,
   type KeyFigure,
 } from '@campusverse/ui';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { ArrowRight, Building2, School, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ApiFailure, api } from '../../../lib/api';
 import { rupees } from '../../../lib/money';
 import { chooseInstitution } from '../../../lib/scope';
+import { campusesIn, useView } from '../../../lib/view';
 import { en } from '../../../messages/en';
 
 const t = en.orgOverview;
@@ -81,10 +82,14 @@ const sum = (xs: (number | null | undefined)[]) =>
  */
 export function OrganisationOverview() {
   const router = useRouter();
-  const tree = useQuery({
-    queryKey: ['scope-tree'],
-    queryFn: () => api.get<Tree>('/school/setup/tree'),
-  });
+  // The person's view: the whole organisation, or the campuses or institutions they chose.
+  const view = useView();
+  const tree = {
+    ...view,
+    data: view.data
+      ? ({ organisation: view.data.organisation, campuses: campusesIn(view.data) } satisfies Tree)
+      : undefined,
+  };
   const schools = (tree.data?.campuses ?? []).flatMap((c) => c.institutions);
   const days = useQueries({
     queries: schools.map((s) => ({
@@ -150,7 +155,11 @@ export function OrganisationOverview() {
         icon={Building2}
         art="welcome"
         area="navy"
-        eyebrow={en.nav.allInstitutions}
+        eyebrow={
+          view.data && view.data.level !== 'organisation'
+            ? `${en.nav.allInstitutions} · ${en.view.levels[view.data.level]}`
+            : en.nav.allInstitutions
+        }
         title={tree.data.organisation.name}
         description={t.lead}
         actions={

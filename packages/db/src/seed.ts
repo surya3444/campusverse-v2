@@ -239,6 +239,10 @@ export async function seedTenant(db: Db, name: string, orgId?: string): Promise<
       select org_id, ${inst.id}, '2026-06-08', id, period, teacher_person_id, 'supervised', ${principalId}
       from school_timetable_slot where org_id = ${id} and timetable_id = ${timetableId}
         and section_id is not null`);
+    // A teacher's calendar link, since stopped (only the secret's hash is ever kept).
+    await tx.execute(sql`
+      insert into school_timetable_feed (org_id, person_id, token_hash, revoked_at)
+      values (${id}, ${teacherId}, ${'0'.repeat(64)}, now())`);
     await tx.execute(sql`
       insert into school_enrolment (org_id, person_id, institution_id, section_id, admission_number,
         roll_number, valid_during)
@@ -397,6 +401,83 @@ export async function seedTenant(db: Db, name: string, orgId?: string): Promise<
     await tx.execute(sql`
       insert into health_break_glass (org_id, student_person_id, opened_by_person_id, reason, expires_at)
       values (${id}, ${guardianId}, ${principalId}, 'Synthetic emergency drill', now() + interval '1 hour')`);
+    const medicineId = await first(sql`
+      insert into health_medicine (org_id, institution_id, name, unit, reorder_level)
+      values (${id}, ${inst.id}, 'Synthetic paracetamol', 'tablet', 10) returning id`);
+    const medicineBatchId = await first(sql`
+      insert into health_medicine_batch (org_id, medicine_id, expires_on, received, remaining)
+      values (${id}, ${medicineId}, current_date + 365, 20, 20) returning id`);
+    await tx.execute(sql`
+      insert into health_medicine_move (org_id, medicine_id, batch_id, kind, quantity, by_person_id)
+      values (${id}, ${medicineId}, ${medicineBatchId}, 'receive', 20, ${principalId})`);
+    await tx.execute(sql`
+      insert into health_partner (org_id, institution_id, name, kind, phone)
+      values (${id}, ${inst.id}, 'Synthetic General Hospital', 'hospital', '0000000000')`);
+    await tx.execute(sql`
+      insert into health_incident (org_id, institution_id, kind, location, raised_by_person_id)
+      values (${id}, ${inst.id}, 'other', 'Synthetic drill ground', ${principalId})`);
+    // Mentoring: on the guardian, so no mentee list meets it.
+    await tx.execute(sql`
+      insert into mentor_assignment (org_id, institution_id, student_person_id, mentor_person_id,
+        valid_during, assigned_by_person_id)
+      values (${id}, ${inst.id}, ${guardianId}, ${teacherId}, daterange(current_date, null), ${principalId})`);
+    await tx.execute(sql`
+      insert into mentor_meeting (org_id, institution_id, student_person_id, mentor_person_id, scheduled_for)
+      values (${id}, ${inst.id}, ${guardianId}, ${teacherId}, current_date + 7)`);
+    await tx.execute(sql`
+      insert into mentor_escalation (org_id, institution_id, student_person_id, raised_by_person_id,
+        escalated_to, reason)
+      values (${id}, ${inst.id}, ${guardianId}, ${teacherId}, 'hod', 'Synthetic escalation for the seed')`);
+    const committeeId = await first(sql`
+      insert into grievance_committee (org_id, institution_id, kind, name, decide_days)
+      values (${id}, ${inst.id}, 'other', 'Synthetic Seed Committee', 30) returning id`);
+    await tx.execute(sql`
+      insert into grievance_member (org_id, committee_id, person_id, role)
+      values (${id}, ${committeeId}, ${principalId}, 'chair')`);
+    await tx.execute(sql`
+      insert into grievance_meeting (org_id, committee_id, held_on, minutes, recorded_by_person_id)
+      values (${id}, ${committeeId}, current_date, 'Synthetic minutes', ${principalId})`);
+    const grievanceCaseId = await first(sql`
+      insert into grievance_case (org_id, committee_id, number, raised_by_person_id, subject, details,
+        received_on, due_on)
+      values (${id}, ${committeeId}, 1, ${guardianId}, 'Synthetic subject', 'Synthetic details for the seed',
+        current_date, current_date + 30) returning id`);
+    await tx.execute(sql`
+      insert into grievance_note (org_id, case_id, author_person_id, body)
+      values (${id}, ${grievanceCaseId}, ${principalId}, 'Synthetic note')`);
+    // Surveys: closed, so it never shows up for anyone to answer.
+    const surveyId = await first(sql`
+      insert into survey (org_id, institution_id, kind, title, audience, opens_on, closes_on, state,
+        created_by_person_id)
+      values (${id}, ${inst.id}, 'other', 'Synthetic seed survey', 'staff', current_date - 7, current_date - 1,
+        'closed', ${principalId}) returning id`);
+    const surveyQuestionId = await first(sql`
+      insert into survey_question (org_id, survey_id, position, kind, prompt, weight)
+      values (${id}, ${surveyId}, 0, 'rating', 'Synthetic question', 1) returning id`);
+    await tx.execute(sql`
+      insert into survey_receipt (org_id, survey_id, person_id) values (${id}, ${surveyId}, ${principalId})`);
+    const surveyResponseId = await first(sql`
+      insert into survey_response (org_id, survey_id, submitted_on)
+      values (${id}, ${surveyId}, current_date - 2) returning id`);
+    await tx.execute(sql`
+      insert into survey_answer (org_id, response_id, question_id, rating)
+      values (${id}, ${surveyResponseId}, ${surveyQuestionId}, 4)`);
+    await tx.execute(sql`
+      insert into survey_action (org_id, survey_id, title, owner_person_id, due_on)
+      values (${id}, ${surveyId}, 'Synthetic action', ${principalId}, current_date + 30)`);
+    // Assessments: one question on one draft paper.
+    const assessmentQuestionId = await first(sql`
+      insert into assessment_question (org_id, institution_id, subject, kind, prompt, marks, difficulty, bloom,
+        created_by_person_id)
+      values (${id}, ${inst.id}, 'Synthetic subject', 'long', 'Synthetic question', 5, 'medium', 'apply',
+        ${principalId}) returning id`);
+    const assessmentPaperId = await first(sql`
+      insert into assessment_paper (org_id, institution_id, title, subject, created_by_person_id)
+      values (${id}, ${inst.id}, 'Synthetic paper', 'Synthetic subject', ${principalId}) returning id`);
+    await tx.execute(sql`
+      insert into assessment_paper_item (org_id, paper_id, position, question_id, kind, prompt, marks, difficulty,
+        bloom)
+      values (${id}, ${assessmentPaperId}, 0, ${assessmentQuestionId}, 'long', 'Synthetic question', 5, 'medium', 'apply')`);
 
     // The academic engine (rule book §12.4 decisions 2–3): one row in each table, enrolment on the
     // guardian so no student list meets it. Curriculum goes in before the regulation is published.
@@ -610,11 +691,12 @@ export async function seedTenant(db: Db, name: string, orgId?: string): Promise<
       values (${id}, ${inst.id}, '2026-05-01', '0510001', '00001', '2026-06-07', 100, ${principalId})`);
 
     // An online application form (docs/specs/ONLINE_APPLICATIONS.md).
-    await tx.execute(sql`
+    const admissionFormId = await first(sql`
       insert into school_admission_form (org_id, institution_id, year_label, slug, title, class_ids,
         created_by_person_id)
       values (${id}, ${inst.id}, '2027-28', ${`synthetic-${randomInt(1e9)}`}, 'Synthetic admissions',
-        ${`{${classId}}`}::uuid[], ${principalId})`);
+        ${`{${classId}}`}::uuid[], ${principalId})
+      returning id`);
 
     // Homework and the class diary (docs/specs/HOMEWORK.md): set, a done tick and a diary entry.
     const homeworkId = await first(sql`
@@ -705,6 +787,22 @@ export async function seedTenant(db: Db, name: string, orgId?: string): Promise<
     await tx.execute(sql`
       insert into fee_day_close (org_id, institution_id, cashier_person_id, on_date, expected_cash_paise, counted_cash_paise)
       values (${id}, ${inst.id}, ${teacherId}, '2026-05-02', 1200000, 1200000)`);
+    // Fees collected for others (a board's share, paid on), and a voluntary donation.
+    const payeeId = await first(sql`
+      insert into fee_payee (org_id, institution_id, kind, name, short_name)
+      values (${id}, ${inst.id}, 'board', 'Synthetic Board of Education', 'SBE') returning id`);
+    await tx.execute(sql`
+      insert into fee_remittance (org_id, institution_id, payee_id, period_label, amount_paise, paid_on, reference,
+        recorded_by_person_id)
+      values (${id}, ${inst.id}, ${payeeId}, '2026-27', 100000, '2026-05-03', 'UTR-SYNTH-0001', ${teacherId})`);
+    await tx.execute(sql`
+      insert into donation_counter (org_id, legal_entity_id, financial_year, next_number)
+      values (${id}, ${le.id}, '2026-27', 2)`);
+    await tx.execute(sql`
+      insert into donation (org_id, legal_entity_id, institution_id, financial_year, number, donor_kind, donor_name,
+        fund, amount_paise, method, received_on, recorded_by_person_id)
+      values (${id}, ${le.id}, ${inst.id}, '2026-27', 1, 'organisation', 'Synthetic Alumni Association',
+        'Library fund', 5000000, 'cash', '2026-05-04', ${teacherId})`);
 
     // Admissions and certificates: an enquiry with its first event, seats, a counter and a TC request.
     const applicationId = await first(sql`
@@ -719,9 +817,36 @@ export async function seedTenant(db: Db, name: string, orgId?: string): Promise<
     await tx.execute(sql`
       insert into school_application_document (org_id, application_id, kind, title, file_id, uploaded_by_person_id)
       values (${id}, ${applicationId}, 'birth_certificate', 'Birth certificate', ${docFileId}, ${principalId})`);
+    // The lead's work: a call, a follow-up, a form link sent, and a bulk upload it could have come from.
+    await tx.execute(sql`
+      insert into school_admission_activity (org_id, application_id, kind, outcome, note, by_person_id)
+      values (${id}, ${applicationId}, 'call', 'interested', 'Wants a school visit', ${principalId})`);
+    await tx.execute(sql`
+      insert into school_admission_follow_up (org_id, application_id, due_on, purpose, assigned_to_person_id,
+        created_by_person_id)
+      values (${id}, ${applicationId}, app_today() + 2, 'Invite for a school visit', ${principalId}, ${principalId})`);
+    await tx.execute(sql`
+      insert into school_admission_invite (org_id, institution_id, form_id, application_id, purpose, channel,
+        token_hash, expires_at, sent_by_person_id)
+      values (${id}, ${inst.id}, ${admissionFormId}, ${applicationId}, 'apply', 'link',
+        decode(md5(random()::text), 'hex'), now() + interval '14 days', ${principalId})`);
+    await tx.execute(sql`
+      insert into school_admission_import (org_id, institution_id, year_label, file_name, source, total_rows,
+        imported_rows, skipped_rows, created_by_person_id)
+      values (${id}, ${inst.id}, '2027-28', 'synthetic-leads.xlsx', 'other', 0, 0, 0, ${principalId})`);
     await tx.execute(sql`
       insert into school_admission_seat (org_id, institution_id, year_label, class_id, category, seats)
       values (${id}, ${inst.id}, '2027-28', ${classId}, 'general', 40)`);
+    // An undecided seat draw from an earlier year, so it never blocks a new one.
+    await tx.execute(sql`
+      insert into school_admission_draw (org_id, institution_id, year_label, class_id, category, method, sibling_first,
+        seed, pool, ranked, seats_free, drawn_by_person_id)
+      values (${id}, ${inst.id}, '2025-26', ${classId}, 'general', 'lottery', false, 'synthetic-seed', '[]'::jsonb,
+        array[${applicationId}]::uuid[], 0, ${principalId})`);
+    // The principal looks at their own institution.
+    await tx.execute(sql`
+      insert into view_preference (org_id, person_id, level, node_ids)
+      values (${id}, ${principalId}, 'institution', array[${inst.id}]::uuid[])`);
     await tx.execute(sql`
       insert into school_number_counter (org_id, institution_id, kind, year_label) values (${id}, ${inst.id}, 'tc', '2026-27')`);
     await tx.execute(sql`
@@ -751,6 +876,25 @@ export async function seedTenant(db: Db, name: string, orgId?: string): Promise<
       insert into school_exam_result (org_id, exam_id, student_person_id, class_id, section_id, subjects, marks, max_marks,
         percent, grade, grade_scheme)
       values (${id}, ${examId}, ${studentId}, ${classId}, ${sectionId}, '[]', 72.5, 80, 90.62, 'A2', 'cbse-8pt@2026')`);
+    // Report card and the year's final result: a co-scholastic area graded A, and a published plan
+    // weighting the exam 100% with its frozen result.
+    const areaId = await first(sql`
+      insert into school_coscholastic_area (org_id, institution_id, name) values (${id}, ${inst.id}, 'Art Education')
+      returning id`);
+    await tx.execute(sql`
+      insert into school_exam_coscholastic (org_id, exam_id, student_person_id, area_id, grade, entered_by_person_id)
+      values (${id}, ${examId}, ${studentId}, ${areaId}, 'A', ${teacherId})`);
+    const resultPlanId = await first(sql`
+      insert into school_result_plan (org_id, institution_id, year_id, name, class_ids, state, grade_scheme,
+        created_by_person_id, published_by_person_id, published_at)
+      values (${id}, ${inst.id}, ${yearId}, 'Final result', ${`{${classId}}`}::uuid[], 'published', 'cbse-8pt@2026',
+        ${principalId}, ${principalId}, now()) returning id`);
+    await tx.execute(sql`
+      insert into school_result_plan_exam (org_id, plan_id, exam_id, weight_bp) values (${id}, ${resultPlanId}, ${examId}, 10000)`);
+    await tx.execute(sql`
+      insert into school_final_result (org_id, plan_id, student_person_id, class_id, section_id, subjects, percent, grade,
+        grade_scheme)
+      values (${id}, ${resultPlanId}, ${studentId}, ${classId}, ${sectionId}, '[]', 90.62, 'A2', 'cbse-8pt@2026')`);
     const nextYearId = await first(sql`
       insert into school_year (org_id, institution_id, label, valid_during, status)
       values (${id}, ${inst.id}, '2027-28', daterange('2027-04-01', '2028-04-01'), 'planned') returning id`);

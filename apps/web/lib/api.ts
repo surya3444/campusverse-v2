@@ -49,8 +49,10 @@ export const api = {
   post: <T>(path: string, json?: unknown) => send<T>('POST', path, json),
   put: <T>(path: string, json?: unknown) => send<T>('PUT', path, json),
   delete: <T>(path: string) => send<T>('DELETE', path),
-  upload: <T>(path: string, file: File) => {
+  /** Multipart; fields go before the file, so the server reads them with it. */
+  upload: <T>(path: string, file: File, fields: Record<string, string> = {}) => {
     const form = new FormData();
+    for (const [k, v] of Object.entries(fields)) form.append(k, v);
     form.append('file', file);
     return fetch(`/api/v1${path}`, { method: 'POST', headers: HEADERS, body: form }).then((r) =>
       read<T>(r),
@@ -65,10 +67,12 @@ export const session = {
       | 'otp'
       | 'signup'
       | 'verify'
+      | 'mfa'
       | 'profile'
       | 'logout'
       | 'onboarding/draft'
-      | 'onboarding/complete',
+      | 'onboarding/complete'
+      | 'onboarding/another',
     json: unknown,
   ) =>
     fetch(`/session/${path}`, {

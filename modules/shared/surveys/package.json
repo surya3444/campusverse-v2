@@ -1,0 +1,25 @@
+{
+  "name": "@campusverse/shared-surveys",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@campusverse/db": "workspace:*",
+    "@campusverse/people-records": "workspace:*",
+    "@campusverse/platform-events": "workspace:*",
+    "@campusverse/platform-organisation": "workspace:*",
+    "@campusverse/platform-permissions": "workspace:*",
+    "drizzle-orm": "^0.45.4"
+  },
+  "devDependencies": {
+    "@campusverse/config": "workspace:*",
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
+  }
+}

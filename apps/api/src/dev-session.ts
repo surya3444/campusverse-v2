@@ -4,11 +4,19 @@
 //   pnpm --filter @campusverse/api dev-session --guardian <orgId>  a guardian of that school (after invites)
 //   pnpm --filter @campusverse/api dev-session --teacher <orgId> [certificateRequestId]   a class teacher (of that request's student)
 //   pnpm --filter @campusverse/api dev-session --invite "Name"     an invited organisation admin (not onboarded)
+//   pnpm --filter @campusverse/api dev-session --approve <mobile>  approves that mobile's sign-up request
+//   pnpm --filter @campusverse/api dev-session --email-invite "Name" <email>  an email invite's sign-up link
 //   pnpm --filter @campusverse/api dev-session --nurse <orgId>     a teacher with a login, given the School nurse role
 //   pnpm --filter @campusverse/api dev-session --office <orgId>    a teacher with a login, given the Office staff role
 import { loadEnv } from '@campusverse/config';
 import { createDb, withTenant } from '@campusverse/db';
-import { createStaff, inviteAdmin } from '@campusverse/platform-control';
+import {
+  createStaff,
+  decideSignup,
+  inviteAdmin,
+  inviteByEmail,
+  type Staff,
+} from '@campusverse/platform-control';
 import { devSignIn } from '@campusverse/platform-identity';
 import { provisionSchool } from '@campusverse/school-setup';
 import { sql } from 'drizzle-orm';
@@ -19,21 +27,39 @@ if (env.APP_ENV !== 'development') throw new Error('dev-session runs in developm
 
 const { db, close } = createDb(env.DATABASE_URL);
 
-if (process.argv[2] === '--invite') {
-  // As the super admin's "Invite an admin" does, by a development staff member.
+/** The development staff member who invites and approves, as the super admin would. */
+async function devStaff(): Promise<Staff> {
   const email = 'dev-invites@staff.campusverse.local';
   const [existing] = await db.execute<{ staffId: string }>(sql`
     select id::text as "staffId" from control.staff where email = ${email}`);
   const staffId =
     existing?.staffId ??
     (await createStaff(db, null, { name: 'Development invites', email, role: 'owner' })).staffId;
+  return { staffId, name: 'Development invites', email, role: 'owner' };
+}
+
+if (process.argv[2] === '--invite') {
   const phone = `9${randomInt(100_000_000, 999_999_999)}`;
-  await inviteAdmin(
-    db,
-    { staffId, name: 'Development invites', email, role: 'owner' },
-    { name: process.argv[3] ?? 'Synthetic Admin', phone, planCode: 'pilot' },
-  );
+  await inviteAdmin(db, await devStaff(), {
+    name: process.argv[3] ?? 'Synthetic Admin',
+    phone,
+    planCode: 'pilot',
+  });
   console.log(JSON.stringify({ phone }));
+} else if (process.argv[2] === '--approve') {
+  const phone = `+91${(process.argv[3] ?? '').slice(-10)}`;
+  const [r] = await db.execute<{ id: string }>(sql`
+    select id::text from control.account_invite where phone = ${phone} and status = 'requested'`);
+  if (!r) throw new Error('no request from that mobile');
+  await decideSignup(db, await devStaff(), r.id, { decision: 'approve' });
+  console.log(JSON.stringify({ inviteId: r.id }));
+} else if (process.argv[2] === '--email-invite') {
+  const { token } = await inviteByEmail(db, await devStaff(), {
+    name: process.argv[3] ?? 'Synthetic Admin',
+    email: process.argv[4] ?? '',
+    planCode: 'pilot',
+  });
+  console.log(JSON.stringify({ token }));
 } else if (['--guardian', '--teacher', '--nurse', '--office'].includes(process.argv[2] ?? '')) {
   const orgId = process.argv[3] ?? '';
   // A guardian with a login and a child, or a class teacher with a login: the same one each time.

@@ -21,6 +21,7 @@ import {
   liftBar,
   myExpected,
   passLeft,
+  resendPickupCode,
   pickupOptions,
   visitHistory,
   visitorByPhone,
@@ -278,20 +279,34 @@ describe('gate passes', () => {
     ).toBe('denied');
   });
 
-  it('lets the child out once, and tells every unrestricted guardian, opted out or not', async () => {
-    const { passId } = await issuePass(deps, office, {
+  it('lets the child out once with the parent’s code, and tells every unrestricted guardian', async () => {
+    const { passId, code: pickup } = await issuePass(deps, office, {
       institutionId: t.institutionId,
       studentId: t.studentId,
       collector: { guardianId: t.guardianId },
       reason: 'Doctor appointment',
     });
-    expect(await code(passLeft(deps, office, { institutionId: t.institutionId, passId }))).toBe(
-      'denied',
+    // The code went to the guardians; only a hash is stored.
+    const sentCode = await messages(`gate-pickup-code:${passId}:${pickup}`);
+    expect(sentCode.map((m) => m.to)).toEqual([t.guardianId]);
+    expect(sentCode[0]?.body).toContain(pickup);
+    const [stored] = await withTenant(db, t.orgId, (tx) =>
+      tx.execute<{ h: string }>(
+        sql`select pickup_code_hash as h from gate_pass where id = ${passId}`,
+      ),
     );
-    await passLeft(deps, guard, { institutionId: t.institutionId, passId });
-    expect(await code(passLeft(deps, guard, { institutionId: t.institutionId, passId }))).toBe(
-      'pass_not_valid',
-    );
+    expect(stored?.h).not.toContain(pickup);
+
+    const at = { institutionId: t.institutionId, passId };
+    expect(await code(passLeft(deps, office, { ...at, code: pickup }))).toBe('denied');
+    const wrong = pickup === '000000' ? '111111' : '000000';
+    expect(await passLeft(deps, guard, { ...at, code: wrong })).toEqual({
+      left: false,
+      triesLeft: 4,
+    });
+    expect(await passLeft(deps, guard, at)).toEqual({ left: false, triesLeft: 3 });
+    expect(await passLeft(deps, guard, { ...at, code: pickup })).toEqual({ left: true });
+    expect(await code(passLeft(deps, guard, { ...at, code: pickup }))).toBe('pass_not_valid');
     // A safety message: it goes even to a guardian who switched academic messages off.
     await withTenant(db, t.orgId, (tx) =>
       tx.execute(sql`
@@ -304,6 +319,21 @@ describe('gate passes', () => {
     expect(sent[0]?.body).toMatch(
       /^Synthetic Student Gate left school at \d{2}:\d{2} [AP]M with Synthetic Guardian Gate \(mother\)\. Reason: Doctor appointment$/,
     );
+  });
+
+  it('locks a pass after five wrong codes; a new code from the office opens it', async () => {
+    const { passId } = await issuePass(deps, office, {
+      institutionId: t.institutionId,
+      studentId: t.studentId,
+      collector: { guardianId: t.guardianId },
+      reason: 'Family function',
+    });
+    const at = { institutionId: t.institutionId, passId };
+    for (let i = 0; i < 5; i++) await passLeft(deps, guard, { ...at, code: 'x' });
+    expect(await code(passLeft(deps, guard, { ...at, code: 'x' }))).toBe('code_locked');
+    expect(await code(resendPickupCode(deps, guard, at))).toBe('denied');
+    const { code: fresh } = await resendPickupCode(deps, office, at);
+    expect(await passLeft(deps, guard, { ...at, code: fresh })).toEqual({ left: true });
   });
 
   it('refuses at the gate a guardian restricted after the pass was issued', async () => {

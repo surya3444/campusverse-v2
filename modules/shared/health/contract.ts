@@ -21,6 +21,13 @@ export {
 export {
   BLOOD_GROUPS,
   BREAK_GLASS_MINUTES,
+  EXPIRY_WARNING_DAYS,
+  INCIDENT_KINDS,
+  INCIDENT_OUTCOMES,
+  PARTNER_KINDS,
+  type IncidentKind,
+  type IncidentOutcome,
+  type PartnerKind,
   EMPTY_VAULT,
   VISIT_OUTCOMES,
   type BloodGroup,
@@ -28,4 +35,29 @@ export {
   type VisitNotes,
   type VisitOutcome,
 } from './domain/health.js';
+export {
+  StockError,
+  discardStock,
+  dispense,
+  medicineDetail,
+  medicines,
+  receiveStock,
+  saveMedicine,
+  type MedicineDetail,
+  type MedicineRow,
+} from './application/stock.js';
+export {
+  EmergencyError,
+  HEALTH_INCIDENT_CLOSED,
+  HEALTH_SOS_RAISED,
+  closeIncident,
+  emergencyPartners,
+  incidentReport,
+  incidents,
+  raiseSos,
+  savePartner,
+  type IncidentRow,
+  type Partner,
+  type SosResult,
+} from './application/emergency.js';
 export { COPY as HEALTH_COPY, healthJobs } from './application/jobs.js';

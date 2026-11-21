@@ -11,21 +11,33 @@ import { ApplyForm } from './apply-form';
 
 const t = en.apply;
 
-async function load(slug: string): Promise<PublicForm | null> {
+async function load(slug: string, invite: string | null): Promise<PublicForm | null> {
   if (!/^[a-z0-9-]{3,60}$/.test(slug)) return null;
   const ip = clientIp(await headers());
-  const res = await fetch(`${webEnv().API_URL}/api/v1/public/apply/${encodeURIComponent(slug)}`, {
-    cache: 'no-store',
-    headers: ip ? { 'x-forwarded-for': ip } : {},
-  });
+  const q = invite ? `?invite=${encodeURIComponent(invite)}` : '';
+  const res = await fetch(
+    `${webEnv().API_URL}/api/v1/public/apply/${encodeURIComponent(slug)}${q}`,
+    {
+      cache: 'no-store',
+      headers: ip ? { 'x-forwarded-for': ip } : {},
+    },
+  );
   return res.ok ? ((await res.json()) as PublicForm) : null;
 }
 
 export const metadata = { title: `${t.pageTitle} · Campusverse`, robots: { index: false } };
 
-export default async function ApplyPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ApplyPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ invite?: string }>;
+}) {
   const { slug } = await params;
-  const form = await load(slug);
+  const raw = (await searchParams).invite;
+  const invite = raw && /^[A-Za-z0-9_-]{20,100}$/.test(raw) ? raw : null;
+  const form = await load(slug, invite);
   return (
     <main id="main" className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-5 px-4 py-8">
       {!form ? (
@@ -37,7 +49,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ slug: st
           </span>
         </section>
       ) : (
-        <ApplyForm slug={slug} form={form} />
+        <ApplyForm slug={slug} form={form} invite={invite} />
       )}
     </main>
   );

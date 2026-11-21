@@ -21,6 +21,8 @@ export type SectionInfo = {
   board: string;
   classTeacherPersonId: string | null;
   classTeacherName: string | null;
+  /** Closed to new students; keeps its students and records. */
+  closed: boolean;
 };
 
 const select = (onDate: string) => sql`
@@ -28,7 +30,8 @@ const select = (onDate: string) => sql`
     c.name || '-' || s.name as label, s.name, s.capacity, i.campus_id::text as "campusId",
     i.id::text as "institutionId", y.id::text as "yearId", lower(y.valid_during)::text as "yearStarts",
     upper(y.valid_during)::text as "yearEnds", i.authority_code as board,
-    ct.teacher_person_id::text as "classTeacherPersonId", p.legal_name as "classTeacherName"
+    ct.teacher_person_id::text as "classTeacherPersonId", p.legal_name as "classTeacherName",
+    s.closed_at is not null as closed
   from school_section s
   join school_class c on c.org_id = s.org_id and c.id = s.class_id
   join school_year y on y.org_id = s.org_id and y.id = s.year_id
@@ -62,6 +65,59 @@ export async function sectionsOn(
   ];
 }
 
+/** Sections of one academic year, in class order (closed ones too; callers placing students skip them). */
+export async function sectionsOfYear(
+  tx: Tx,
+  yearId: string,
+  onDate: string,
+): Promise<SectionInfo[]> {
+  return [
+    ...(await tx.execute<SectionInfo>(sql`
+      ${select(onDate)}
+      where s.org_id = app_current_org() and s.year_id = ${yearId}
+      order by c.sequence, s.name`)),
+  ];
+}
+
+/** An institution's academic year by its label ("2027-28"), or null if the school hasn't set it up. */
+export async function yearByLabel(
+  tx: Tx,
+  institutionId: string,
+  label: string,
+): Promise<YearInfo | null> {
+  const [y] = await tx.execute<YearInfo>(sql`
+    select id::text as "yearId", label, lower(valid_during)::text as starts, upper(valid_during)::text as ends,
+      ${YEAR_STATUS} as status
+    from school_year where org_id = app_current_org() and institution_id = ${institutionId} and label = ${label}`);
+  return y ?? null;
+}
+
+/**
+ * Classes that run in a year (they have sections in it), in order, with their open seats: the
+ * classes admissions offers for that year.
+ */
+export async function classesIn(
+  tx: Tx,
+  yearId: string,
+): Promise<{ classId: string; code: string; name: string; sequence: number; capacity: number }[]> {
+  return [
+    ...(await tx.execute<{
+      classId: string;
+      code: string;
+      name: string;
+      sequence: number;
+      capacity: number;
+    }>(sql`
+      select c.id::text as "classId", c.code, c.name, c.sequence,
+        coalesce(sum(s.capacity) filter (where s.closed_at is null), 0)::int as capacity
+      from school_section s join school_class c on c.org_id = s.org_id and c.id = s.class_id
+      where s.org_id = app_current_org() and s.year_id = ${yearId}
+      group by c.id, c.code, c.name, c.sequence
+      having count(*) filter (where s.closed_at is null) > 0
+      order by c.sequence`)),
+  ];
+}
+
 /** Sections a person is class teacher of on a date. */
 export async function classTeacherSections(
   tx: Tx,
@@ -77,6 +133,16 @@ export async function classTeacherSections(
 
 /** Notice audiences for a school: whole classes and single sections of the current year. */
 export const schoolAudience: AudiencePort = {
+  /** Fee plans bill for one academic year; a closed year takes no new charges. */
+  async periods(tx, institutionId) {
+    return (await yearsOf(tx, institutionId)).map((y) => ({
+      id: y.yearId,
+      label: y.label,
+      starts: y.starts,
+      ends: y.ends,
+      closed: y.status === 'closed',
+    }));
+  },
   async groups(tx, institutionId, onDate) {
     const sections = await sectionsOn(tx, institutionId, onDate);
     const classes = new Map(sections.map((s) => [s.classId, s.className]));

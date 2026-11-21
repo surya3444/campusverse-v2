@@ -1,0 +1,91 @@
+# The demo environment (demo-v2.campusverse.app) on one server: API, worker, Postgres, Valkey,
+# and Caddy for HTTPS. The web app runs on Vercel and calls the API at api.demo-v2.campusverse.app.
+# Synthetic data only: sign-in codes and messages are shown on screen (APP_ENV=test).
+# Secrets live in .env next to this file (made by setup.sh, never committed).
+name: campusverse-demo
+
+x-app-env: &app-env
+  APP_ENV: test
+  API_HOST: 0.0.0.0
+  DATABASE_URL: postgres://cv_app:${CV_APP_PASSWORD:?}@postgres:5432/campusverse
+  REDIS_URL: redis://valkey:6379
+  AUTH_PEPPER: ${AUTH_PEPPER:?}
+  FIELD_KEYS: ${FIELD_KEYS:?}
+  HEALTH_KEYS: ${HEALTH_KEYS:?}
+  S3_BUCKET: ${S3_BUCKET:?}
+  # S3 access comes from the server's IAM role (campusverse-v2-demo-server): no stored keys.
+  S3_REGION: ap-south-1
+  PUBLIC_VERIFY_BASE_URL: https://demo-v2.campusverse.app/verify
+  ADMIN_ORIGIN: https://admin.demo-v2.campusverse.app
+  PAYMENT_RETURN_URL: https://demo-v2.campusverse.app
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: campusverse
+      POSTGRES_PASSWORD: ${PG_MASTER_PASSWORD:?}
+      POSTGRES_DB: campusverse
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U campusverse']
+      interval: 3s
+      retries: 40
+
+  valkey:
+    image: valkey/valkey:8
+    restart: unless-stopped
+    command: ['valkey-server', '--appendonly', 'yes']
+    volumes: [valkeydata:/data]
+
+  # One-off: the app's two database logins (setup.sh runs it before migrations). Same image as
+  # migrate (node is the entrypoint; the script ships in it).
+  roles:
+    image: campusverse-demo-migrate
+    profiles: [setup]
+    environment:
+      MASTER_DATABASE_URL: postgres://campusverse:${PG_MASTER_PASSWORD}@postgres:5432/campusverse
+      CV_MIGRATOR_PASSWORD: ${CV_MIGRATOR_PASSWORD:?}
+      CV_APP_PASSWORD: ${CV_APP_PASSWORD:?}
+    command: ['--import', 'tsx', 'scripts/bootstrap-roles.ts']
+    depends_on: { postgres: { condition: service_healthy } }
+
+  # Images are built on the owner's machine and loaded here (deploy.sh): a small server can't build.
+  migrate:
+    image: campusverse-demo-migrate
+    profiles: [setup]
+    environment:
+      MIGRATION_DATABASE_URL: postgres://cv_migrator:${CV_MIGRATOR_PASSWORD}@postgres:5432/campusverse
+    depends_on: { postgres: { condition: service_healthy } }
+
+  api:
+    image: campusverse-demo-api
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      NODE_OPTIONS: --max-old-space-size=384
+    depends_on: { postgres: { condition: service_healthy }, valkey: { condition: service_started } }
+
+  worker:
+    image: campusverse-demo-worker
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      NODE_OPTIONS: --max-old-space-size=320
+    depends_on: { postgres: { condition: service_healthy }, valkey: { condition: service_started } }
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  valkeydata:
+  caddydata:

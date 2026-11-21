@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ApiFailure, api } from '../../../lib/api';
 import { useChosenInstitution } from '../../../lib/scope';
+import { useView } from '../../../lib/view';
 import { en } from '../../../messages/en';
 
 export const t = en.attendance;
@@ -10,7 +11,10 @@ export const t = en.attendance;
 export const errorText = (e: unknown): string =>
   t.errors[e instanceof ApiFailure ? e.code : 'error'] ?? t.errors.error ?? '';
 
-/** The institution chosen in the scope switcher, or the first one this person can see. */
+/**
+ * The institution chosen in the scope switcher, or the first one in the person's view. Only
+ * institutions inside the saved view count; without a view (it failed) every one does.
+ */
 export function useInstitution(enabled = true) {
   const chosen = useChosenInstitution();
   const q = useQuery({
@@ -19,13 +23,19 @@ export function useInstitution(enabled = true) {
       api.get<{ id: string; name: string; profile: string }[]>('/school/setup/institutions'),
     enabled,
   });
-  const found = q.data?.find((i) => i.id === chosen) ?? q.data?.[0];
+  const view = useView(enabled);
+  const inView = view.data ? new Set(view.data.institutionIds) : null;
+  const list = inView ? q.data?.filter((i) => inView.has(i.id)) : q.data;
+  const found = list?.find((i) => i.id === chosen) ?? list?.[0];
   return {
     ...q,
+    isPending: q.isPending || (enabled && view.isPending),
     institutionId: found?.id,
     institutionName: found?.name,
     /** Rule book §12.3: school, affiliated_college, autonomous_college or university. */
     profile: found?.profile,
+    /** The institutions in the view, for screens that show several at once. */
+    inView: list ?? [],
   };
 }
 

@@ -19,6 +19,20 @@ export function parseRupees(input: string): number | null {
   return Number(whole) * 100 + Number((m[2] ?? '').padEnd(2, '0'));
 }
 
+/**
+ * Rupees short enough for a key-figure strip: "₹20,000", "₹1.2 L", "₹3.45 Cr" (lakh and crore,
+ * rounded down so it never overstates). Exact amounts stay in the tables beside it.
+ */
+export function shortRupees(paise: number): string {
+  const r = Math.floor(Math.abs(paise) / 100);
+  const sign = paise < 0 ? '-' : '';
+  const scaled = (size: number, unit: string) =>
+    `${sign}₹${(Math.floor((r / size) * 100) / 100).toFixed(2).replace(/\.?0+$/, '')} ${unit}`;
+  if (r >= 1_00_00_000) return scaled(1_00_00_000, 'Cr');
+  if (r >= 1_00_000) return scaled(1_00_000, 'L');
+  return rupees(paise).replace(/\.\d\d$/, '');
+}
+
 /** Basis points as "33.34%". */
 export const percent = (bp: number) =>
   `${Math.floor(bp / 100)}.${String(bp % 100).padStart(2, '0')}%`;

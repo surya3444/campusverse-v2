@@ -3,6 +3,8 @@ import { placeOf } from '@campusverse/platform-organisation';
 import type { Actor, Resource } from '@campusverse/platform-permissions';
 
 /** A setup failure the person can act on. `code` maps to a message in the language files. */
+export const STRUCTURE_APPLIED = 'school.structure.applied.v1';
+
 export class SetupError extends Error {
   constructor(
     readonly code: string,

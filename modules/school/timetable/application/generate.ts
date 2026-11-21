@@ -45,7 +45,15 @@ export type Generation = {
   requestedAt: string;
   /** The draft changed since: placing it is refused. */
   stale: boolean;
+  /**
+   * Still working long after the longest search (a minute) could take: nothing picked it up,
+   * usually because the background worker isn't running. The screen stops waiting and says so.
+   */
+  stuck: boolean;
 };
+
+/** Longer than the thorough search's minute, with room for a busy queue. */
+const STUCK_AFTER = '3 minutes';
 
 /** The saved rules over the defaults. */
 export const rulesOf = (raw: unknown): Rules => ({
@@ -96,6 +104,9 @@ async function draftState(tx: Tx, timetableId: string, mode: Rules['mode']) {
     t,
     fixed,
     demands,
+    classTeachers: Object.fromEntries(
+      plan.sections.map((sec) => [sec.sectionId, sec.classTeacherPersonId]),
+    ),
     replaces: slots.length - fixed.length,
     periods: periods.map((p) => p.number),
   };
@@ -177,6 +188,7 @@ export function generationJobs(opts: { timeMs?: number } = {}): Consumer[] {
             periods: s.periods,
             fixed: s.fixed,
             rules,
+            classTeachers: s.classTeachers,
             ...(opts.timeMs ? { timeMs: opts.timeMs } : {}),
           });
           const result: GenerationResult = {
@@ -222,8 +234,10 @@ export async function generation(
       result: GenerationResult | null;
       requestedAt: string;
       draftStamp: string;
+      stuck: boolean;
     }>(sql`
-      select id::text, state, rules, result, requested_at::text as "requestedAt", draft_stamp as "draftStamp"
+      select id::text, state, rules, result, requested_at::text as "requestedAt", draft_stamp as "draftStamp",
+        (state = 'working' and requested_at < now() - ${STUCK_AFTER}::interval) as stuck
       from school_timetable_generation
       where org_id = app_current_org() and id = ${input.generationId} and timetable_id = ${input.timetableId}`);
     if (!g) throw new TimetableError('generation_not_found');

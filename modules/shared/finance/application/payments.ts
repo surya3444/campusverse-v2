@@ -5,11 +5,13 @@ import type { Actor } from '@campusverse/platform-permissions';
 import { sql } from 'drizzle-orm';
 import { allocate, rupees } from '../domain/money.js';
 import {
+  allocateToInvoice,
   FinanceError,
   institution,
   issueReceipt,
   ONLINE_PAYMENT_STARTED,
   PAYMENT_SUCCEEDED,
+  payeeNames,
   placeOf,
   refreshInvoice,
   today,
@@ -91,12 +93,16 @@ async function settle(
     p.amountPaise,
     sameEntity.map((i) => ({ invoiceId: i.id, balance: i.balance })),
   );
+  // Each invoice's share is split by who it is collected for (the university first).
+  const forOthers = new Map<string, number>();
   for (const a of allocations) {
-    await tx.execute(sql`
-      insert into fee_allocation (org_id, payment_id, invoice_id, amount_paise)
-      values (app_current_org(), ${p.paymentId}, ${a.invoiceId}, ${a.amount})`);
+    for (const part of await allocateToInvoice(tx, p.paymentId, a.invoiceId, a.amount)) {
+      if (part.payeeId)
+        forOthers.set(part.payeeId, (forOthers.get(part.payeeId) ?? 0) + part.amount);
+    }
     await refreshInvoice(tx, a.invoiceId);
   }
+  const names = await payeeNames(tx, [...forOthers.keys()]);
   await tx.execute(sql`
     update fee_payment set state = 'succeeded', succeeded_at = now(), credit_paise = ${credit},
       legal_entity_id = ${first.legalEntityId}, institution_id = ${first.institutionId}
@@ -132,6 +138,12 @@ async function settle(
         amountPaise: a.amount,
       })),
       creditPaise: credit,
+      // Money collected for others inside this payment (the rest is the institution's own).
+      forOthers: [...forOthers].map(([id, amountPaise]) => ({
+        payee: names.get(id)?.shortName ?? '',
+        payeeName: names.get(id)?.name ?? '',
+        amountPaise,
+      })),
       totalPaise: p.amountPaise,
       total: rupees(p.amountPaise),
     },
@@ -499,7 +511,14 @@ export type Account = {
     state: string;
     totalPaise: number;
     paidPaise: number;
-    lines: { kind: string; head: string | null; amountPaise: number; reason: string | null }[];
+    lines: {
+      kind: string;
+      head: string | null;
+      /** Collected for an outside body (its short name); null: the institution's own. */
+      payee: string | null;
+      amountPaise: number;
+      reason: string | null;
+    }[];
   }[];
   payments: {
     id: string;
@@ -549,8 +568,10 @@ export async function studentAccount(
     const lines = await tx.execute<
       { invoiceId: string } & Account['invoices'][number]['lines'][number]
     >(sql`
-      select l.invoice_id::text as "invoiceId", l.kind, h.name as head, l.amount_paise::int as "amountPaise", l.reason
+      select l.invoice_id::text as "invoiceId", l.kind, h.name as head, fp.short_name as payee,
+        l.amount_paise::int as "amountPaise", l.reason
       from fee_invoice_line l left join fee_head h on h.org_id = l.org_id and h.id = l.head_id
+      left join fee_payee fp on fp.org_id = h.org_id and fp.id = h.payee_id
       join fee_invoice i on i.org_id = l.org_id and i.id = l.invoice_id
       where l.org_id = app_current_org() and i.student_person_id = ${studentId} order by l.created_at`);
     const payments = await tx.execute<Account['payments'][number]>(sql`
@@ -590,6 +611,7 @@ export async function studentAccount(
           .map((l) => ({
             kind: l.kind,
             head: l.head,
+            payee: l.payee,
             amountPaise: l.amountPaise,
             reason: l.reason,
           })),

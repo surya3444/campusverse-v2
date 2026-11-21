@@ -10,11 +10,20 @@ type Permissions = ReturnType<typeof createPermissions>;
 export const SECTION_CHANGED = 'school.enrolment.section_changed.v1';
 
 export class EnrolmentError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly details: Record<string, unknown> | null = null,
+  ) {
     super(`Enrolment: ${code}`);
     this.name = 'EnrolmentError';
   }
 }
+
+/**
+ * What a section change asks the attendance module (wired by the API, so enrolment never reads
+ * attendance's tables): the days on or after a date either section already took attendance.
+ */
+export type AttendanceTaken = (tx: Tx, sectionIds: string[], from: string) => Promise<string[]>;
 
 /** The school's answer to "where is this person?": "Class 5-A" on a given day, or null. */
 export const schoolPlacement: AcademicPlacementPort = {
@@ -97,6 +106,10 @@ export async function enrol(
     importBatchId?: string | null;
   },
 ): Promise<void> {
+  // A closed section keeps its students and takes no new ones.
+  const [s] = await tx.execute<{ closed: boolean }>(sql`
+    select closed_at is not null as closed from school_section where org_id = app_current_org() and id = ${input.sectionId}`);
+  if (s?.closed) throw new EnrolmentError('section_closed');
   await tx.execute(sql`
     insert into school_enrolment (org_id, person_id, institution_id, section_id, admission_number, roll_number,
       valid_during, import_batch_id)
@@ -126,7 +139,8 @@ export async function changeSection(
     rollNumber?: number | null;
     reason: string;
   },
-): Promise<void> {
+  ports: { attendanceTaken?: AttendanceTaken } = {},
+): Promise<{ rollNumber: number }> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.from)) throw new EnrolmentError('bad_date');
   if (input.reason.trim().length < 3) throw new EnrolmentError('reason_required');
   const place = await withTenant(db, actor.orgId, async (tx) => {
@@ -138,7 +152,7 @@ export async function changeSection(
   });
   if (!place) throw new EnrolmentError('not_enrolled_then');
 
-  await command(
+  return command(
     db,
     permissions,
     actor,
@@ -170,6 +184,14 @@ export async function changeSection(
       if (!target || target.yearId !== current.yearId || target.classId !== current.classId) {
         throw new EnrolmentError('different_class_or_year');
       }
+      // Attendance taken from that day in either section would be split between them: refused,
+      // with the days, so a move is always from a day neither register has been taken.
+      const taken = ports.attendanceTaken
+        ? await ports.attendanceTaken(tx, [current.sectionId, input.sectionId], input.from)
+        : [];
+      if (taken.length > 0) throw new EnrolmentError('attendance_taken', { days: taken });
+      const rollNumber =
+        input.rollNumber ?? (await nextRollNumber(tx, input.sectionId, input.from));
       await tx.execute(sql`
         update school_enrolment set valid_during = daterange(lower(valid_during), ${input.from}::date)
         where org_id = app_current_org() and id = ${current.id}`);
@@ -178,19 +200,24 @@ export async function changeSection(
         institutionId: place.institutionId,
         sectionId: input.sectionId,
         admissionNumber: current.admissionNumber,
-        rollNumber: input.rollNumber ?? null,
+        rollNumber,
         from: input.from,
         until: current.ends,
       });
       return {
-        result: undefined,
+        result: { rollNumber },
         audit: {
           action: 'school.enrolment.change',
           entityType: 'person',
           entityId: input.personId,
           dataClass: 'personal',
           reason: input.reason.trim(),
-          detail: { from: input.from, fromSection: current.sectionId, toSection: input.sectionId },
+          detail: {
+            from: input.from,
+            fromSection: current.sectionId,
+            toSection: input.sectionId,
+            rollNumber,
+          },
         },
         events: [
           {
@@ -341,6 +368,10 @@ export async function enrolForRollover(
     until: string;
   },
 ): Promise<void> {
+  // A closed section keeps its students and takes no new ones.
+  const [s] = await tx.execute<{ closed: boolean }>(sql`
+    select closed_at is not null as closed from school_section where org_id = app_current_org() and id = ${input.sectionId}`);
+  if (s?.closed) throw new EnrolmentError('section_closed');
   await tx.execute(sql`
     insert into school_enrolment (org_id, person_id, institution_id, section_id, admission_number, roll_number,
       valid_during, rollover_id)
@@ -358,4 +389,109 @@ export async function undoRolloverEnrolments(tx: Tx, rolloverId: string): Promis
     where org_id = app_current_org() and rollover_id = ${rolloverId} and not isempty(valid_during)
     returning person_id::text as id`);
   return rows.map((r) => r.id);
+}
+
+export type SectionOptions = {
+  today: string;
+  current: {
+    sectionId: string;
+    label: string;
+    rollNumber: number | null;
+    yearLabel: string;
+    /** Exclusive. */
+    yearEnds: string;
+  };
+  options: {
+    sectionId: string;
+    label: string;
+    students: number;
+    capacity: number;
+    closed: boolean;
+    classTeacher: string | null;
+    /** The roll number the student would get. */
+    nextRoll: number;
+    /** The first day the move can start: today, unless either register is already taken today. */
+    earliest: string;
+  }[];
+};
+
+/** Where a student could move within their class this year, for the Change section screen. */
+export async function sectionOptions(
+  db: Db,
+  permissions: Permissions,
+  actor: Actor,
+  personId: string,
+  ports: { attendanceTaken?: AttendanceTaken } = {},
+): Promise<SectionOptions> {
+  return withTenant(db, actor.orgId, async (tx) => {
+    const [d] = await tx.execute<{ today: string; tomorrow: string }>(sql`
+      select app_today()::text as today, (app_today() + 1)::text as tomorrow`);
+    const today = d?.today ?? '';
+    const [cur] = await tx.execute<{
+      sectionId: string;
+      label: string;
+      rollNumber: number | null;
+      yearId: string;
+      yearLabel: string;
+      yearEnds: string;
+      classId: string;
+      campusId: string;
+      institutionId: string;
+    }>(sql`
+      select e.section_id::text as "sectionId", c.name || '-' || s.name as label, e.roll_number as "rollNumber",
+        y.id::text as "yearId", y.label as "yearLabel", upper(y.valid_during)::text as "yearEnds",
+        s.class_id::text as "classId", i.campus_id::text as "campusId", i.id::text as "institutionId"
+      from school_enrolment e
+      join school_section s on s.org_id = e.org_id and s.id = e.section_id
+      join school_class c on c.org_id = s.org_id and c.id = s.class_id
+      join school_year y on y.org_id = s.org_id and y.id = s.year_id
+      join institution i on i.org_id = e.org_id and i.id = e.institution_id
+      where e.org_id = app_current_org() and e.person_id = ${personId}
+        and e.valid_during @> greatest(${today}::date, lower(e.valid_during))
+        and upper(e.valid_during) > ${today}::date
+      order by lower(e.valid_during) limit 1`);
+    if (!cur) throw new EnrolmentError('not_enrolled_then');
+    await permissions.assertCan(tx, actor, 'school.enrolment.change', {
+      orgId: actor.orgId,
+      place: { campusId: cur.campusId, institutionId: cur.institutionId },
+      subjectPersonId: personId,
+    });
+    const sections = await tx.execute<{
+      sectionId: string;
+      label: string;
+      capacity: number;
+      closed: boolean;
+      classTeacher: string | null;
+      students: number;
+    }>(sql`
+      select s.id::text as "sectionId", c.name || '-' || s.name as label, s.capacity, s.closed_at is not null as closed,
+        (select p.legal_name from school_teacher_allocation a join person p on p.org_id = a.org_id and p.id = a.teacher_person_id
+          where a.org_id = s.org_id and a.section_id = s.id and a.kind = 'class_teacher' and a.valid_during @> ${today}::date
+          limit 1) as "classTeacher",
+        (select count(distinct x.person_id)::int from school_enrolment x where x.org_id = s.org_id and x.section_id = s.id
+          and x.valid_during @> greatest(${today}::date, lower(x.valid_during)) and upper(x.valid_during) > ${today}::date) as students
+      from school_section s join school_class c on c.org_id = s.org_id and c.id = s.class_id
+      where s.org_id = app_current_org() and s.year_id = ${cur.yearId} and s.class_id = ${cur.classId}
+        and s.id <> ${cur.sectionId}
+      order by s.name`);
+    const options: SectionOptions['options'] = [];
+    for (const s of sections) {
+      const taken = ports.attendanceTaken
+        ? await ports.attendanceTaken(tx, [cur.sectionId, s.sectionId], today)
+        : [];
+      const earliest = taken.length > 0 ? (d?.tomorrow ?? today) : today;
+      options.push({ ...s, nextRoll: await nextRollNumber(tx, s.sectionId, earliest), earliest });
+    }
+    return {
+      today,
+      current: {
+        sectionId: cur.sectionId,
+        label: cur.label,
+        rollNumber: cur.rollNumber,
+        yearLabel: cur.yearLabel,
+        yearEnds: cur.yearEnds,
+      },
+      options,
+    };
+  });
 }

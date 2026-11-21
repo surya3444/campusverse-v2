@@ -81,6 +81,29 @@ export function allocate(
   return { allocations, credit: left };
 }
 
+/**
+ * Splits money paid into one invoice between the bodies it is collected for. Outside payees
+ * (the university, a board) are filled first, in the order given, up to what they are still owed;
+ * the institution (payeeId null) takes the rest. So the institution never spends money it owes on.
+ */
+export function splitByPayee(
+  amount: Paise,
+  unpaid: { payeeId: string; unpaid: Paise }[],
+): { payeeId: string | null; amount: Paise }[] {
+  assertPaise(amount);
+  let left = amount;
+  const out: { payeeId: string | null; amount: Paise }[] = [];
+  for (const u of unpaid) {
+    const take = Math.min(left, Math.max(0, u.unpaid));
+    if (take > 0) {
+      out.push({ payeeId: u.payeeId, amount: take });
+      left -= take;
+    }
+  }
+  if (left > 0) out.push({ payeeId: null, amount: left });
+  return out;
+}
+
 /** The unused share of a charge, by days: rounded down, so a refund never exceeds what is owed back. */
 export function prorate(total: Paise, daysUnused: number, daysTotal: number): Paise {
   assertPaise(total);

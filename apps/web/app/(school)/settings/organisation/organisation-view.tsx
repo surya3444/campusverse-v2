@@ -69,6 +69,9 @@ export function OrganisationView() {
     void qc.invalidateQueries({ queryKey: ['scope-tree'] });
     void qc.invalidateQueries({ queryKey: ['stamps'] });
     void qc.invalidateQueries({ queryKey: ['brand'] });
+    // A new campus or institution joins the view and the switcher at once.
+    void qc.invalidateQueries({ queryKey: ['view'] });
+    void qc.invalidateQueries({ queryKey: ['institutions'] });
   };
 
   return (

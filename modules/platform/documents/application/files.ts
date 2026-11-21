@@ -1,5 +1,6 @@
 import { withTenant, type Db, type Tx } from '@campusverse/db';
-import { command, type Consumer } from '@campusverse/platform-events';
+import { writeAudit } from '@campusverse/platform-audit';
+import { command, emit, type Consumer } from '@campusverse/platform-events';
 import type { Actor, Resource, createPermissions } from '@campusverse/platform-permissions';
 import { sql } from 'drizzle-orm';
 import { createHash, randomUUID } from 'node:crypto';
@@ -278,6 +279,45 @@ export async function storeFile(
       events: [{ type: FILE_UPLOADED, payload: { fileId: row.id } }],
     };
   });
+}
+
+/**
+ * A file from someone with no account (a family's papers through an admission form), inside the
+ * caller's tenant transaction. Same type, size and scan rules; the caller decides who may send it
+ * and audits the business write; the file row itself is audited with no actor.
+ */
+export async function storeFileIn(
+  tx: Tx,
+  store: ObjectStore,
+  orgId: string,
+  input: { purpose: string; fileName: string; contentType: string; bytes: Uint8Array },
+): Promise<string> {
+  if (!isAllowedType(input.contentType) || !contentMatches(input.contentType, input.bytes))
+    throw new FileRefused('file_type');
+  if (input.bytes.length === 0 || input.bytes.length > MAX_BYTES)
+    throw new FileRefused('file_size');
+  const key = `${orgId}/files/${randomUUID()}`;
+  await store.put(key, input.bytes, input.contentType);
+  const [row] = await tx.execute<{ id: string }>(sql`
+    insert into stored_file (org_id, purpose, file_name, content_type, size_bytes, storage_key,
+      scan_status, created_by_account_id, uploaded_at)
+    values (app_current_org(), ${input.purpose}, ${input.fileName.slice(0, 200) || 'file'},
+      ${input.contentType}, ${input.bytes.length}, ${key}, 'pending', null, now())
+    returning id::text`);
+  if (!row) throw new Error('storeFileIn: insert returned no row');
+  await writeAudit(tx, null, {
+    action: 'platform.file.store',
+    entityType: 'stored_file',
+    entityId: row.id,
+    dataClass: 'personal',
+    detail: {
+      purpose: input.purpose,
+      contentType: input.contentType,
+      sizeBytes: input.bytes.length,
+    },
+  });
+  await emit(tx, { type: FILE_UPLOADED, payload: { fileId: row.id } });
+  return row.id;
 }
 
 export type FileState = 'pending' | 'clean' | 'infected' | 'rejected' | 'awaiting_upload';

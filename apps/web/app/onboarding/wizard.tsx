@@ -1,12 +1,14 @@
 'use client';
 
 import { STATES } from '@campusverse/rules';
-import { Button, IconTile, Progress, StatePanel, cx, type Area } from '@campusverse/ui';
+import { Button, EmptyState, IconTile, Progress, StatePanel, cx, type Area } from '@campusverse/ui';
 import iconColor from '@campusverse/ui/brand/icon-color.svg';
 import {
   Building2,
   Check,
+  CircleSlash,
   ClipboardList,
+  Hourglass,
   MapPin,
   Plus,
   School as SchoolIcon,
@@ -105,6 +107,9 @@ const newCampus = (name = ''): Campus => ({
   schools: [newSchool()],
 });
 
+/** A sign-up that Campusverse has not approved (yet). */
+type Waiting = { waiting: { status: 'requested' } | { status: 'declined'; reason: string } };
+
 type State = {
   name: string;
   email: string | null;
@@ -113,15 +118,15 @@ type State = {
   draft: Partial<Draft>;
 };
 
-async function load(): Promise<State> {
+async function load(): Promise<State | Waiting> {
   const res = await fetch('/session/onboarding', { cache: 'no-store' });
-  const body = (await res.json()) as State & { code?: string };
+  const body = (await res.json()) as (State | Waiting) & { code?: string };
   if (!res.ok) throw new ApiFailure(res.status, body.code ?? 'error', 'onboarding');
   return body;
 }
 
 export function OnboardingWizard() {
-  const [state, setState] = useState<State | null>(null);
+  const [state, setState] = useState<State | Waiting | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   useEffect(() => {
     load()
@@ -144,7 +149,44 @@ export function OnboardingWizard() {
         <StatePanel kind="loading" title={en.states.loading.title} />
       </Frame>
     );
+  if ('waiting' in state) return <Pending waiting={state.waiting} />;
   return <Wizard state={state} />;
+}
+
+/** Signed up, not yet approved by Campusverse; or declined, with the reason and a way to ask again. */
+function Pending({ waiting }: Waiting) {
+  const declined = waiting.status === 'declined';
+  return (
+    <Frame>
+      <section className="panel">
+        <EmptyState
+          icon={declined ? CircleSlash : Hourglass}
+          area={declined ? 'rose' : 'navy'}
+          title={declined ? t.declinedTitle : t.waitingTitle}
+          body={
+            declined ? (
+              <>
+                {t.declinedBody}
+                <span className="mt-2 block font-medium text-ink">{t.reason(waiting.reason)}</span>
+              </>
+            ) : (
+              t.waitingBody
+            )
+          }
+          actions={
+            <span className="flex flex-wrap justify-center gap-2">
+              {declined && (
+                <Button onClick={() => window.location.assign('/signup')}>{t.askAgain}</Button>
+              )}
+              <Button variant="secondary" onClick={() => window.location.reload()}>
+                {t.checkAgain}
+              </Button>
+            </span>
+          }
+        />
+      </section>
+    </Frame>
+  );
 }
 
 function Frame({ children, aside }: { children: ReactNode; aside?: ReactNode }) {

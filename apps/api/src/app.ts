@@ -10,6 +10,7 @@ import type { FastifyRequest } from 'fastify';
 import { AttendanceController } from './http/attendance.controller.js';
 import { AuthController } from './http/auth.controller.js';
 import { academicPlacement } from '@campusverse/academics-structure';
+import { admissionInProgress } from '@campusverse/school-admissions';
 import { schoolPlacement } from '@campusverse/school-enrolment';
 import { schoolAudience } from '@campusverse/school-setup';
 import { campusAudience } from './audience.js';
@@ -34,12 +35,14 @@ import {
   SMS_SIMULATOR,
   APPLY,
   HEALTH,
+  MFA_KEYS,
   STORE,
   DB,
   FINANCE,
   OTP,
   PEOPLE,
   PERMISSIONS,
+  type ApplyDeps,
   type ControlDeps,
   type Deps,
 } from './http/deps.js';
@@ -63,6 +66,10 @@ import { GateController } from './http/gate.controller.js';
 import { HostelController } from './http/hostel.controller.js';
 import { SyllabusController } from './http/syllabus.controller.js';
 import { HelpdeskController } from './http/helpdesk.controller.js';
+import { MentoringController } from './http/mentoring.controller.js';
+import { GrievancesController } from './http/grievances.controller.js';
+import { SurveysController } from './http/surveys.controller.js';
+import { AssessmentsController } from './http/assessments.controller.js';
 import { ConsentController, PrivacyController } from './http/privacy.controller.js';
 import { StudentHealthController } from './http/health.controller.js';
 import { AcademicsController } from './http/academics.controller.js';
@@ -82,7 +89,7 @@ import {
   StaffController,
   StaffLeaveController,
 } from './http/staff.controller.js';
-import { TimetableController } from './http/timetable.controller.js';
+import { CalendarController, TimetableController } from './http/timetable.controller.js';
 import { TransportController } from './http/transport.controller.js';
 import {
   AccessController,
@@ -138,6 +145,10 @@ class ApiModule {
         HostelController,
         SyllabusController,
         HelpdeskController,
+        MentoringController,
+        GrievancesController,
+        SurveysController,
+        AssessmentsController,
         PrivacyController,
         ConsentController,
         StudentHealthController,
@@ -152,6 +163,7 @@ class ApiModule {
         RecordController,
         PayrollController,
         TimetableController,
+        CalendarController,
         TransportController,
         FieldsController,
         AccessController,
@@ -195,6 +207,8 @@ class ApiModule {
             permissions: deps.permissions,
             audience: campusAudience,
             placements: [schoolPlacement, academicPlacement],
+            // Donations are refused from families with an admission in progress.
+            admissionInProgress,
             gateway: deps.gateway ?? null,
             returnUrl: deps.paymentReturnUrl,
             // Super admin: the customer's online_payments flag and the payments_off switch.
@@ -259,9 +273,16 @@ class ApiModule {
           } satisfies ControlDeps,
         },
         { provide: SMS_SIMULATOR, useValue: deps.smsSimulator ?? null },
+        { provide: MFA_KEYS, useValue: deriveKeys(deps.keys, 'identity-mfa') },
         {
           provide: APPLY,
-          useValue: { otp: deps.applyOtp ?? null, simulator: deps.applySimulator ?? null },
+          useValue: {
+            otp: deps.applyOtp ?? null,
+            simulator: deps.applySimulator ?? null,
+            secret: deps.applySecret ?? null,
+            store: deps.store ?? noStore,
+            origin: new URL(deps.verifyBaseUrl ?? 'http://localhost:3000/verify').origin,
+          } satisfies ApplyDeps,
         },
         { provide: STORE, useValue: deps.store ?? noStore },
         {

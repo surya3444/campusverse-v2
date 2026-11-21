@@ -26,3 +26,30 @@ export function collectorCheck(
     ? 'collector_restricted'
     : 'ok';
 }
+
+// Pick-up codes (rule book §13.8 Student Pick-up): six digits to the parent, kept only as a hash
+// tied to the pass, five tries, then the office issues a new one.
+export const CODE_TRIES = 5;
+
+/** A fresh six-digit code from a random integer source (0 ≤ n < 1 000 000). */
+export const pickupCode = (n: number) => String(Math.floor(n) % 1_000_000).padStart(6, '0');
+
+/** The stored hash: the pass id binds the code to one pass. */
+export const codeHash = (passId: string, code: string, sha256: (s: string) => string) =>
+  sha256(`gate-pickup:${passId}:${code.replace(/\s/g, '')}`);
+
+export type CodeCheck = 'ok' | 'wrong_code' | 'code_locked';
+
+/** Checks a typed code against the pass. `tries` are wrong tries so far. */
+export function checkCode(
+  stored: string | null,
+  tries: number,
+  typed: string | undefined,
+  hash: (code: string) => string,
+): CodeCheck {
+  if (stored === null) return 'ok';
+  if (tries >= CODE_TRIES) return 'code_locked';
+  return typed !== undefined && /^\d{6}$/.test(typed.replace(/\s/g, '')) && hash(typed) === stored
+    ? 'ok'
+    : 'wrong_code';
+}

@@ -8,6 +8,7 @@ export {
   fileState,
   filesInfo,
   storeFile,
+  storeFileIn,
   type FileInfo,
   type FileState,
   createUpload,

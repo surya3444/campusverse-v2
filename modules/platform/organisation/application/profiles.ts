@@ -23,7 +23,14 @@ const MANAGE = 'platform.organisation.manage';
 export const ORGANISATION_CHANGED = 'platform.organisation.changed.v1';
 
 export class OrganisationError extends Error {
-  constructor(readonly code: 'campus_not_found' | 'campus_has_institutions') {
+  constructor(
+    readonly code:
+      | 'campus_not_found'
+      | 'campus_has_institutions'
+      | 'organisation_not_found'
+      | 'view_invalid'
+      | 'view_out_of_reach',
+  ) {
     super(`organisation: ${code}`);
     this.name = 'OrganisationError';
   }

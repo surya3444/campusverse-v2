@@ -53,12 +53,12 @@ export class ExamError extends Error {
   }
 }
 
-async function today(tx: Tx) {
+export async function today(tx: Tx) {
   const [r] = await tx.execute<{ d: string }>(sql`select app_today()::text as d`);
   return r?.d ?? '';
 }
 
-type ExamRow = {
+export type ExamRow = {
   id: string;
   institutionId: string;
   yearId: string;
@@ -67,7 +67,7 @@ type ExamRow = {
   state: string;
 };
 
-async function loadExam(tx: Tx, examId: string, lock = false): Promise<ExamRow> {
+export async function loadExam(tx: Tx, examId: string, lock = false): Promise<ExamRow> {
   const [e] = await tx.execute<ExamRow>(sql`
     select id::text, institution_id::text as "institutionId", year_id::text as "yearId", name, class_ids::text[] as "classIds", state
     from school_exam where org_id = app_current_org() and id = ${examId} ${lock ? sql`for update` : sql``}`);
@@ -75,14 +75,14 @@ async function loadExam(tx: Tx, examId: string, lock = false): Promise<ExamRow> 
   return e;
 }
 
-async function place(tx: Tx, institutionId: string) {
+export async function place(tx: Tx, institutionId: string) {
   const p = await institutionPlace(tx, institutionId);
   if (!p) throw new ExamError('institution_not_found');
   return p;
 }
 
 /** The day used for rosters: today within the exam's year, else the year's last day. */
-async function rosterDay(tx: Tx, e: ExamRow) {
+export async function rosterDay(tx: Tx, e: ExamRow) {
   const y = (await yearsOf(tx, e.institutionId)).find((x) => x.yearId === e.yearId);
   const d = await today(tx);
   if (!y) return d;
@@ -94,7 +94,7 @@ async function rosterDay(tx: Tx, e: ExamRow) {
  * The board's grading in force (rule pack) for an exam's classes on a date. The id is frozen
  * with each result, so a later pack version carries its number and never rewrites an old card.
  */
-async function schemeAt(tx: Tx, e: ExamRow, on: string) {
+export async function schemeAt(tx: Tx, e: ExamRow, on: string) {
   const board = (await classInfo(tx, e.classIds[0] ?? ''))?.board ?? '';
   const b = await boardRulesAt(tx, e.institutionId, board, on);
   if (!b?.rules.grades) return null;
@@ -108,7 +108,7 @@ async function schemeAt(tx: Tx, e: ExamRow, on: string) {
 }
 
 /** Runs one exam step: permission on the institution, the work, an audit row and events, in one transaction. */
-async function step<T>(
+export async function step<T>(
   deps: ExamDeps,
   actor: Actor,
   examId: string,
@@ -152,9 +152,41 @@ async function step<T>(
   );
 }
 
+export type PartInput = { name: string; maxMarks: string };
+
 /**
- * A new exam for some classes of a year, with a paper for every subject each class is offered,
- * all with the same maximum unless changed later. Marks are open from the start.
+ * A marks split, checked: one unnamed whole paper, or two to four named parts (Theory and
+ * Practical), each with its own maximum.
+ */
+function checkParts(parts: PartInput[]): PartInput[] {
+  const clean = parts.map((x) => ({ name: x.name.trim(), maxMarks: x.maxMarks.trim() }));
+  if (clean.length === 0 || clean.length > 4) throw new ExamError('bad_parts');
+  if (clean.some((x) => !hundredths(x.maxMarks))) throw new ExamError('bad_max');
+  if (clean.length === 1)
+    return [{ name: clean[0]?.name ?? '', maxMarks: clean[0]?.maxMarks ?? '' }];
+  const names = clean.map((x) => x.name.toLowerCase());
+  if (names.some((x) => !x || x.length > 30) || new Set(names).size !== names.length)
+    throw new ExamError('bad_parts');
+  return clean;
+}
+
+async function insertParts(
+  tx: Tx,
+  examId: string,
+  classId: string,
+  subjectId: string,
+  parts: PartInput[],
+) {
+  for (const [i, x] of parts.entries())
+    await tx.execute(sql`
+      insert into school_exam_paper (org_id, exam_id, class_id, subject_id, max_marks, part, part_seq)
+      values (app_current_org(), ${examId}, ${classId}, ${subjectId}, ${x.maxMarks}::numeric, ${x.name}, ${i})`);
+}
+
+/**
+ * A new exam for some classes of a year, with a paper for every subject each class is offered:
+ * one whole paper with the maximum, or the same split for every subject (Theory 80 + Practical
+ * 20), each subject's split changeable while it has no marks. Marks are open from the start.
  */
 export async function createExam(
   deps: ExamDeps,
@@ -165,12 +197,15 @@ export async function createExam(
     name: string;
     classIds: string[];
     maxMarks: string;
+    /** A split for every subject; left out, one whole paper of maxMarks. */
+    parts?: PartInput[] | null | undefined;
     startsOn?: string | null | undefined;
     endsOn?: string | null | undefined;
   },
 ): Promise<{ id: string; papers: number }> {
-  if (hundredths(input.maxMarks) === null || hundredths(input.maxMarks) === 0)
-    throw new ExamError('bad_max');
+  const parts = checkParts(
+    input.parts?.length ? input.parts : [{ name: '', maxMarks: input.maxMarks }],
+  );
   if (input.classIds.length === 0) throw new ExamError('no_classes');
   const p = await withTenant(deps.db, actor.orgId, (tx) => place(tx, input.institutionId));
   return command(
@@ -192,10 +227,8 @@ export async function createExam(
         const c = await classInfo(tx, classId);
         if (!c || c.institutionId !== input.institutionId) throw new ExamError('class_not_found');
         for (const s of await subjectsOf(tx, input.yearId, classId)) {
-          await tx.execute(sql`
-          insert into school_exam_paper (org_id, exam_id, class_id, subject_id, max_marks)
-          values (app_current_org(), ${e.id}, ${classId}, ${s.subjectId}, ${input.maxMarks}::numeric)`);
-          papers++;
+          await insertParts(tx, e.id, classId, s.subjectId, parts);
+          papers += parts.length;
         }
       }
       if (papers === 0) throw new ExamError('no_subjects');
@@ -213,12 +246,50 @@ export async function createExam(
   );
 }
 
+/**
+ * Changes one subject's split in one class (Theory 70 + Practical 30 for Physics, a whole paper
+ * for English) while marks are open and none are entered for it. Dates set on the old papers go.
+ */
+export async function setSubjectParts(
+  deps: ExamDeps,
+  actor: Actor,
+  input: { examId: string; classId: string; subjectId: string; parts: PartInput[] },
+): Promise<{ papers: number }> {
+  const parts = checkParts(input.parts);
+  return step(deps, actor, input.examId, 'school.exam.manage', async (tx, e) => {
+    if (e.state !== 'marks_open') throw new ExamError('marks_closed');
+    if (!e.classIds.includes(input.classId)) throw new ExamError('class_not_found');
+    const these = sql`p.org_id = app_current_org() and p.exam_id = ${input.examId}
+      and p.class_id = ${input.classId} and p.subject_id = ${input.subjectId}`;
+    const [had] = await tx.execute<{ papers: number; marks: number }>(sql`
+      select (select count(*)::int from school_exam_paper p where ${these}) as papers,
+        (select count(*)::int from school_exam_mark m
+          join school_exam_paper p on p.org_id = m.org_id and p.id = m.paper_id where ${these}) as marks`);
+    if (!had?.papers) throw new ExamError('paper_not_found');
+    if (had.marks > 0) throw new ExamError('marks_entered');
+    await tx.execute(sql`
+      delete from school_exam_paper where org_id = app_current_org() and exam_id = ${input.examId}
+        and class_id = ${input.classId} and subject_id = ${input.subjectId}`);
+    await insertParts(tx, input.examId, input.classId, input.subjectId, parts);
+    return {
+      result: { papers: parts.length },
+      detail: {
+        classId: input.classId,
+        subjectId: input.subjectId,
+        parts: parts.map((x) => `${x.name || 'whole'} ${x.maxMarks}`).join(', '),
+      },
+    };
+  });
+}
+
 export type ExamSummary = {
   id: string;
   name: string;
+  yearId: string;
   yearLabel: string;
   state: string;
   classes: number;
+  classIds: string[];
   papers: number;
   submitted: number;
   publishedAt: string | null;
@@ -236,7 +307,8 @@ export async function listExams(
     });
     return [
       ...(await tx.execute<ExamSummary>(sql`
-        select e.id::text, e.name, y.label as "yearLabel", e.state, cardinality(e.class_ids) as classes,
+        select e.id::text, e.name, e.year_id::text as "yearId", y.label as "yearLabel", e.state,
+          cardinality(e.class_ids) as classes, e.class_ids::text[] as "classIds",
           (select count(*)::int from school_exam_paper p where p.org_id = e.org_id and p.exam_id = e.id) as papers,
           (select count(*)::int from school_exam_paper p where p.org_id = e.org_id and p.exam_id = e.id and p.submitted_at is not null) as submitted,
           e.published_at::text as "publishedAt"
@@ -258,6 +330,10 @@ export type ExamDetail = {
     sections: { sectionId: string; label: string; students: number }[];
     papers: {
       paperId: string;
+      subjectId: string;
+      /** '' for a whole paper; "Theory", "Practical" for a subject split into parts. */
+      part: string;
+      /** "Science", or "Science · Practical". */
       subject: string;
       maxMarks: string;
       entered: number;
@@ -306,17 +382,19 @@ export async function examDetail(
       const ids = `{${[...students].join(',')}}`;
       const papers = await tx.execute<{
         paperId: string;
+        subjectId: string;
+        part: string;
         subject: string;
         maxMarks: string;
         entered: number;
         submitted: boolean;
       }>(sql`
-        select p.id::text as "paperId", s.name as subject, p.max_marks::text as "maxMarks",
+        select p.id::text as "paperId", p.subject_id::text as "subjectId", p.part, s.name || case when p.part <> '' then ' · ' || p.part else '' end as subject, p.max_marks::text as "maxMarks",
           (select count(*)::int from school_exam_mark m where m.org_id = p.org_id and m.paper_id = p.id
             and (m.value is not null or m.code is not null) and m.student_person_id = any(${ids}::uuid[])) as entered,
           p.submitted_at is not null as submitted
         from school_exam_paper p join school_subject s on s.org_id = p.org_id and s.id = p.subject_id
-        where p.org_id = app_current_org() and p.exam_id = ${examId} and p.class_id = ${classId} order by s.code`);
+        where p.org_id = app_current_org() and p.exam_id = ${examId} and p.class_id = ${classId} order by s.code, p.part_seq`);
       classes.push({
         classId,
         name: c?.name ?? '',
@@ -331,7 +409,7 @@ export async function examDetail(
     const changes = await tx.execute<
       Omit<ExamDetail['changes'][number], 'newMark'> & { value: string | null; code: string | null }
     >(sql`
-      select c.id::text, st.legal_name as student, s.name as subject, c.new_value::text as value, c.new_code as code,
+      select c.id::text, st.legal_name as student, s.name || case when p.part <> '' then ' · ' || p.part else '' end as subject, c.new_value::text as value, c.new_code as code,
         c.reason, r.legal_name as "requestedBy", c.requested_by_person_id::text as "requestedById"
       from school_exam_mark_change c
       join school_exam_paper p on p.org_id = c.org_id and p.id = c.paper_id
@@ -368,7 +446,7 @@ type PaperRow = {
 async function loadPaper(tx: Tx, paperId: string): Promise<PaperRow> {
   const [p] = await tx.execute<PaperRow>(sql`
     select p.id::text as "paperId", p.exam_id::text as "examId", p.class_id::text as "classId", p.subject_id::text as "subjectId",
-      s.name as subject, p.max_marks::text as "maxMarks", p.submitted_at is not null as submitted
+      s.name || case when p.part <> '' then ' · ' || p.part else '' end as subject, p.max_marks::text as "maxMarks", p.submitted_at is not null as submitted
     from school_exam_paper p join school_subject s on s.org_id = p.org_id and s.id = p.subject_id
     where p.org_id = app_current_org() and p.id = ${paperId}`);
   if (!p) throw new ExamError('paper_not_found');
@@ -670,9 +748,9 @@ export async function publishExam(
     // ponytail: renders every report card inside this transaction; move to a worker job past a few hundred students.
     for (const classId of e.classIds) {
       const papers = await tx.execute<Paper>(sql`
-        select p.id::text as "paperId", p.subject_id::text as "subjectId", s.name as subject, p.max_marks::text as max
+        select p.id::text as "paperId", p.subject_id::text as "subjectId", s.name as subject, p.part, p.max_marks::text as max
         from school_exam_paper p join school_subject s on s.org_id = p.org_id and s.id = p.subject_id
-        where p.org_id = app_current_org() and p.exam_id = ${examId} and p.class_id = ${classId} order by s.code`);
+        where p.org_id = app_current_org() and p.exam_id = ${examId} and p.class_id = ${classId} order by s.code, p.part_seq`);
       for (const section of (await sectionsOn(tx, e.institutionId, d)).filter(
         (s) => s.classId === classId,
       )) {
@@ -726,15 +804,24 @@ export async function publishExam(
                 ['Academic year', inst.label],
                 ...r.subjects.map((s): [string, string] => [
                   s.subject,
-                  s.marks === null
-                    ? `${s.shown}${s.note ? ` (${s.note})` : ''}`
-                    : `${s.shown} / ${fromHundredths(s.max ?? 0)}  ${s.grade ?? ''}`,
+                  (s.parts
+                    ? `${s.parts
+                        .map(
+                          (x) =>
+                            `${x.part} ${x.shown}${x.max === null ? '' : `/${fromHundredths(x.max)}`}`,
+                        )
+                        .join(' · ')}  =  `
+                    : '') +
+                    (s.marks === null
+                      ? `${s.shown}${s.note ? ` (${s.note})` : ''}`
+                      : `${s.shown} / ${fromHundredths(s.max ?? 0)}  ${s.grade ?? ''}`),
                 ]),
                 ['Total', `${fromHundredths(r.marks)} / ${fromHundredths(r.max)}  (${pct})`],
                 [
                   'Attendance',
                   `${Math.floor(att.attendedHalfDays / 2)}${att.attendedHalfDays % 2 ? '.5' : ''} of ${att.workingDays} days`,
                 ],
+                ...(await gradesFor(tx, examId, st.personId)),
                 ['Remark', remark?.remark ?? ''],
                 ['Grading', scheme.id],
               ],
@@ -766,6 +853,20 @@ export async function publishExam(
     await emit(tx, { type: EXAM_PUBLISHED, payload: { examId, results: count } });
     return { result: { results: count }, detail: { results: count, scheme: scheme.id } };
   });
+}
+
+/** A student's co-scholastic grades in an exam, by area name, for the printed card. */
+export async function gradesFor(
+  tx: Tx,
+  examId: string,
+  studentId: string,
+): Promise<[string, string][]> {
+  const rows = await tx.execute<{ name: string; grade: string }>(sql`
+    select a.name, g.grade from school_exam_coscholastic g
+    join school_coscholastic_area a on a.org_id = g.org_id and a.id = g.area_id
+    where g.org_id = app_current_org() and g.exam_id = ${examId} and g.student_person_id = ${studentId}
+    order by a.seq, a.name`);
+  return rows.map((r) => [r.name, r.grade]);
 }
 
 export type StudentResult = {
@@ -815,12 +916,18 @@ export async function latestResult(
   percentBp: number | null;
   subjects: { subject: string; percentBp: number | null }[];
 } | null> {
+  // The year's final result when there is one, else the latest exam's.
   const [r] = await tx.execute<{
     percent: string | null;
     subjects: { subject: string; percentBp: number | null }[];
   }>(sql`
-    select percent::text, subjects from school_exam_result
-    where org_id = app_current_org() and student_person_id = ${studentId} order by published_at desc limit 1`);
+    select percent::text, subjects from (
+      select percent, subjects, published_at, 1 as final from school_final_result
+      where org_id = app_current_org() and student_person_id = ${studentId}
+      union all
+      select percent, subjects, published_at, 0 from school_exam_result
+      where org_id = app_current_org() and student_person_id = ${studentId}) x
+    order by published_at desc, final desc limit 1`);
   if (!r) return null;
   return {
     percentBp: r.percent === null ? null : Math.round(Number(r.percent) * 100),
@@ -867,7 +974,7 @@ export async function dateSheet(deps: ExamDeps, actor: Actor, examId: string): P
       }
     >(sql`
       select p.id::text as "paperId", p.class_id::text as "classId", c.name as "className", s.code as "subjectCode",
-        s.name as subject, p.max_marks::text as "maxMarks", p.on_date::text as "onDate",
+        s.name || case when p.part <> '' then ' · ' || p.part else '' end as subject, p.max_marks::text as "maxMarks", p.on_date::text as "onDate",
         to_char(p.starts_at, 'HH24:MI') as "startsAt", p.duration_minutes as "durationMinutes", p.room,
         p.invigilator_person_id::text as "invigilatorId", inv.legal_name as "invigilatorName"
       from school_exam_paper p
@@ -1006,11 +1113,12 @@ export async function examAnalysis(
         paperId: string;
         subjectId: string;
         subject: string;
+        part: string;
         max: string;
       }>(sql`
-        select p.id::text as "paperId", p.subject_id::text as "subjectId", s.name as subject, p.max_marks::text as max
+        select p.id::text as "paperId", p.subject_id::text as "subjectId", s.name as subject, p.part, p.max_marks::text as max
         from school_exam_paper p join school_subject s on s.org_id = p.org_id and s.id = p.subject_id
-        where p.org_id = app_current_org() and p.exam_id = ${examId} and p.class_id = ${classId} order by s.code`);
+        where p.org_id = app_current_org() and p.exam_id = ${examId} and p.class_id = ${classId} order by s.code, p.part_seq`);
       const marks = await tx.execute<{
         paperId: string;
         studentId: string;
@@ -1030,6 +1138,7 @@ export async function examAnalysis(
             paperId: p.paperId,
             subjectId: p.subjectId,
             subject: p.subject,
+            part: p.part,
             max: p.max,
           })),
           new Map(
@@ -1048,7 +1157,7 @@ export async function examAnalysis(
         students: students.length,
         papers: papers.map((p) => ({
           paperId: p.paperId,
-          subject: p.subject,
+          subject: p.part ? `${p.subject} · ${p.part}` : p.subject,
           maxMarks: fromHundredths(hundredths(p.max) ?? 0),
           ...paperStats(
             p.max,
@@ -1085,7 +1194,7 @@ export type PaperOn = {
 export async function papersOn(tx: Tx, institutionId: string, onDate: string): Promise<PaperOn[]> {
   return [
     ...(await tx.execute<PaperOn>(sql`
-      select p.class_id::text as "classId", c.name as "className", e.name as exam, s.name as subject,
+      select p.class_id::text as "classId", c.name as "className", e.name as exam, s.name || case when p.part <> '' then ' · ' || p.part else '' end as subject,
         to_char(p.starts_at, 'HH24:MI') as "startsAt",
         to_char(p.starts_at + make_interval(mins => p.duration_minutes), 'HH24:MI') as "endsAt",
         p.room, p.invigilator_person_id::text as "invigilatorPersonId"

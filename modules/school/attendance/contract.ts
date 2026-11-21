@@ -17,6 +17,7 @@ export {
   type TrendDay,
   correctAttendance,
   markingSheet,
+  attendanceTaken,
   monthlyRegister,
   openConflicts,
   holidayOn,

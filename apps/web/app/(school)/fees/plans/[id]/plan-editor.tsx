@@ -38,6 +38,16 @@ export function PlanEditor({ planId }: { planId: string | null }) {
     queryFn: () => api.get<AudienceGroup[]>(`/communications/${id}/audience-groups`),
     enabled: !!id,
   });
+  // A plan bills for one academic year; closed years show but can't be chosen.
+  const years = useQuery({
+    queryKey: ['fee-years', id],
+    queryFn: () =>
+      api.get<{ id: string; label: string; starts: string; ends: string; closed: boolean }[]>(
+        `/finance/${id}/years`,
+      ),
+    enabled: !!id,
+  });
+  const [periodId, setPeriodId] = useState('');
   const [name, setName] = useState('');
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
@@ -52,6 +62,7 @@ export function PlanEditor({ planId }: { planId: string | null }) {
     const p = plan.data;
     if (!p) return;
     setName(p.name);
+    setPeriodId(p.periodId ?? '');
     setGroupIds(p.groupIds);
     setAmounts(
       Object.fromEntries(p.lines.map((l) => [l.headId, rupees(l.amountPaise).replace('₹', '')])),
@@ -68,18 +79,39 @@ export function PlanEditor({ planId }: { planId: string | null }) {
     setEditing(p.state === 'draft');
   }, [plan.data]);
 
+  // A new plan starts in the year running today (else the first open one).
+  useEffect(() => {
+    if (planId || periodId || !years.data) return;
+    const today = new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+    const open = years.data.filter((y) => !y.closed);
+    const now = open.find((y) => y.starts <= today && today < y.ends) ?? open[0];
+    if (now) setPeriodId(now.id);
+  }, [planId, periodId, years.data]);
+  const year = years.data?.find((y) => y.id === periodId);
+  const lastDay = year
+    ? new Date(Date.parse(`${year.ends}T00:00:00Z`) - 864e5).toISOString().slice(0, 10)
+    : undefined;
+
   const lines = Object.entries(amounts)
     .map(([headId, v]) => ({ headId, amountPaise: parseRupees(v) ?? 0 }))
     .filter((l) => l.amountPaise > 0);
   const shares = insts.map((i) => parseRupees(i.share) ?? 0); // "33.34" → 3334 basis points
   const sharesTotal = shares.reduce((a, b) => a + b, 0);
   const total = lines.reduce((a, l) => a + l.amountPaise, 0);
+  // Who gets what: each outside body's share (VTU first), then the institution's own fees.
+  const split = [
+    ...lines.reduce((m, l) => {
+      const who = heads.data?.find((h) => h.id === l.headId)?.payee ?? t.splitOwn;
+      return m.set(who, (m.get(who) ?? 0) + l.amountPaise);
+    }, new Map<string, number>()),
+  ].sort(([a], [b]) => (a === t.splitOwn ? 1 : b === t.splitOwn ? -1 : a.localeCompare(b)));
 
   const save = useMutation({
     mutationFn: () =>
       api.post<{ id: string }>(`/finance/${id}/plans`, {
         ...(planId ? { planId } : {}),
         name,
+        ...(periodId ? { periodId } : {}),
         groupIds,
         lines,
         instalments: insts.map((i, n) => ({
@@ -176,6 +208,27 @@ export function PlanEditor({ planId }: { planId: string | null }) {
             className={field}
           />
         </label>
+        {(years.data ?? []).length > 0 && (
+          <label className="flex flex-col gap-1.5">
+            <span className="text-caption font-medium text-ink">{t.year}</span>
+            <select
+              value={periodId}
+              onChange={(e) => setPeriodId(e.target.value)}
+              // A published family's year is fixed: a new version stays in it.
+              disabled={!!p}
+              className={cx(field, 'max-w-xs')}
+            >
+              {(years.data ?? []).map((y) => (
+                <option key={y.id} value={y.id} disabled={y.closed}>
+                  {y.closed ? t.yearClosedOption(y.label) : y.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-caption text-ink-muted">
+              {p ? t.yearFixed : year ? t.yearHint(year.label) : null}
+            </span>
+          </label>
+        )}
         <div className="flex flex-col gap-1.5">
           <span className="text-caption font-medium text-ink">{t.appliesTo}</span>
           <div className="flex flex-wrap gap-2">
@@ -210,7 +263,14 @@ export function PlanEditor({ planId }: { planId: string | null }) {
         <span className="text-caption font-medium text-ink">{t.amounts}</span>
         {heads.data.map((h) => (
           <label key={h.id} className="flex items-center gap-3">
-            <span className="flex-1 text-body text-ink">{h.name}</span>
+            <span className="flex flex-1 flex-wrap items-center gap-2 text-body text-ink">
+              {h.name}
+              {h.payee && (
+                <span className="rounded-full bg-signal-go-tint px-2 py-0.5 text-caption font-medium text-signal-go-ink">
+                  {en.collectedFor.collectedForPill(h.payee)}
+                </span>
+              )}
+            </span>
             <input
               inputMode="decimal"
               aria-label={`${h.name} ${t.amount}`}
@@ -224,14 +284,30 @@ export function PlanEditor({ planId }: { planId: string | null }) {
           <span className="text-body font-semibold text-ink">{t.total}</span>
           <span className="tabular text-lead font-semibold text-ink">{rupees(total)}</span>
         </div>
+        {split.length > 1 && (
+          <div className="flex flex-col gap-1.5 rounded-lg bg-paper px-3 py-2.5">
+            <span className="text-caption font-medium text-ink-muted">{t.splitTitle}</span>
+            <ul className="flex flex-wrap gap-x-5 gap-y-1">
+              {split.map(([who, paise]) => (
+                <li key={who} className="text-body text-ink">
+                  <span className="text-ink-muted">{who}</span>{' '}
+                  <span className="tabular font-medium">{rupees(paise)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </fieldset>
 
       <fieldset disabled={!editing} className="panel flex flex-col gap-3 p-5">
         <legend className="sr-only">{t.instalments}</legend>
         <span className="text-caption font-medium text-ink">{t.instalments}</span>
         {insts.map((i, n) => (
-          <div key={n} className="grid grid-cols-[1fr_auto_auto_auto] items-end gap-2">
-            <label className="flex flex-col gap-1.5">
+          <div
+            key={n}
+            className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-end gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
+          >
+            <label className="col-span-3 flex flex-col gap-1.5 sm:col-span-1">
               <span className="text-caption text-ink-muted">{t.label}</span>
               <input
                 required
@@ -242,16 +318,17 @@ export function PlanEditor({ planId }: { planId: string | null }) {
                 className={field}
               />
             </label>
-            <label className="flex flex-col gap-1.5">
+            <label className="flex min-w-0 flex-col gap-1.5">
               <span className="text-caption text-ink-muted">{t.dueOn}</span>
               <input
                 type="date"
                 required
                 value={i.dueOn}
+                max={lastDay}
                 onChange={(e) =>
                   setInsts((x) => x.map((y, k) => (k === n ? { ...y, dueOn: e.target.value } : y)))
                 }
-                className={field}
+                className={cx(field, 'w-full min-w-0')}
               />
             </label>
             <label className="flex flex-col gap-1.5">

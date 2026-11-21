@@ -1,10 +1,11 @@
 // Self-serve sign-up (rule book §11 "Self-serve onboarding") through the real screens: someone
-// running a college signs up, confirms the simulated code, finds onboarding already started with
+// running a college signs up, confirms the simulated code, waits for Campusverse to approve the
+// request (done here as the super admin would), finds onboarding already started with
 // their answers, adds the affiliating university and creates the organisation, landing in
 // Academic Structure with the sidebar for colleges. All data synthetic.
 import { expect, test } from '@playwright/test';
 import { randomInt } from 'node:crypto';
-import { apiPost, noA11yViolations } from './helpers';
+import { apiPost, approveSignup, noA11yViolations } from './helpers';
 
 test('a college signs up by itself and onboards', async ({ page, context }, info) => {
   test.setTimeout(150_000);
@@ -43,6 +44,13 @@ test('a college signs up by itself and onboards', async ({ page, context }, info
   const code = /(\d{6}) is your/.exec((await sms.textContent()) ?? '')?.[1] ?? '';
   await page.getByLabel('6-digit code').fill(code);
   await page.getByRole('button', { name: 'Confirm and continue' }).click();
+
+  // Campusverse checks each new organisation first: setup waits for approval.
+  await expect(page).toHaveURL(/\/onboarding/);
+  await expect(page.getByText('Your request is with Campusverse')).toBeVisible();
+  await noA11yViolations(page);
+  approveSignup(phone);
+  await page.getByRole('button', { name: 'Check again' }).click();
 
   // Onboarding, started with their answers.
   await expect(page).toHaveURL(/\/onboarding/);

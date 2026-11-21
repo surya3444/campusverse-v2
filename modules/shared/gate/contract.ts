@@ -19,6 +19,8 @@ export {
   liftBar,
   myExpected,
   passLeft,
+  resendPickupCode,
+  PICKUP_COPY,
   pickupOptions,
   visitHistory,
   visitorByPhone,

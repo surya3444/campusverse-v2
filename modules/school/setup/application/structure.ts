@@ -4,11 +4,12 @@ import { command, type Consumer } from '@campusverse/platform-events';
 import type { Actor, createPermissions } from '@campusverse/platform-permissions';
 import { sql } from 'drizzle-orm';
 import { planStructure, type StructureInput, type StructurePlan } from '../domain/structure.js';
-import { institutionResource, SetupError } from './common.js';
+import { institutionResource, SetupError, STRUCTURE_APPLIED } from './common.js';
+import { applyYearPlan, yearPlanProblems, type YearPlan } from './year-structure.js';
 
 type Permissions = ReturnType<typeof createPermissions>;
 
-export const STRUCTURE_APPLIED = 'school.structure.applied.v1';
+export { STRUCTURE_APPLIED } from './common.js';
 
 async function id(tx: Tx, q: ReturnType<typeof sql>): Promise<string> {
   const [row] = await tx.execute<{ id: string }>(q);
@@ -108,7 +109,13 @@ export async function setUpNextYear(
   permissions: Permissions,
   actor: Actor,
   institutionId: string,
+  /** The new year's classes and sections as the school edited them; left out, a copy of this year. */
+  plan?: YearPlan | null,
 ): Promise<{ yearId: string; label: string; starts: string; sections: number }> {
+  if (plan) {
+    const problems = yearPlanProblems(plan);
+    if (problems.length > 0) throw new SetupError('invalid_structure', problems);
+  }
   const resource = await institutionResource(db, actor, institutionId);
   return command(
     db,
@@ -139,25 +146,31 @@ export async function setUpNextYear(
             case when ${last.next}::date <= app_today() then 'active' else 'planned' end)
           returning id::text`,
       );
-      const sections = await tx.execute(sql`
-        insert into school_section (org_id, year_id, class_id, name, capacity)
-        select org_id, ${yearId}, class_id, name, capacity from school_section
-        where org_id = app_current_org() and year_id = ${last.id}
-        on conflict (org_id, year_id, class_id, name) do nothing
-        returning 1`);
-      await tx.execute(sql`
-        insert into school_subject_offering (org_id, year_id, class_id, subject_id, periods_per_week)
-        select org_id, ${yearId}, class_id, subject_id, periods_per_week from school_subject_offering
-        where org_id = app_current_org() and year_id = ${last.id}
-        on conflict (org_id, year_id, class_id, subject_id) do nothing`);
+      let count: number;
+      if (plan) count = await applyYearPlan(tx, institutionId, yearId, plan);
+      else {
+        // A copy of this year: its open sections (names and capacities) and subjects.
+        const sections = await tx.execute(sql`
+          insert into school_section (org_id, year_id, class_id, name, capacity)
+          select org_id, ${yearId}, class_id, name, capacity from school_section
+          where org_id = app_current_org() and year_id = ${last.id} and closed_at is null
+          on conflict (org_id, year_id, class_id, name) do nothing
+          returning 1`);
+        await tx.execute(sql`
+          insert into school_subject_offering (org_id, year_id, class_id, subject_id, periods_per_week)
+          select org_id, ${yearId}, class_id, subject_id, periods_per_week from school_subject_offering
+          where org_id = app_current_org() and year_id = ${last.id}
+          on conflict (org_id, year_id, class_id, subject_id) do nothing`);
+        count = sections.length;
+      }
       return {
-        result: { yearId, label, starts: last.next, sections: sections.length },
+        result: { yearId, label, starts: last.next, sections: count },
         audit: {
           action: 'school.setup.manage',
           entityType: 'school_year',
           entityId: yearId,
           dataClass: 'operational',
-          detail: { step: 'next_year', from: last.label, label, sections: sections.length },
+          detail: { step: 'next_year', from: last.label, label, sections: count, edited: !!plan },
         },
         events: [{ type: STRUCTURE_APPLIED, payload: { institutionId, yearId, nextYear: true } }],
       };

@@ -40,7 +40,8 @@ import {
   type PeopleDeps,
 } from '@campusverse/people-records';
 import type { Actor } from '@campusverse/platform-permissions';
-import { changeSection } from '@campusverse/school-enrolment';
+import { attendanceTaken } from '@campusverse/school-attendance';
+import { changeSection, sectionOptions } from '@campusverse/school-enrolment';
 import {
   Body,
   Controller,
@@ -239,16 +240,30 @@ export class PeopleController {
     };
   }
 
+  /** Where a student could move within their class this year, with seats and the earliest day. */
+  @Get('school/enrolment/:personId/section-options')
+  sectionOptions(@Param('personId') personId: string, @Req() req: AuthedRequest) {
+    return sectionOptions(this.deps.db, this.deps.permissions, actorOf(req), Id.parse(personId), {
+      attendanceTaken,
+    });
+  }
+
+  /** Moves a student to another section of their class from a day neither register is taken. */
   @Post('school/enrolment/change-section')
-  @HttpCode(204)
   async changeSection(@Body() body: unknown, @Req() req: AuthedRequest) {
     const c = SectionChange.parse(body);
-    await changeSection(this.deps.db, this.deps.permissions, actorOf(req), {
-      personId: c.personId,
-      sectionId: c.sectionId,
-      from: c.from,
-      reason: c.reason,
-      ...(c.rollNumber !== undefined ? { rollNumber: c.rollNumber } : {}),
-    });
+    return changeSection(
+      this.deps.db,
+      this.deps.permissions,
+      actorOf(req),
+      {
+        personId: c.personId,
+        sectionId: c.sectionId,
+        from: c.from,
+        reason: c.reason,
+        ...(c.rollNumber !== undefined ? { rollNumber: c.rollNumber } : {}),
+      },
+      { attendanceTaken },
+    );
   }
 }

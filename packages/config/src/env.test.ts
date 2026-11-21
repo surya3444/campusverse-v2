@@ -16,6 +16,11 @@ describe('loadEnv', () => {
     expect(loadEnv(valid).APP_ENV).toBe('development');
   });
 
+  it('treats an empty value as unset (optional settings left blank in Compose)', () => {
+    expect(loadEnv({ ...valid, OPENAI_API_KEY: '' }).OPENAI_API_KEY).toBeUndefined();
+    expect(() => loadEnv({ ...valid, DATABASE_URL: '' })).toThrow(/DATABASE_URL/);
+  });
+
   it('rejects missing values and names them without leaking secrets', () => {
     const run = () => loadEnv({ ...valid, DATABASE_URL: undefined, REDIS_URL: 'http://secret' });
     expect(run).toThrow(/DATABASE_URL, REDIS_URL/);

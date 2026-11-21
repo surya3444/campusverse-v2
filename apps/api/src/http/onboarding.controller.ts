@@ -1,6 +1,11 @@
 import { OnboardingComplete, OnboardingDraft } from '@campusverse/contracts';
 import type { Db } from '@campusverse/db';
-import { pendingInvite, saveInviteDraft } from '@campusverse/platform-control';
+import {
+  pendingInvite,
+  saveInviteDraft,
+  signupState,
+  startAnotherOrganisation,
+} from '@campusverse/platform-control';
 import { completeOnboarding } from '@campusverse/school-setup';
 import {
   Body,
@@ -34,7 +39,12 @@ export class OnboardingController {
   @Get()
   async state(@Req() req: AuthedRequest) {
     const invite = await pendingInvite(this.db, accountOf(req));
-    if (!invite) throw new NotFoundException({ code: 'not_invited' });
+    if (!invite) {
+      // A sign-up waiting for Campusverse to approve it, or declined with the reason.
+      const waiting = await signupState(this.db, accountOf(req));
+      if (waiting) return { waiting };
+      throw new NotFoundException({ code: 'not_invited' });
+    }
     const { name, email, planName, draft } = invite;
     return { name, email, phone: `…${invite.phone.slice(-4)}`, planName, draft };
   }
@@ -43,6 +53,13 @@ export class OnboardingController {
   @HttpCode(204)
   async draft(@Body() body: unknown, @Req() req: AuthedRequest) {
     await saveInviteDraft(this.db, accountOf(req), OnboardingDraft.parse(body).draft);
+  }
+
+  /** An admin starts another organisation of their own; onboarding then builds it. */
+  @Post('another')
+  @HttpCode(204)
+  async another(@Req() req: AuthedRequest) {
+    await startAnotherOrganisation(this.db, accountOf(req));
   }
 
   @Post('complete')

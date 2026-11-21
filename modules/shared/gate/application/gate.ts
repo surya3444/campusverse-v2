@@ -18,8 +18,49 @@ import {
   type createPermissions,
   type Resource,
 } from '@campusverse/platform-permissions';
+import { notifyGuardians } from '@campusverse/shared-communications';
 import { sql } from 'drizzle-orm';
-import { collectorCheck, type Collector } from '../domain/gate.js';
+import { createHash, randomInt } from 'node:crypto';
+import {
+  CODE_TRIES,
+  checkCode,
+  codeHash,
+  collectorCheck,
+  pickupCode,
+  type Collector,
+} from '../domain/gate.js';
+
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
+export const PICKUP_COPY = {
+  en: {
+    title: (student: string) => `Code to collect ${student} today`,
+    body: (student: string, code: string, collector: string) =>
+      `${code} is the code to collect ${student} from school today. Give it to ${collector}; the guard asks for it at the gate. Valid today only. If you didn't ask for this, call the school.`,
+  },
+} as const;
+
+/** A new code for a pass: stored as a hash, sent to every unrestricted guardian of the child. */
+async function sendPickupCode(
+  tx: Tx,
+  pass: { passId: string; studentId: string; collector: string },
+): Promise<string> {
+  const code = pickupCode(randomInt(1_000_000));
+  await tx.execute(sql`
+    update gate_pass set pickup_code_hash = ${codeHash(pass.passId, code, sha256)}, code_tries = 0
+    where org_id = app_current_org() and id = ${pass.passId}`);
+  const names = await displayNames(tx, [pass.studentId]);
+  const student = names[pass.studentId] ?? 'your child';
+  await notifyGuardians(tx, {
+    studentId: pass.studentId,
+    flag: null,
+    kind: 'gate',
+    language: 'en',
+    title: PICKUP_COPY.en.title(student),
+    body: PICKUP_COPY.en.body(student, code, pass.collector),
+    dedupeKey: `gate-pickup-code:${pass.passId}:${code}`,
+  });
+  return code;
+}
 
 type Permissions = ReturnType<typeof createPermissions>;
 type Placements = Pick<AcademicPlacementPort, 'getPlacements' | 'findByReference'>[];
@@ -56,7 +97,9 @@ export class GateError extends Error {
       | 'collector_restricted'
       | 'collector_not_guardian'
       | 'pass_not_found'
-      | 'pass_not_valid',
+      | 'pass_not_valid'
+      | 'wrong_code'
+      | 'code_locked',
     readonly details?: Record<string, unknown>,
   ) {
     super(`gate: ${code}`);
@@ -559,6 +602,10 @@ export type PassRow = {
   issuedAt: string;
   issuedBy: string | null;
   leftAt: string | null;
+  /** The guard must type the parent's code (passes from before codes don't). */
+  codeNeeded: boolean;
+  /** Five wrong tries: the office sends a new code. */
+  locked: boolean;
 };
 
 async function labels(tx: Tx, deps: GateDeps, personIds: string[], on: string) {
@@ -575,7 +622,7 @@ async function passes(tx: Tx, deps: GateDeps, institutionId: string, on: string)
     select id::text as "passId", student_person_id::text as "studentId", collector_name as collector,
       collector_relation as relation, collector_phone as phone, collector_guardian_id is not null as guardian,
       reason, state, issued_on::text as "issuedOn", issued_at as "issuedAt", issued_by_person_id::text as "byId",
-      left_at as "leftAt"
+      left_at as "leftAt", pickup_code_hash is not null as "codeNeeded", code_tries >= ${CODE_TRIES} as locked
     from gate_pass
     where org_id = app_current_org() and institution_id = ${institutionId} and issued_on = ${on}::date
     order by issued_at desc`);
@@ -624,12 +671,16 @@ export type PassInput = {
   reason: string;
 };
 
-/** The office lets a child leave early today, collected by a guardian or a named person. */
+/**
+ * The office lets a child leave early today, collected by a guardian or a named person. The
+ * child's guardians get a code by message; the guard asks for it at the gate. The code is
+ * returned only so the API can show it in simulation; never send it to the office's screen live.
+ */
 export async function issuePass(
   deps: GateDeps,
   actor: Actor,
   input: PassInput,
-): Promise<{ passId: string }> {
+): Promise<{ passId: string; code: string }> {
   return command(
     deps.db,
     deps.permissions,
@@ -659,8 +710,13 @@ export async function issuePass(
           ${g ? (g.phones[0] ?? null) : 'phone' in c ? c.phone : null}, ${input.reason.trim()}, ${on}::date, ${actor.personId})
         returning id::text`);
       const passId = row?.id ?? '';
+      const code = await sendPickupCode(tx, {
+        passId,
+        studentId: input.studentId,
+        collector: g ? g.name : 'name' in c ? c.name.trim() : '',
+      });
       return {
-        result: { passId },
+        result: { passId, code },
         audit: {
           action: 'gate.pass.issue',
           entityType: 'person',
@@ -680,9 +736,9 @@ export async function issuePass(
 export async function passLeft(
   deps: GateDeps,
   actor: Actor,
-  input: { institutionId: string; passId: string },
-): Promise<void> {
-  await command(
+  input: { institutionId: string; passId: string; code?: string | undefined },
+): Promise<{ left: true } | { left: false; triesLeft: number }> {
+  return command<{ left: true } | { left: false; triesLeft: number }>(
     deps.db,
     deps.permissions,
     actor,
@@ -699,10 +755,12 @@ export async function passLeft(
         name: string;
         relation: string;
         phone: string | null;
+        codeHash: string | null;
+        tries: number;
       }>(sql`
         select student_person_id::text as "studentId", state, issued_on::text as "issuedOn",
           collector_guardian_id::text as "guardianId", collector_name as name, collector_relation as relation,
-          collector_phone as phone
+          collector_phone as phone, pickup_code_hash as "codeHash", code_tries as tries
         from gate_pass where org_id = app_current_org() and id = ${input.passId}
           and institution_id = ${input.institutionId} for update`);
       if (!p) throw new GateError('pass_not_found');
@@ -715,11 +773,31 @@ export async function passLeft(
           : { name: p.name, relation: p.relation, phone: p.phone ?? '' },
       );
       if (check !== 'ok') throw new GateError(check);
+      const code = checkCode(p.codeHash, p.tries, input.code, (c) =>
+        codeHash(input.passId, c, sha256),
+      );
+      if (code === 'code_locked') throw new GateError('code_locked');
+      if (code === 'wrong_code') {
+        // Kept, not thrown: a wrong try must count even though the child doesn't leave.
+        await tx.execute(sql`
+          update gate_pass set code_tries = code_tries + 1
+          where org_id = app_current_org() and id = ${input.passId}`);
+        return {
+          result: { left: false as const, triesLeft: CODE_TRIES - p.tries - 1 },
+          audit: {
+            action: 'gate.pass.code_wrong',
+            entityType: 'person',
+            entityId: p.studentId,
+            dataClass: 'personal',
+            detail: { passId: input.passId, tries: p.tries + 1 },
+          },
+        };
+      }
       await tx.execute(sql`
         update gate_pass set state = 'left', left_at = now(), left_by_person_id = ${actor.personId}
         where org_id = app_current_org() and id = ${input.passId}`);
       return {
-        result: undefined,
+        result: { left: true as const },
         audit: {
           action: 'gate.pass.left',
           entityType: 'person',
@@ -733,6 +811,53 @@ export async function passLeft(
             payload: { passId: input.passId, institutionId: input.institutionId },
           },
         ],
+      };
+    },
+  );
+}
+
+/** A new code for today's pass (lost, or locked after five wrong tries). The office only. */
+export async function resendPickupCode(
+  deps: GateDeps,
+  actor: Actor,
+  input: { institutionId: string; passId: string },
+): Promise<{ code: string }> {
+  return command(
+    deps.db,
+    deps.permissions,
+    actor,
+    {
+      permission: 'gate.pass.issue',
+      resource: res(actor, await where(deps, actor, input.institutionId)),
+    },
+    async (tx) => {
+      const [p] = await tx.execute<{
+        studentId: string;
+        state: string;
+        issuedOn: string;
+        collector: string;
+      }>(sql`
+        select student_person_id::text as "studentId", state, issued_on::text as "issuedOn",
+          collector_name as collector
+        from gate_pass where org_id = app_current_org() and id = ${input.passId}
+          and institution_id = ${input.institutionId} for update`);
+      if (!p) throw new GateError('pass_not_found');
+      if (p.state !== 'issued' || p.issuedOn !== (await today(tx)))
+        throw new GateError('pass_not_valid');
+      const code = await sendPickupCode(tx, {
+        passId: input.passId,
+        studentId: p.studentId,
+        collector: p.collector,
+      });
+      return {
+        result: { code },
+        audit: {
+          action: 'gate.pass.code_resent',
+          entityType: 'person',
+          entityId: p.studentId,
+          dataClass: 'personal',
+          detail: { passId: input.passId },
+        },
       };
     },
   );

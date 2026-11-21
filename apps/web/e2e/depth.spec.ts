@@ -48,45 +48,51 @@ test('an applicant’s papers follow them into the student record; subjects are 
     required: true,
   });
 
-  // The enquiry asks the owner's question.
+  // The lead asks the owner's question.
   await page.goto('/admissions');
-  await page.getByRole('button', { name: 'New enquiry' }).first().click();
-  await page.getByLabel("Child's name").fill('Ira Synthetic Depth');
-  await page.getByLabel('Date of birth').fill('2018-06-15');
-  await page.getByLabel("Parent or guardian's name").fill('Asha Synthetic Depth');
-  await page
+  await page.getByRole('button', { name: 'New lead' }).first().click();
+  const lead = page.getByRole('dialog', { name: 'New lead' });
+  await lead.getByLabel("Child's name").fill('Ira Synthetic Depth');
+  await lead.getByLabel(/^Date of birth/).fill('2018-06-15');
+  await lead.getByLabel("Parent or guardian's name").fill('Asha Synthetic Depth');
+  await lead
     .getByLabel('Mobile number')
     .fill(`9${Math.floor(100_000_000 + Math.random() * 899_999_999)}`);
-  await page.getByLabel('Previous board').selectOption('ICSE');
-  await page.getByRole('button', { name: 'Save enquiry' }).click();
+  await lead.getByLabel('Previous board').selectOption('ICSE');
+  await lead.getByLabel('Send the application form after saving').uncheck();
+  await lead.getByRole('button', { name: 'Save lead' }).click();
   await page.getByRole('link', { name: /Ira Synthetic Depth/ }).click();
 
-  // Photo and a paper on the application, checked by the office.
+  // Photo and a paper on the application, accepted by the office.
   await page
     .getByLabel('Photo: Upload')
     .setInputFiles({ name: 'ira.png', mimeType: 'image/png', buffer: PNG });
-  await page.getByRole('button', { name: 'Add a document' }).click();
-  const doc = page.getByRole('form', { name: 'Add a document' });
-  await doc.getByLabel('Document').fill('Birth certificate');
-  await doc
-    .getByLabel('File')
-    .setInputFiles({ name: 'birth.pdf', mimeType: 'application/pdf', buffer: PDF });
-  await doc.getByRole('button', { name: 'Upload' }).click();
-  await page.getByRole('button', { name: 'Verify' }).click();
-  await expect(page.getByText(/Checked by Meera Owner Synthetic/)).toBeVisible();
+  await page.getByRole('tab', { name: /^Papers/ }).click();
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.getByRole('button', { name: 'Upload Birth certificate' }).click(),
+  ]);
+  await chooser.setFiles({ name: 'birth.pdf', mimeType: 'application/pdf', buffer: PDF });
+  await page.getByRole('button', { name: 'Accept Birth certificate' }).click();
+  await expect(page.getByText(/^Accepted · from the office/)).toBeVisible();
+  await page.getByRole('tab', { name: 'More details' }).click();
   await expect(page.getByLabel('Previous board')).toHaveValue('ICSE');
   await noA11yViolations(page);
   await page.screenshot({ path: 'e2e/screenshots/admissions-application.png', fullPage: true });
 
-  // Applied → offered → accepted → enrolled.
-  await page.getByLabel('Move to').selectOption('applied');
-  await page.getByRole('button', { name: 'Move', exact: true }).click();
+  // Applied → in review → offered → accepted → enrolled.
+  const move = async (to: string) => {
+    await page.getByRole('combobox', { name: 'Other actions' }).selectOption(to);
+    await page.getByRole('button', { name: 'Move', exact: true }).click();
+  };
+  await move('applied');
+  await expect(page.getByText('Check the papers')).toBeVisible();
+  await move('under_review');
   await page.getByRole('button', { name: 'Make offer' }).click();
   await page.getByRole('button', { name: 'Family accepted' }).click();
   await page.getByLabel('Section').selectOption({ label: 'Class 3-A' });
   await page.getByRole('button', { name: 'Enrol', exact: true }).click();
-  await expect(page.getByText(/Enrolled\. Admission number/).first()).toBeVisible();
-  await expect(page.getByText('These papers are now in the student’s record.')).toBeVisible();
+  await expect(page.getByText(/In Class 3-A, roll number \d+/)).toBeVisible();
 
   // The student's record has the verified paper in Identity.
   await page.getByRole('link', { name: 'Open student record' }).click();

@@ -314,7 +314,20 @@ describe('generating a draft', () => {
       rules: mine,
     });
     const ask = { timetableId: next, generationId: runId };
-    expect((await generation(db, permissions, office, ask)).state).toBe('working');
+    expect(await generation(db, permissions, office, ask)).toMatchObject({
+      state: 'working',
+      stuck: false,
+    });
+    // Nothing picks a run up for minutes (no worker running): the screen is told to stop waiting.
+    const forgotten = (await requestGeneration(db, permissions, office, { timetableId: next })).id;
+    await withTenant(db, t.orgId, (tx) =>
+      tx.execute(sql`
+        update school_timetable_generation set requested_at = now() - interval '4 minutes'
+        where org_id = app_current_org() and id = ${forgotten}`),
+    );
+    expect(
+      await generation(db, permissions, office, { timetableId: next, generationId: forgotten }),
+    ).toMatchObject({ state: 'working', stuck: true });
     await work(runId);
     const run = await generation(db, permissions, office, ask);
     expect(run).toMatchObject({

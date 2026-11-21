@@ -2,6 +2,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
+  splitByPayee,
   ageBucket,
   allocate,
   concessionOn,
@@ -100,6 +101,43 @@ describe('allocating a payment', () => {
       credit: 0,
     });
     expect(allocate(25_000, [{ invoiceId: 'april', balance: 10_000 }]).credit).toBe(15_000);
+  });
+});
+
+describe('splitting a payment by payee', () => {
+  it('fills the university first, then the college', () => {
+    const owed = [{ payeeId: 'vtu', unpaid: 2_000_000 }];
+    expect(splitByPayee(500_000, owed)).toEqual([{ payeeId: 'vtu', amount: 500_000 }]);
+    expect(splitByPayee(12_000_000, owed)).toEqual([
+      { payeeId: 'vtu', amount: 2_000_000 },
+      { payeeId: null, amount: 10_000_000 },
+    ]);
+    // Already settled (or over-settled after a later concession): all to the college.
+    expect(splitByPayee(300, [{ payeeId: 'vtu', unpaid: -50 }])).toEqual([
+      { payeeId: null, amount: 300 },
+    ]);
+  });
+
+  it('never loses or makes up a paisa', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 10 ** 9 }),
+        fc.array(fc.integer({ min: -(10 ** 6), max: 10 ** 8 }), { maxLength: 4 }),
+        (amount, owed) => {
+          const parts = splitByPayee(
+            amount,
+            owed.map((u, i) => ({ payeeId: `p${i}`, unpaid: u })),
+          );
+          expect(parts.reduce((a, p) => a + p.amount, 0)).toBe(amount);
+          parts.forEach((p) => expect(p.amount).toBeGreaterThan(0));
+          parts
+            .filter((p) => p.payeeId !== null)
+            .forEach((p) =>
+              expect(p.amount).toBeLessThanOrEqual(owed[Number(p.payeeId?.slice(1))] ?? 0),
+            );
+        },
+      ),
+    );
   });
 });
 

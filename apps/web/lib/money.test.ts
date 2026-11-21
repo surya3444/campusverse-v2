@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRupees, percent, rupees, rupeesInWords } from './money';
+import { parseRupees, percent, rupees, rupeesInWords, shortRupees } from './money';
 
 describe('rupees on screen', () => {
   it('formats and parses exactly, with no floating point', () => {
@@ -26,5 +26,16 @@ describe('rupeesInWords', () => {
     expect(rupeesInWords(12_345_678_901)).toBe(
       'Rupees Twelve Crore Thirty-four Lakh Fifty-six Thousand Seven Hundred Eighty-nine and One Paisa Only',
     );
+  });
+});
+
+describe('shortRupees', () => {
+  it('fits a key-figure strip, never overstating', () => {
+    expect(shortRupees(2_000_000)).toBe('₹20,000');
+    expect(shortRupees(12_000_000)).toBe('₹1.2 L');
+    expect(shortRupees(10_000_000)).toBe('₹1 L');
+    expect(shortRupees(12_999_999)).toBe('₹1.29 L');
+    expect(shortRupees(34_567_000_000)).toBe('₹34.56 Cr');
+    expect(shortRupees(0)).toBe('₹0');
   });
 });

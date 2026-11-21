@@ -110,6 +110,18 @@ year's classes, sections, class teachers and headcounts on /classes, and Year en
 or reopens it with a reason. Staff are added with a work role (teacher, office, driver, bus attendant, security,
 warden, nurse, or support without app access) and carry safety checks (police verification; licence and medical
 fitness for drivers); routes refuse crew without them. Enrolment gives a roll number and a welcome message to the family.
+Classes and sections belong to a year: Classes edits each year's structure (unused sections removed, used ones
+closed, closed years read-only), Year end sets up next year as an editable proposal, admissions and fee plans work
+in the school's real years (a closed year takes payments, not charges), and Change section on the student profile
+moves a student within their class from a day neither register is taken (the register shows "Marked in 3-A").
+Fees collected for others (VTU's fee in a college's, a board's): heads marked "collected for" a body, every payment
+split with that body's share first and shown on the receipt, payments on with a reference (/fees/payees). Voluntary
+donations have their own receipts (/donations); never for a seat, so families with an admission in progress are refused.
+Teachers see their own week on /my-timetable (lessons, covers they take or that cover them, invigilation) and can
+subscribe Google Calendar or Outlook to a private link; timetable grids use the hub's subject colours.
+Generating a timetable is one guided flow on /timetable: school day, subjects and periods a week per class, teachers
+per section with their weekly load, rules, a fit check, then generate, place and publish, without leaving the page.
+School exams split a subject's marks into parts (Theory 80 + Internal 20), take co-scholastic grades and class-teacher remarks (suggested from the student's marks, no AI model) on a Report card tab, and combine the year's exams with weights into a final result and year report card (/exams/final/<id>).
 ID cards print per section (Classes) or per student (profile); the student list has a year picker for past years. Built against the rule book so far: the nine-system map; institution profiles and the academic engine (programs, versioned regulations,
 batches that advance by terms; colleges and universities first, schools still on school/setup); course
 registration with credit limits, elective seats and approval; college exams and results (UGC 10-point,

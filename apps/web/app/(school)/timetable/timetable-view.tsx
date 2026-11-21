@@ -27,16 +27,10 @@ import { en } from '../../../messages/en';
 import { useInstitution } from '../attendance/shared';
 import { useMe } from '../common/me';
 import { CoverTab } from './cover-tab';
-import {
-  CopyForm,
-  GenerateCanvas,
-  GroupForm,
-  GroupSlotForm,
-  PublishForm,
-  ScheduleForm,
-  SlotForm,
-} from './forms';
+import { CopyForm, GroupForm, GroupSlotForm, PublishForm, ScheduleForm, SlotForm } from './forms';
+import { TimetableGenerator } from './generator';
 import { date, errorText, t } from './shared';
+import { LessonCard, subjectColors } from './lesson-card';
 
 const TONE: Record<Version['status'], Tone> = {
   draft: 'warn',
@@ -48,7 +42,7 @@ export const statusText = (v: Version) =>
   v.status === 'scheduled' ? t.status.scheduled(date(v.effectiveFrom ?? '')) : t.status[v.status];
 
 type Open =
-  | { kind: 'new' }
+  | { kind: 'new'; thenGenerate?: boolean }
   | { kind: 'schedule' }
   | { kind: 'copy' }
   | { kind: 'publish' }
@@ -61,7 +55,7 @@ type Open =
       period: number;
     }
   | { kind: 'group'; group?: Group | undefined }
-  | { kind: 'generate' };
+  | { kind: 'generate'; firstStep?: 'day' | 'subjects' };
 
 export function TimetableView() {
   const { institutionId: id } = useInstitution();
@@ -139,10 +133,16 @@ export function TimetableView() {
         body={manage ? t.emptyBody : t.emptyReader}
         actions={
           manage ? (
-            <Button onClick={() => setOpen({ kind: 'new' })}>
-              <Plus aria-hidden className="size-4" />
-              {t.new}
-            </Button>
+            <>
+              <Button onClick={() => setOpen({ kind: 'new', thenGenerate: true })}>
+                <Sparkles aria-hidden className="size-4" />
+                {t.wizard.start}
+              </Button>
+              <Button variant="secondary" onClick={() => setOpen({ kind: 'new' })}>
+                <Plus aria-hidden className="size-4" />
+                {t.wizard.byHand}
+              </Button>
+            </>
           ) : null
         }
       />
@@ -267,8 +267,13 @@ export function TimetableView() {
       {open?.kind === 'new' && id && (
         <ScheduleForm
           institutionId={id}
+          {...(open.thenGenerate ? { title: t.wizard.firstTitle } : {})}
           onClose={() => setOpen(null)}
-          onDone={(newId) => done(t.saved, newId)}
+          onDone={(newId) => {
+            done(t.saved, newId);
+            // Generating: the new draft opens straight at its subjects.
+            if (open.thenGenerate) setOpen({ kind: 'generate', firstStep: 'subjects' });
+          }}
         />
       )}
       {open?.kind === 'schedule' && detail.data && (
@@ -321,13 +326,18 @@ export function TimetableView() {
           onDone={() => done(t.saved)}
         />
       )}
-      {open?.kind === 'generate' && detail.data && (
-        <GenerateCanvas
-          detail={detail.data}
-          onClose={() => setOpen(null)}
-          onDone={(n) => done(t.generate.done(n))}
-        />
-      )}
+      {open?.kind === 'generate' &&
+        id &&
+        detail.data &&
+        detail.data.version.id === selected?.id && (
+          <TimetableGenerator
+            institutionId={id}
+            detail={detail.data}
+            {...(open.firstStep ? { firstStep: open.firstStep } : {})}
+            onClose={() => setOpen(null)}
+            onDone={(m) => done(m)}
+          />
+        )}
       <Announcer message={message} />
     </div>
   );
@@ -370,6 +380,18 @@ function Week({
   });
 
   const subject = new Map(plan.offerings.map((o) => [o.subjectId, o]));
+  // A subject's name, with its code only when two subjects share the name.
+  const named = (id: string) => {
+    const o = subject.get(id);
+    if (!o) return '';
+    return plan.offerings.some((x) => x.subjectId !== id && x.name === o.name)
+      ? `${o.name} (${o.code})`
+      : o.name;
+  };
+  // One colour per subject, as the hub draws the week; a teaching group takes its name's colour.
+  const subjectColor = subjectColors(plan.offerings.map((o) => o.subjectId));
+  const groupColor = subjectColors(groups.map((g) => g.id));
+  const colorOf = (key: string) => (groupOf.has(key) ? groupColor(key) : subjectColor(key));
   const name = new Map(staff.map((s) => [s.personId, s.name]));
   const label = new Map(plan.sections.map((s) => [s.sectionId, s.label]));
   const shown =
@@ -404,11 +426,13 @@ function Week({
     const group = s.groupId ? groupOf.get(s.groupId) : undefined;
     if (group && by === 'section')
       return {
+        key: group.id,
         main: group.name,
-        sub: t.groups.cellSub(here.map((x) => subject.get(x.subjectId)?.code ?? '').join(', ')),
+        sub: t.groups.cellSub(here.map((x) => named(x.subjectId)).join(', ')),
       };
     return {
-      main: subject.get(s.subjectId)?.code ?? '',
+      key: s.subjectId,
+      main: named(s.subjectId),
       sub:
         by === 'section'
           ? [s.teacherPersonId ? name.get(s.teacherPersonId) : null, s.room]
@@ -423,10 +447,7 @@ function Week({
   const cell = (weekday: number, period: number) => {
     const text = cellText(at(weekday, period));
     const inner = text ? (
-      <span className="flex w-full min-w-0 flex-col gap-0.5 text-left">
-        <span className="font-medium text-ink">{text.main}</span>
-        {text.sub && <span className="truncate text-caption text-ink-muted">{text.sub}</span>}
-      </span>
+      <LessonCard subject={text.main} sub={text.sub} color={colorOf(text.key)} />
     ) : editable && by === 'section' ? (
       <span className="text-caption text-ink-muted">
         <span aria-hidden>+</span>
@@ -448,8 +469,10 @@ function Week({
         )}
         onClick={() => onCell(sectionId, weekday, period)}
         className={cx(
-          'flex min-h-14 w-full items-start rounded-lg border px-2 py-1.5 hover:border-navy-950 hover:bg-navy-50',
-          text ? 'border-line bg-surface' : 'border-dashed border-line-strong',
+          'flex min-h-14 w-full items-stretch rounded-lg border hover:border-navy-950',
+          text
+            ? 'border-transparent'
+            : 'border-dashed border-line-strong px-2 py-1.5 hover:bg-navy-50',
         )}
       >
         <span className="sr-only">
@@ -458,12 +481,7 @@ function Week({
         {inner}
       </button>
     ) : (
-      <div
-        className={cx(
-          'flex min-h-14 items-start rounded-lg px-2 py-1.5',
-          text ? 'border border-line bg-surface' : '',
-        )}
-      >
+      <div className={cx('flex min-h-14 items-stretch rounded-lg', !text && 'px-2 py-1.5')}>
         {inner}
       </div>
     );
@@ -524,7 +542,7 @@ function Week({
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
           <span className="text-caption text-ink-muted">{t.targets}</span>
           {sectionTargets.map((x) => {
-            const code = subject.get(x.subjectId)?.code ?? '';
+            const code = named(x.subjectId);
             const tone: Tone =
               x.target === null
                 ? 'neutral'

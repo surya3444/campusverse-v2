@@ -13,7 +13,7 @@ import {
   KeyFigures,
   type Tone,
 } from '@campusverse/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery } from '@tanstack/react-query';
 import { BriefcaseBusiness, ChevronRight, Download, Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -93,19 +93,45 @@ export function StaffList() {
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>('all');
   const [onlyDue, setOnlyDue] = useState(false);
   const [adding, setAdding] = useState(false);
-  const staff = useQuery({
-    queryKey: ['staff', id, show],
-    queryFn: () =>
-      api.get<Staff[]>(
-        `/people/staff?institutionId=${id}${show === 'all' ? '&includeLeft=true' : ''}`,
-      ),
-    enabled: !!id,
+  // A view with several institutions lists everyone in it once, with every institution they work
+  // in (one staff record across the group, rule book §12.4); "This institution" narrows to one.
+  const many = school.inView.length > 1;
+  const [span, setSpan] = useState<'view' | 'one'>('view');
+  const wide = many && span === 'view';
+  const ids = wide ? school.inView.map((i) => i.id) : id ? [id] : [];
+  const names = new Map(school.inView.map((i) => [i.id, i.name]));
+  const staff = useQueries({
+    queries: ids.map((iid) => ({
+      queryKey: ['staff', iid, show],
+      queryFn: () =>
+        api.get<Staff[]>(
+          `/people/staff?institutionId=${iid}${show === 'all' ? '&includeLeft=true' : ''}`,
+        ),
+    })),
+    combine: (rs) => {
+      const byPerson = new Map<string, Staff & { institutions: string[] }>();
+      rs.forEach((r, n) =>
+        (r.data ?? []).forEach((x) => {
+          const name = names.get(ids[n] ?? '') ?? '';
+          const seen = byPerson.get(x.personId);
+          if (seen) seen.institutions.push(name);
+          else byPerson.set(x.personId, { ...x, institutions: [name] });
+        }),
+      );
+      return {
+        data: rs.length > 0 && rs.every((r) => r.data) ? [...byPerson.values()] : undefined,
+        isPending: rs.length === 0 || rs.some((r) => r.isPending),
+        isError: rs.some((r) => r.isError),
+        error: rs.find((r) => r.error)?.error ?? null,
+      };
+    },
   });
+  // Today's attendance is kept per institution: shown when listing one.
   const today = useQuery({
     queryKey: ['staff-register', id, istToday()],
     queryFn: () =>
       api.get<Register>(`/staff-attendance/register?institutionId=${id}&date=${istToday()}`),
-    enabled: !!id && can('staff.attendance.read'),
+    enabled: !!id && !wide && can('staff.attendance.read'),
   });
   const days = new Map((today.data?.staff ?? []).map((s) => [s.personId, s.day?.status ?? null]));
   const q = query.trim().toLowerCase();
@@ -136,12 +162,19 @@ export function StaffList() {
                   'staff',
                   id ?? '',
                   'staff',
-                  [t.csv.code, t.csv.name, t.csv.designation, t.csv.status],
+                  [
+                    t.csv.code,
+                    t.csv.name,
+                    t.csv.designation,
+                    t.csv.status,
+                    ...(wide ? [en.view.institution] : []),
+                  ],
                   shown.map((s) => [
                     s.employeeCode,
                     s.name,
                     s.designation,
                     t.statuses[s.status] ?? s.status,
+                    ...(wide ? [s.institutions.join('; ')] : []),
                   ]),
                 )
               }
@@ -212,6 +245,17 @@ export function StaffList() {
                   className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-ink-muted"
                 />
               </label>
+              {many && (
+                <Segmented
+                  label={en.view.span}
+                  value={span}
+                  onChange={setSpan}
+                  options={[
+                    { value: 'view', label: en.view.spanView(school.inView.length) },
+                    { value: 'one', label: en.view.spanOne },
+                  ]}
+                />
+              )}
               <Segmented
                 label={t.categoryFilter}
                 value={category}
@@ -285,6 +329,7 @@ export function StaffList() {
                                   s.roleKeys.map((r) => t.roles[r] ?? r).join(', ') ??
                                   null,
                                 s.employeeCode,
+                                wide ? s.institutions.join(', ') : null,
                               ]
                                 .filter(Boolean)
                                 .join(' · ')}
@@ -302,7 +347,7 @@ export function StaffList() {
                               )}
                             </Pill>
                           )}
-                          {can('staff.attendance.read') && s.status !== 'left' && (
+                          {!wide && can('staff.attendance.read') && s.status !== 'left' && (
                             <Pill tone={d ? (TODAY_TONE[d] ?? 'neutral') : 'neutral'}>
                               {t.today[d ?? 'none']}
                             </Pill>

@@ -27,4 +27,8 @@ The Campusverse super admin (spec: `docs/specs/SUPER_ADMIN.md`). Staff only; sch
 
 **Not yet:** SSO for staff, billing schools, "view as" a school user, data export for a leaving customer, a status page, provider dashboards, customer list beyond 50 (search instead).
 
-**Self-serve sign-up** (`selfSignup`; rule book §11 "Self-serve onboarding"; migration 0077): `/signup` opens an invite on the Pilot plan with no staff member behind it (`source = 'self'`), onboarding already started with the person's name, organisation, state and institution kind. Someone already invited keeps their invite; someone already a member just signs in. The same OTP send limits apply before anything is written. Staff see these as "Self sign-up" in the invites list.
+**Self-serve sign-up** (`selfSignup`; rule book §11 "Self-serve onboarding"; migrations 0077, 0089): `/signup` opens a **request** (`status = 'requested'`, Pilot plan, `source = 'self'`) with onboarding answers already drafted. Staff approve it (`decideSignup` → `invited`, onboarding opens) or decline it with a reason the person sees (`declined`; they can ask again). Someone with an open request or invite keeps it; someone already a member just signs in. The same OTP send limits apply before anything is written.
+
+**Email invites** (`inviteByEmail`, `emailInvite`): a one-time link (`/signup?invite=…`, 14 days; only its SHA-256 hash is stored) for an address. Signing up through it takes the invite without approval and fixes the email; a waiting request from the same mobile gives way to it. No email service is connected: the portal shows the link once to copy or open in the staff member's mail app.
+
+**Several organisations per admin** (`startAnotherOrganisation`): an admin who has onboarded opens another invite (`source = 'additional'`, same plan) and builds a new organisation, its own tenant, in the same onboarding. `listAdmins` groups the organisations each admin set up (portal: Admins).

@@ -4,7 +4,10 @@ import {
   ApplicationStatusRequest,
   Id,
   OnlineApplicationInput,
+  SendPapersInput,
+  StartApplicationInput,
 } from '@campusverse/contracts';
+import { FileRefused } from '@campusverse/platform-documents';
 import type { Db } from '@campusverse/db';
 import { normaliseIndianMobile, type Otp } from '@campusverse/platform-identity';
 import type { Actor } from '@campusverse/platform-permissions';
@@ -14,10 +17,14 @@ import {
   publicForm,
   requestApplicationCode,
   saveAdmissionForm,
+  sendPapers,
+  startApplication,
   submitOnlineApplication,
+  uploadPaper,
   type AdmissionsDeps,
 } from '@campusverse/school-admissions';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -34,11 +41,10 @@ import {
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import type { SmsSimulator } from '../simulation.js';
-import { ADMISSIONS, APPLY, DB, type AuthedRequest } from './deps.js';
+import { ADMISSIONS, APPLY, DB, type ApplyDeps, type AuthedRequest } from './deps.js';
 import { ActorGuard } from './guards.js';
 
-type Apply = { otp: Otp | null; simulator: SmsSimulator | null };
+const PAPER_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 
 /**
  * The public online application form (docs/specs/ONLINE_APPLICATIONS.md): no session. Every call
@@ -48,7 +54,7 @@ type Apply = { otp: Otp | null; simulator: SmsSimulator | null };
 export class ApplyController {
   constructor(
     @Inject(DB) private readonly db: Db,
-    @Inject(APPLY) private readonly apply: Apply,
+    @Inject(APPLY) private readonly apply: ApplyDeps,
   ) {}
 
   private otp(): Otp {
@@ -56,10 +62,21 @@ export class ApplyController {
     return this.apply.otp;
   }
 
+  private secret(): string {
+    if (!this.apply.secret)
+      throw new ServiceUnavailableException({ code: 'online_form_unavailable' });
+    return this.apply.secret;
+  }
+
+  /** The form; with ?invite= a personal link, which is marked opened. */
   @Get(':slug')
-  async form(@Param('slug') slug: string, @Req() req: AuthedRequest) {
+  async form(
+    @Param('slug') slug: string,
+    @Query('invite') invite: string | undefined,
+    @Req() req: AuthedRequest,
+  ) {
     await this.otp().checkLimit('view', req.ip, 300);
-    const f = await publicForm(this.db, slug);
+    const f = await publicForm(this.db, slug, invite ?? null);
     if (!f) throw new NotFoundException({ code: 'form_not_found' });
     return f;
   }
@@ -77,13 +94,53 @@ export class ApplyController {
     return simulated ? { simulated } : {};
   }
 
+  /** The code proves the mobile: a session for uploading papers and submitting. */
+  @Post(':slug/start')
+  @HttpCode(200)
+  async start(@Param('slug') slug: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    await this.otp().checkLimit('start', req.ip, 30);
+    return startApplication(this.db, this.otp(), this.secret(), {
+      slug,
+      ...StartApplicationInput.parse(body),
+    });
+  }
+
+  /** Multipart: session and kind before the file (PDF, JPEG or PNG). */
+  @Post(':slug/papers')
+  async paper(@Param('slug') slug: string, @Req() req: AuthedRequest) {
+    await this.otp().checkLimit('paper', req.ip, 60);
+    const file = await req.file();
+    if (!file) throw new BadRequestException({ code: 'file_missing' });
+    const field = (k: string) => {
+      const f = file.fields[k];
+      return f && !Array.isArray(f) && 'value' in f ? String(f.value) : '';
+    };
+    if (!PAPER_TYPES.has(file.mimetype)) throw new FileRefused('file_type');
+    return uploadPaper(this.db, this.apply.store, this.secret(), {
+      slug,
+      session: field('session'),
+      kind: field('kind'),
+      fileName: file.filename,
+      contentType: file.mimetype,
+      bytes: new Uint8Array(await file.toBuffer()),
+    });
+  }
+
   @Post(':slug')
   async submit(@Param('slug') slug: string, @Body() body: unknown, @Req() req: AuthedRequest) {
     await this.otp().checkLimit('submit', req.ip, 30);
-    return submitOnlineApplication(this.db, this.otp(), {
+    return submitOnlineApplication(this.db, this.secret(), {
       slug,
       ...OnlineApplicationInput.parse(body),
     });
+  }
+
+  /** Papers the school asked for, sent with a papers link or after Check an application. */
+  @Post(':slug/send-papers')
+  @HttpCode(200)
+  async sendPapers(@Param('slug') slug: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    await this.otp().checkLimit('submit', req.ip, 30);
+    return sendPapers(this.db, this.secret(), { slug, ...SendPapersInput.parse(body) });
   }
 
   @Post(':slug/status')
@@ -91,7 +148,7 @@ export class ApplyController {
   async status(@Param('slug') slug: string, @Body() body: unknown, @Req() req: AuthedRequest) {
     await this.otp().checkLimit('status', req.ip, 30);
     return {
-      applications: await applicationStatus(this.db, this.otp(), {
+      applications: await applicationStatus(this.db, this.otp(), this.secret(), {
         slug,
         ...ApplicationStatusRequest.parse(body),
       }),

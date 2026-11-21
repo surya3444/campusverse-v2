@@ -23,6 +23,16 @@ export type Audience = { type: 'school' } | { type: 'groups'; groupIds: string[]
 /** A choosable audience group (a class or a section), as the academic module names it. */
 export type AudienceGroup = { id: string; label: string };
 
+/** A billing period (a school's academic year): fee plans bill for one; a closed one takes no new charges. */
+export type AudiencePeriod = {
+  id: string;
+  label: string;
+  starts: string;
+  /** Exclusive. */
+  ends: string;
+  closed: boolean;
+};
+
 /**
  * Who is in an audience. Communications is shared and knows nothing about classes; each
  * academic module answers (school: classes and sections).
@@ -36,6 +46,19 @@ export interface AudiencePort {
     groupIds: string[] | null,
     onDate: string,
   ): Promise<string[]>;
+  /** The institution's academic years, if it has them (schools); colleges and services don't. */
+  periods?(tx: Tx, institutionId: string): Promise<AudiencePeriod[]>;
+  /**
+   * The part of a group's fee each student pays, in basis points (10,000 = all of it), for those
+   * who pay less: transport's one-way riders pay half the zone fee. Students left out pay it all.
+   */
+  shares?(
+    tx: Tx,
+    institutionId: string,
+    groupIds: string[],
+    studentIds: string[],
+    onDate: string,
+  ): Promise<Map<string, number>>;
 }
 
 export type NoticeDeps = { db: Db; permissions: Permissions; audience: AudiencePort };
@@ -546,9 +569,20 @@ export async function audienceGroups(
  */
 export function combineAudiences(
   academic: AudiencePort,
-  ...services: Pick<AudiencePort, 'groups' | 'students'>[]
+  ...services: Pick<AudiencePort, 'groups' | 'students' | 'shares'>[]
 ): AudiencePort {
   return {
+    ...(academic.periods ? { periods: academic.periods.bind(academic) } : {}),
+    // The lowest part any owner gives a student (one group per plan in practice).
+    async shares(tx, institutionId, groupIds, studentIds, onDate) {
+      const out = new Map<string, number>();
+      for (const s of [academic, ...services]) {
+        if (!s.shares) continue;
+        for (const [id, bp] of await s.shares(tx, institutionId, groupIds, studentIds, onDate))
+          out.set(id, Math.min(bp, out.get(id) ?? 10_000));
+      }
+      return out;
+    },
     async groups(tx, institutionId, onDate) {
       const all = [await academic.groups(tx, institutionId, onDate)];
       for (const s of services) all.push(await s.groups(tx, institutionId, onDate));

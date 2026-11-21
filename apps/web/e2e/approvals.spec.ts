@@ -78,4 +78,15 @@ test('approvals: the designer routes a bill to office staff’s My Work', async 
   await expect(drawer).toContainText('Approved');
   await page.goto('/my-work');
   await expect(main.getByText('Nothing is waiting for you')).toBeVisible();
+
+  // Decided by me: the bill, approved, and where it stands now.
+  await main.getByRole('radio', { name: /Decided by me/ }).click();
+  const done = main.getByRole('button', { name: /Synthetic Plumber · SP-17/ });
+  await expect(done).toContainText('Approved');
+  await expect(done).toContainText('Done: approved');
+  await noA11yViolations(page);
+  await page.screenshot({
+    path: `e2e/screenshots/my-work-decided-${info.project.name}.png`,
+    fullPage: true,
+  });
 });

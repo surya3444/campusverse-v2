@@ -146,12 +146,18 @@ export async function submitAttendance(
         });
 
         if (first) {
+          // A student moved here today may already be marked in their old section: that mark is
+          // kept (a day counts once), and everyone else's goes in.
+          const written = new Map<string, DayStatus>();
           for (const [personId, status] of days) {
-            await tx.execute(sql`
+            const [row] = await tx.execute(sql`
               insert into school_attendance_day (org_id, person_id, on_date, section_id, status, source_event_id)
-              values (app_current_org(), ${personId}, ${input.onDate}::date, ${s.sectionId}, ${status}, ${input.eventId})`);
+              values (app_current_org(), ${personId}, ${input.onDate}::date, ${s.sectionId}, ${status}, ${input.eventId})
+              on conflict (org_id, person_id, on_date) do nothing
+              returning 1`);
+            if (row) written.set(personId, status);
           }
-          const absent = [...days].filter(([, st]) => st === 'absent').map(([id]) => id);
+          const absent = [...written].filter(([, st]) => st === 'absent').map(([id]) => id);
           const events: EventInput[] = [
             {
               type: SUBMITTED,
@@ -159,7 +165,7 @@ export async function submitAttendance(
                 sectionId: s.sectionId,
                 onDate: input.onDate,
                 eventId: input.eventId,
-                students: days.size,
+                students: written.size,
                 absent: absent.length,
               },
             },
@@ -172,7 +178,11 @@ export async function submitAttendance(
           }
           return {
             result: { outcome: 'accepted' as const },
-            audit: audit({ students: days.size, absent: absent.length }),
+            audit: audit({
+              students: written.size,
+              absent: absent.length,
+              markedElsewhere: days.size - written.size,
+            }),
             events,
           };
         }
@@ -206,6 +216,24 @@ export async function submitAttendance(
     if (isUniqueViolation(e)) return { outcome: 'duplicate' };
     throw e;
   }
+}
+
+/**
+ * Days on or after a date that any of the sections already took attendance: a section change must
+ * start after them (school/enrolment asks through the API's wiring).
+ */
+export async function attendanceTaken(
+  tx: Tx,
+  sectionIds: string[],
+  from: string,
+): Promise<string[]> {
+  if (sectionIds.length === 0) return [];
+  const rows = await tx.execute<{ d: string }>(sql`
+    select distinct on_date::text as d from school_attendance_session
+    where org_id = app_current_org() and on_date >= ${from}::date
+      and section_id = any(${`{${sectionIds.join(',')}}`}::uuid[])
+    order by 1`);
+  return rows.map((r) => r.d);
 }
 
 export type SyncEvent = {
@@ -500,6 +528,8 @@ export type SheetStudent = {
   /** Recorded status once taken; before that, leave if any, else null (present by default). */
   status: DayStatus | null;
   onLeave: Leave | null;
+  /** Already marked that day in another section (they moved here): that section's label. */
+  markedIn: string | null;
 };
 export type MarkingSheet = {
   sectionId: string;
@@ -549,13 +579,17 @@ export async function markingSheet(
       roster.map((r) => r.personId),
       onDate,
     );
-    const days = new Map(
-      (
-        await tx.execute<{ id: string; status: DayStatus }>(sql`
-          select person_id::text as id, status from school_attendance_day
-          where org_id = app_current_org() and section_id = ${s.sectionId} and on_date = ${onDate}::date`)
-      ).map((r) => [r.id, r.status]),
-    );
+    // Each student's mark for the day wherever it was taken: here, or in a section they left today.
+    const marks = await tx.execute<{ id: string; status: DayStatus; elsewhere: string | null }>(sql`
+      select d.person_id::text as id, d.status,
+        case when d.section_id <> ${s.sectionId} then c.name || '-' || x.name end as elsewhere
+      from school_attendance_day d
+      join school_section x on x.org_id = d.org_id and x.id = d.section_id
+      join school_class c on c.org_id = x.org_id and c.id = x.class_id
+      where d.org_id = app_current_org() and d.on_date = ${onDate}::date
+        and d.person_id = any(${`{${roster.map((r) => r.personId).join(',')}}`}::uuid[])`);
+    const days = new Map(marks.map((r) => [r.id, r.status]));
+    const elsewhere = new Map(marks.map((r) => [r.id, r.elsewhere]));
     const [session] = await tx.execute<{
       submittedAt: string;
       submittedBy: string;
@@ -583,6 +617,7 @@ export async function markingSheet(
         ...r,
         status: days.get(r.personId) ?? leave.get(r.personId) ?? null,
         onLeave: leave.get(r.personId) ?? null,
+        markedIn: elsewhere.get(r.personId) ?? null,
       })),
       canMark,
       canSignOff: (

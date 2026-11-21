@@ -202,20 +202,24 @@ describe('cross-tenant schemas', () => {
 });
 
 describe('append-only tables', () => {
-  it.each(['audit_event', 'consent_record', 'consent_notice', 'issued_document', 'verse_request'])(
-    '%s refuses UPDATE and DELETE from the app role',
-    async (table) => {
-      const T = sql.identifier(table);
-      for (const stmt of [
-        sql`update ${T} set org_id = org_id where org_id = ${a.orgId}`,
-        sql`delete from ${T} where org_id = ${a.orgId}`,
-      ]) {
-        expect(await errorCode(withTenant(db, a.orgId, (tx) => tx.execute(stmt)))).toBe(
-          RLS_VIOLATION,
-        );
-      }
-    },
-  );
+  it.each([
+    'audit_event',
+    'consent_record',
+    'consent_notice',
+    'issued_document',
+    'verse_request',
+    'fee_remittance',
+  ])('%s refuses UPDATE and DELETE from the app role', async (table) => {
+    const T = sql.identifier(table);
+    for (const stmt of [
+      sql`update ${T} set org_id = org_id where org_id = ${a.orgId}`,
+      sql`delete from ${T} where org_id = ${a.orgId}`,
+    ]) {
+      expect(await errorCode(withTenant(db, a.orgId, (tx) => tx.execute(stmt)))).toBe(
+        RLS_VIOLATION,
+      );
+    }
+  });
 });
 
 describe('identity schema', () => {
@@ -224,6 +228,8 @@ describe('identity schema', () => {
     'account',
     'account_person_link',
     'login_identifier',
+    'mfa_challenge',
+    'mfa_secret',
     'session',
     'trusted_device',
   ];

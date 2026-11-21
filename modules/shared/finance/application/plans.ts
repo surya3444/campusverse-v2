@@ -3,6 +3,7 @@ import { command } from '@campusverse/platform-events';
 import type { Actor } from '@campusverse/platform-permissions';
 import { sql } from 'drizzle-orm';
 import { concessionOn, instalmentLines, type Concession } from '../domain/money.js';
+import { clampTo, inferPeriod, periodOn, periodsFor, resolvePeriod } from './periods.js';
 import {
   DATE,
   FinanceError,
@@ -12,6 +13,7 @@ import {
   today,
   type FinanceDeps,
 } from './common.js';
+import { payeeOf } from './payees.js';
 
 export type HeadInput = {
   institutionId: string;
@@ -20,6 +22,8 @@ export type HeadInput = {
   taxClass: 'education_exempt' | 'taxable';
   rteExempt: boolean;
   refundable: boolean;
+  /** Collected for an outside body (the university, a board); null or left out: the institution's own. */
+  payeeId?: string | null | undefined;
 };
 
 async function placeFor(deps: FinanceDeps, actor: Actor, institutionId: string) {
@@ -40,10 +44,11 @@ export async function createHead(
     actor,
     { permission: 'finance.plan.manage', resource: { orgId: actor.orgId, place } },
     async (tx) => {
+      if (input.payeeId) await payeeOf(tx, input.institutionId, input.payeeId);
       const [row] = await tx.execute<{ id: string }>(sql`
-        insert into fee_head (org_id, institution_id, code, name, tax_class, rte_exempt, refundable)
+        insert into fee_head (org_id, institution_id, code, name, tax_class, rte_exempt, refundable, payee_id)
         values (app_current_org(), ${input.institutionId}, ${input.code}, ${input.name.trim()}, ${input.taxClass},
-          ${input.rteExempt}, ${input.refundable})
+          ${input.rteExempt}, ${input.refundable}, ${input.payeeId ?? null})
         on conflict (org_id, institution_id, code) do nothing returning id::text`);
       if (!row) throw new FinanceError('head_exists');
       return {
@@ -67,6 +72,11 @@ export type Head = {
   taxClass: string;
   rteExempt: boolean;
   refundable: boolean;
+  /** Null: the institution's own fee. */
+  payeeId: string | null;
+  payee: string | null;
+  /** Billed at least once: who it is collected for can no longer change. */
+  used: boolean;
 };
 
 export async function listHeads(
@@ -81,8 +91,12 @@ export async function listHeads(
     });
     return [
       ...(await tx.execute<Head>(sql`
-        select id::text, code, name, tax_class as "taxClass", rte_exempt as "rteExempt", refundable
-        from fee_head where org_id = app_current_org() and institution_id = ${institutionId} order by code`)),
+        select h.id::text, h.code, h.name, h.tax_class as "taxClass", h.rte_exempt as "rteExempt", h.refundable,
+          h.payee_id::text as "payeeId", p.short_name as payee,
+          exists (select 1 from fee_invoice_line l where l.org_id = h.org_id and l.head_id = h.id) as used
+        from fee_head h left join fee_payee p on p.org_id = h.org_id and p.id = h.payee_id
+        where h.org_id = app_current_org() and h.institution_id = ${institutionId}
+        order by h.payee_id is not null desc, h.code`)),
     ];
   });
 }
@@ -95,6 +109,8 @@ export type PlanInput = {
   instalments: { label: string; dueOn: string; shareBp: number }[];
   lateFeePaise: number;
   graceDays: number;
+  /** The academic year it bills for (required where the institution has years). */
+  periodId?: string | null | undefined;
 };
 
 function checkPlan(p: Omit<PlanInput, 'institutionId'>) {
@@ -145,6 +161,24 @@ export async function savePlan(
     { permission: 'finance.plan.manage', resource: { orgId: actor.orgId, place } },
     async (tx) => {
       let plan: { id: string; version: number };
+      let familyPeriod: string | null | undefined;
+      if (input.planId) {
+        const [fp] = await tx.execute<{ periodId: string | null }>(sql`
+          select period_id::text as "periodId" from fee_plan where org_id = app_current_org() and id = ${input.planId}`);
+        familyPeriod = fp?.periodId;
+      }
+      // A family's versions all bill for the same year; a plan for another year is a new plan.
+      if (familyPeriod && input.periodId && input.periodId !== familyPeriod)
+        throw new FinanceError('year_fixed');
+      const period = await resolvePeriod(
+        tx,
+        deps.audience,
+        input.institutionId,
+        input.periodId ?? familyPeriod,
+        input.instalments.map((i) => i.dueOn),
+      );
+      const pid = period?.id ?? null;
+      const plabel = period?.label ?? null;
       if (input.planId) {
         const [existing] = await tx.execute<{
           id: string;
@@ -158,17 +192,18 @@ export async function savePlan(
         if (existing.state === 'draft') {
           await tx.execute(sql`
             update fee_plan set name = ${input.name.trim()}, group_ids = ${`{${input.groupIds.join(',')}}`}::uuid[],
-              late_fee_paise = ${input.lateFeePaise}, grace_days = ${input.graceDays}
+              late_fee_paise = ${input.lateFeePaise}, grace_days = ${input.graceDays},
+              period_id = ${pid}::uuid, period_label = ${plabel}
             where org_id = app_current_org() and id = ${existing.id}`);
           plan = existing;
         } else {
           const [next] = await tx.execute<{ id: string; version: number }>(sql`
             insert into fee_plan (org_id, family_id, version, institution_id, name, group_ids, late_fee_paise, grace_days,
-              created_by_person_id)
+              created_by_person_id, period_id, period_label)
             values (app_current_org(), ${existing.familyId},
               (select max(version) + 1 from fee_plan where org_id = app_current_org() and family_id = ${existing.familyId}),
               ${input.institutionId}, ${input.name.trim()}, ${`{${input.groupIds.join(',')}}`}::uuid[],
-              ${input.lateFeePaise}, ${input.graceDays}, ${actor.personId})
+              ${input.lateFeePaise}, ${input.graceDays}, ${actor.personId}, ${pid}::uuid, ${plabel})
             returning id::text, version`);
           if (!next) throw new Error('savePlan: no version');
           plan = next;
@@ -176,9 +211,10 @@ export async function savePlan(
       } else {
         const [created] = await tx.execute<{ id: string; version: number }>(sql`
           insert into fee_plan (org_id, family_id, institution_id, name, group_ids, late_fee_paise, grace_days,
-            created_by_person_id)
+            created_by_person_id, period_id, period_label)
           values (app_current_org(), uuidv7(), ${input.institutionId}, ${input.name.trim()},
-            ${`{${input.groupIds.join(',')}}`}::uuid[], ${input.lateFeePaise}, ${input.graceDays}, ${actor.personId})
+            ${`{${input.groupIds.join(',')}}`}::uuid[], ${input.lateFeePaise}, ${input.graceDays}, ${actor.personId},
+            ${pid}::uuid, ${plabel})
           returning id::text, version`);
         if (!created) throw new Error('savePlan: no row');
         plan = created;
@@ -191,7 +227,7 @@ export async function savePlan(
           entityType: 'fee_plan',
           entityId: plan.id,
           dataClass: 'operational',
-          detail: { version: plan.version },
+          detail: { version: plan.version, year: plabel },
         },
       };
     },
@@ -214,6 +250,9 @@ export type PlanDetail = {
   previousTotalPaise: number | null;
   /** Invoices raised from this version: 0 after publishing means nobody has been billed yet. */
   invoicesIssued: number;
+  /** The academic year it bills for; null for plans from before years were recorded. */
+  periodId: string | null;
+  periodLabel: string | null;
 };
 
 async function loadPlan(tx: Tx, planId: string): Promise<PlanDetail & { institutionId: string }> {
@@ -226,7 +265,8 @@ async function loadPlan(tx: Tx, planId: string): Promise<PlanDetail & { institut
     }
   >(sql`
     select id::text, family_id::text as "familyId", version, name, state, group_ids::text[] as "groupIds",
-      late_fee_paise::int as "lateFeePaise", grace_days as "graceDays", institution_id::text as "institutionId"
+      late_fee_paise::int as "lateFeePaise", grace_days as "graceDays", institution_id::text as "institutionId",
+      period_id::text as "periodId", period_label as "periodLabel"
     from fee_plan where org_id = app_current_org() and id = ${planId}`);
   if (!p) throw new FinanceError('plan_not_found');
   const lines = await tx.execute<PlanDetail['lines'][number]>(sql`
@@ -277,6 +317,8 @@ export type PlanSummary = {
   state: string;
   totalPaise: number;
   groups: number;
+  periodId: string | null;
+  periodLabel: string | null;
 };
 
 export async function listPlans(
@@ -292,9 +334,10 @@ export async function listPlans(
     return [
       ...(await tx.execute<PlanSummary>(sql`
         select p.id::text, p.name, p.version, p.state, cardinality(p.group_ids) as groups,
+          p.period_id::text as "periodId", p.period_label as "periodLabel",
           coalesce((select sum(amount_paise) from fee_plan_line where org_id = p.org_id and plan_id = p.id), 0)::int as "totalPaise"
         from fee_plan p where p.org_id = app_current_org() and p.institution_id = ${institutionId} and p.state <> 'retired'
-        order by p.name, p.version desc`)),
+        order by p.period_label desc nulls last, p.name, p.version desc`)),
     ];
   });
 }
@@ -420,13 +463,34 @@ async function issuePlan(
   if (p.state !== 'published') throw new FinanceError('not_published');
   const inst = await institution(tx, p.institutionId);
   const issuedOn = await today(tx);
-  const d = asOf && asOf > issuedOn ? asOf : issuedOn;
+  let d = asOf && asOf > issuedOn ? asOf : issuedOn;
+  // A plan for a year bills that year's students: next year's plan, issued before it starts,
+  // reaches the students already placed in next year's sections. A closed year takes no new bills.
+  if (p.periodId) {
+    const period = (await periodsFor(tx, deps.audience, p.institutionId)).find(
+      (x) => x.id === p.periodId,
+    );
+    if (period?.closed) throw new FinanceError('year_closed', { year: period.label });
+    if (period) d = clampTo(d, period);
+  }
   const everyone = await deps.audience.students(tx, p.institutionId, p.groupIds, d);
   const students = onlyStudentId ? everyone.filter((s) => s === onlyStudentId) : everyone;
-  const split = instalmentLines(
-    p.lines.map((l) => ({ headId: l.headId, amount: l.amountPaise })),
-    p.instalments.map((i) => i.shareBp),
-  );
+  // Some students pay part of the fee (a one-way bus rider pays half the zone fee): each line is
+  // scaled down (rounded down, never overstated), then split into instalments as usual.
+  const parts = deps.audience.shares
+    ? await deps.audience.shares(tx, p.institutionId, p.groupIds, students, d)
+    : new Map<string, number>();
+  const splits = new Map<number, ReturnType<typeof instalmentLines>>();
+  const splitFor = (bp: number) => {
+    const known = splits.get(bp);
+    if (known) return known;
+    const made = instalmentLines(
+      p.lines.map((l) => ({ headId: l.headId, amount: Math.floor((l.amountPaise * bp) / 10_000) })),
+      p.instalments.map((i) => i.shareBp),
+    );
+    splits.set(bp, made);
+    return made;
+  };
   const existing = new Set(
     (
       await tx.execute<{ k: string }>(sql`
@@ -440,6 +504,7 @@ async function issuePlan(
   let skipped = 0;
   const issued: string[] = [];
   for (const studentId of students) {
+    const split = splitFor(Math.min(10_000, Math.max(0, parts.get(studentId) ?? 10_000)));
     // A student with no invoice yet joined after the plan was first billed: past instalments are skipped.
     const isNew = !p.instalments.some((i) => existing.has(`${studentId}:${i.seq}`));
     for (const [n, i] of p.instalments.entries()) {
@@ -567,6 +632,19 @@ export async function adjustInvoice(
     actor,
     { permission: 'finance.invoice.issue', resource: { orgId: actor.orgId, place } },
     async (tx) => {
+      // A closed year takes no new charges; reducing what is owed (or paying it) still works.
+      if (input.amountPaise > 0) {
+        const [inv] = await tx.execute<{ institutionId: string; periodId: string | null }>(sql`
+          select i.institution_id::text as "institutionId", p.period_id::text as "periodId"
+          from fee_invoice i join fee_plan p on p.org_id = i.org_id and p.id = i.plan_id
+          where i.org_id = app_current_org() and i.id = ${input.invoiceId}`);
+        const year =
+          inv?.periodId &&
+          (await periodsFor(tx, deps.audience, inv.institutionId)).find(
+            (x) => x.id === inv.periodId,
+          );
+        if (year && year.closed) throw new FinanceError('year_closed', { year: year.label });
+      }
       await tx.execute(sql`
         insert into fee_invoice_line (org_id, invoice_id, kind, amount_paise, reason, created_by_person_id)
         values (app_current_org(), ${input.invoiceId}, 'adjustment', ${input.amountPaise}, ${input.reason.trim()}, ${actor.personId})`);
@@ -598,9 +676,13 @@ export async function billStudent(
   audience: FinanceDeps['audience'],
   input: { studentId: string; institutionId: string; actorId: string; asOf?: string },
 ): Promise<{ invoices: number; totalPaise: number }> {
+  // Plans for the year the student joins (and any from before years were recorded).
+  const on = input.asOf ?? (await today(tx));
+  const year = periodOn(await periodsFor(tx, audience, input.institutionId), on);
   const plans = await tx.execute<{ id: string }>(sql`
     select id::text from fee_plan
-    where org_id = app_current_org() and institution_id = ${input.institutionId} and state = 'published'`);
+    where org_id = app_current_org() and institution_id = ${input.institutionId} and state = 'published'
+      and (period_id is null ${year ? sql`or period_id = ${year.id}::uuid` : sql``})`);
   let invoices = 0;
   let totalPaise = 0;
   for (const p of plans) {
@@ -635,11 +717,14 @@ export async function feeDisclosure(
   tx: Tx,
   institutionId: string,
   groupIds: string[],
+  /** Only that year's plans (and any from before years were recorded). */
+  periodId: string | null = null,
 ): Promise<FeeDisclosure[]> {
   const plans = await tx.execute<{ id: string }>(sql`
     select id::text from fee_plan
     where org_id = app_current_org() and institution_id = ${institutionId} and state = 'published'
-      and group_ids && ${`{${groupIds.join(',')}}`}::uuid[]`);
+      and group_ids && ${`{${groupIds.join(',')}}`}::uuid[]
+      ${periodId ? sql`and (period_id is null or period_id = ${periodId}::uuid)` : sql``}`);
   const out: FeeDisclosure[] = [];
   for (const { id } of plans) {
     const p = await loadPlan(tx, id);
@@ -716,7 +801,20 @@ export type GroupFeeInput = {
   head: { code: string; name: string; rteExempt: boolean };
   amountPaise: number;
   instalments: { label: string; dueOn: string; shareBp: number }[];
+  /** The year it bills for; left out, the year running today (or the next one). */
+  periodId?: string | null | undefined;
 };
+
+/** The year a group fee is for when none is named: the running one, else the next to start. */
+async function defaultPeriod(tx: Tx, audience: FinanceDeps['audience'], institutionId: string) {
+  const periods = await periodsFor(tx, audience, institutionId);
+  const d = await today(tx);
+  return (
+    periodOn(periods, d) ??
+    [...periods].filter((p) => p.starts > d).sort((a, b) => a.starts.localeCompare(b.starts))[0] ??
+    null
+  );
+}
 
 /**
  * One fee for one group, set from the module that owns the group (Transport sets each fare zone's
@@ -749,6 +847,22 @@ export async function setGroupFee(
       const group = offered.find((g) => g.id === input.groupId);
       if (!group) throw new FinanceError('group_not_found');
       const planName = input.name.trim() || group.label;
+      const chosen =
+        input.periodId ??
+        inferPeriod(
+          await periodsFor(tx, deps.audience, input.institutionId),
+          input.instalments.map((i) => i.dueOn),
+        )?.id ??
+        (await defaultPeriod(tx, deps.audience, input.institutionId))?.id;
+      const period = await resolvePeriod(
+        tx,
+        deps.audience,
+        input.institutionId,
+        chosen,
+        input.instalments.map((i) => i.dueOn),
+      );
+      const pid = period?.id ?? null;
+      const plabel = period?.label ?? null;
       await tx.execute(sql`
         insert into fee_head (org_id, institution_id, code, name, tax_class, rte_exempt, refundable)
         values (app_current_org(), ${input.institutionId}, ${input.head.code}, ${input.head.name}, 'education_exempt',
@@ -758,24 +872,26 @@ export async function setGroupFee(
         select id::text from fee_head
         where org_id = app_current_org() and institution_id = ${input.institutionId} and code = ${input.head.code}`);
       if (!head) throw new Error('setGroupFee: no head');
-      // The group's own plan: the one naming exactly this group (newest version first).
+      // The group's own plan for that year: the one naming exactly this group (newest version first).
       const [family] = await tx.execute<{ familyId: string }>(sql`
         select family_id::text as "familyId" from fee_plan
         where org_id = app_current_org() and institution_id = ${input.institutionId}
-          and group_ids = ${`{${input.groupId}}`}::uuid[]
+          and group_ids = ${`{${input.groupId}}`}::uuid[] and period_id is not distinct from ${pid}::uuid
         order by created_at desc limit 1 for update`);
       const [plan] = await tx.execute<{ id: string; version: number }>(
         family
           ? sql`
-            insert into fee_plan (org_id, family_id, version, institution_id, name, group_ids, created_by_person_id)
+            insert into fee_plan (org_id, family_id, version, institution_id, name, group_ids, created_by_person_id,
+              period_id, period_label)
             values (app_current_org(), ${family.familyId},
               (select max(version) + 1 from fee_plan where org_id = app_current_org() and family_id = ${family.familyId}),
-              ${input.institutionId}, ${planName}, ${`{${input.groupId}}`}::uuid[], ${actor.personId})
+              ${input.institutionId}, ${planName}, ${`{${input.groupId}}`}::uuid[], ${actor.personId}, ${pid}::uuid, ${plabel})
             returning id::text, version`
           : sql`
-            insert into fee_plan (org_id, family_id, institution_id, name, group_ids, created_by_person_id)
+            insert into fee_plan (org_id, family_id, institution_id, name, group_ids, created_by_person_id,
+              period_id, period_label)
             values (app_current_org(), uuidv7(), ${input.institutionId}, ${planName},
-              ${`{${input.groupId}}`}::uuid[], ${actor.personId})
+              ${`{${input.groupId}}`}::uuid[], ${actor.personId}, ${pid}::uuid, ${plabel})
             returning id::text, version`,
       );
       if (!plan) throw new Error('setGroupFee: no plan');
@@ -819,6 +935,7 @@ export async function setGroupFee(
 export type GroupFee = {
   groupId: string;
   planId: string;
+  periodLabel: string | null;
   name: string;
   version: number;
   totalPaise: number;
@@ -840,15 +957,19 @@ export async function groupFees(
       place: placeOf(await institution(tx, institutionId)),
     });
     if (groupIds.length === 0) return [];
+    // This year's fee for each group (the year running today, or the next to start).
+    const year = await defaultPeriod(tx, deps.audience, institutionId);
     const rows = await tx.execute<
       Omit<GroupFee, 'instalments' | 'totalPaise'> & { totalPaise: string }
     >(sql`
-      select p.group_ids[1]::text as "groupId", p.id::text as "planId", p.name, p.version,
+      select p.group_ids[1]::text as "groupId", p.id::text as "planId", p.period_label as "periodLabel", p.name, p.version,
         coalesce((select sum(amount_paise) from fee_plan_line where org_id = p.org_id and plan_id = p.id), 0)::text as "totalPaise",
         (select count(distinct student_person_id) from fee_invoice where org_id = p.org_id and plan_family_id = p.family_id)::int as billed
       from fee_plan p
       where p.org_id = app_current_org() and p.institution_id = ${institutionId} and p.state = 'published'
-        and cardinality(p.group_ids) = 1 and p.group_ids[1] = any(${`{${groupIds.join(',')}}`}::uuid[])`);
+        and cardinality(p.group_ids) = 1 and p.group_ids[1] = any(${`{${groupIds.join(',')}}`}::uuid[])
+        ${year ? sql`and (p.period_id is null or p.period_id = ${year.id}::uuid)` : sql``}
+      order by p.period_id nulls first`);
     const out: GroupFee[] = [];
     for (const r of rows) {
       const insts = await tx.execute<GroupFee['instalments'][number]>(sql`
@@ -903,5 +1024,20 @@ export async function financeSummary(
       students: Number(r?.students ?? 0),
       cleared: Number(r?.cleared ?? 0),
     };
+  });
+}
+
+/** The years fee plans can bill for (the school's academic years), for the plan editor. */
+export async function feeYears(
+  deps: FinanceDeps,
+  actor: Actor,
+  institutionId: string,
+): Promise<{ id: string; label: string; starts: string; ends: string; closed: boolean }[]> {
+  return withTenant(deps.db, actor.orgId, async (tx) => {
+    await deps.permissions.assertCan(tx, actor, 'finance.invoice.read', {
+      orgId: actor.orgId,
+      place: placeOf(await institution(tx, institutionId)),
+    });
+    return periodsFor(tx, deps.audience, institutionId);
   });
 }

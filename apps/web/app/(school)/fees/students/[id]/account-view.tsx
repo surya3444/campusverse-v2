@@ -131,6 +131,11 @@ export function AccountView({ studentId }: { studentId: string }) {
                     <li key={n} className="flex gap-3">
                       <span className="flex-1">
                         {[l.head, t.lineKinds[l.kind]].filter(Boolean).join(' · ')}
+                        {l.payee && (
+                          <span className="ml-2 rounded-full bg-signal-go-tint px-2 py-0.5 text-caption font-medium text-signal-go-ink">
+                            {en.collectedFor.collectedForPill(l.payee)}
+                          </span>
+                        )}
                         {l.reason && ` (${l.reason})`}
                       </span>
                       <span className="tabular">{rupees(l.amountPaise)}</span>

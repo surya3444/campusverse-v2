@@ -8,7 +8,9 @@ import type { Actor, createPermissions } from '@campusverse/platform-permissions
 import { sql } from 'drizzle-orm';
 import { institutionResource, SetupError } from './common.js';
 import { sectionHeadcounts } from '@campusverse/school-enrolment';
-import { classesOf, sectionsOn, YEAR_STATUS, type YearStatus } from './sections.js';
+import { CBSE_CLASSES } from '@campusverse/rules';
+import { classesOf, sectionsOfYear, sectionsOn, YEAR_STATUS, type YearStatus } from './sections.js';
+import { sectionInUse } from './year-structure.js';
 
 type Permissions = ReturnType<typeof createPermissions>;
 export type SubjectKind = 'scholastic' | 'co_scholastic' | 'language' | 'elective';
@@ -108,6 +110,8 @@ export async function subjectsOverview(
 }
 
 export type ClassesOverview = {
+  /** The board's classes the school can run (LKG to Class 12), for adding a class to a year. */
+  catalogue: { code: string; name: string }[];
   years: {
     yearId: string;
     label: string;
@@ -119,6 +123,7 @@ export type ClassesOverview = {
     countedOn: string;
     classes: {
       classId: string;
+      code: string;
       name: string;
       sections: {
         sectionId: string;
@@ -127,6 +132,10 @@ export type ClassesOverview = {
         capacity: number;
         classTeacher: string | null;
         students: number;
+        /** Closed to new students. */
+        closed: boolean;
+        /** Has history (students, attendance, homework or a timetable): it can be closed, not removed. */
+        inUse: boolean;
       }[];
     }[];
   }[];
@@ -151,7 +160,9 @@ export async function classesOverview(
     const classes = await classesOf(tx, institutionId);
     const out: ClassesOverview['years'] = [];
     for (const y of years) {
-      const sections = await sectionsOn(tx, institutionId, y.countedOn);
+      const sections = await sectionsOfYear(tx, y.yearId, y.countedOn);
+      const used = new Set<string>();
+      for (const s of sections) if (await sectionInUse(tx, s.sectionId)) used.add(s.sectionId);
       const heads = await sectionHeadcounts(
         tx,
         sections.map((s) => s.sectionId),
@@ -162,6 +173,7 @@ export async function classesOverview(
         classes: classes
           .map((c) => ({
             classId: c.classId,
+            code: c.code,
             name: c.name,
             sections: sections
               .filter((s) => s.classId === c.classId)
@@ -172,12 +184,14 @@ export async function classesOverview(
                 capacity: s.capacity,
                 classTeacher: s.classTeacherName,
                 students: heads.get(s.sectionId) ?? 0,
+                closed: s.closed,
+                inUse: used.has(s.sectionId),
               })),
           }))
           .filter((c) => c.sections.length > 0),
       });
     }
-    return { years: out };
+    return { catalogue: CBSE_CLASSES.map(({ code, name }) => ({ code, name })), years: out };
   });
 }
 
@@ -353,7 +367,12 @@ export async function assignTeacher(
 
 export type TeachingPlan = {
   yearId: string | null;
-  sections: { sectionId: string; classId: string; label: string }[];
+  sections: {
+    sectionId: string;
+    classId: string;
+    label: string;
+    classTeacherPersonId: string | null;
+  }[];
   offerings: {
     classId: string;
     subjectId: string;
@@ -391,7 +410,12 @@ export async function teachingPlan(
       and a.valid_during @> ${on}::date`);
   return {
     yearId: year.id,
-    sections: sections.map((s) => ({ sectionId: s.sectionId, classId: s.classId, label: s.label })),
+    sections: sections.map((s) => ({
+      sectionId: s.sectionId,
+      classId: s.classId,
+      label: s.label,
+      classTeacherPersonId: s.classTeacherPersonId,
+    })),
     offerings: [...offerings],
     teachers: [...teachers],
   };

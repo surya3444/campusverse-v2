@@ -12,6 +12,7 @@
   "dependencies": {
     "@campusverse/db": "workspace:*",
     "@campusverse/people-records": "workspace:*",
+    "@campusverse/platform-audit": "workspace:*",
     "@campusverse/platform-events": "workspace:*",
     "@campusverse/platform-organisation": "workspace:*",
     "@campusverse/platform-permissions": "workspace:*",

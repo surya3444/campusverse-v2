@@ -1,7 +1,9 @@
 import { withTenant, type Db, type Tx } from '@campusverse/db';
 import {
+  addEmail,
   addMembership,
   addPhone,
+  displayNames,
   createPerson,
   ensureStudentProfile,
   fileDocument,
@@ -9,14 +11,22 @@ import {
   guardiansByPhone,
   linkGuardian,
   setPhotoIn,
+  setStudentDetailsIn,
 } from '@campusverse/people-records';
 import { command, type EventInput } from '@campusverse/platform-events';
-import { saveValues, valuesOf, type FieldValue } from '@campusverse/platform-fields';
+import { listFields, saveValues, valuesOf, type FieldValue } from '@campusverse/platform-fields';
 import { placeOf as placeOfInstitution } from '@campusverse/platform-organisation';
 import { assignRole, type Actor, type createPermissions } from '@campusverse/platform-permissions';
 import { admissionAgeRule, completedYears } from '@campusverse/rules';
-import { enrol, nextRollNumber } from '@campusverse/school-enrolment';
-import { classesOf, classInfo, sectionsOn } from '@campusverse/school-setup';
+import { enrol, nextRollNumber, sectionHeadcounts } from '@campusverse/school-enrolment';
+import {
+  classesIn,
+  classesOf,
+  classInfo,
+  sectionsOfYear,
+  sectionsOn,
+  yearByLabel,
+} from '@campusverse/school-setup';
 import type { AudiencePort } from '@campusverse/shared-communications';
 import { billStudent, feeDisclosure, type FeeDisclosure } from '@campusverse/shared-finance';
 import { sql } from 'drizzle-orm';
@@ -36,6 +46,8 @@ export type AdmissionsDeps = { db: Db; permissions: Permissions; audience: Audie
 
 export const APPLICATION_CONFIRMED = 'school.admission.confirmed.v1';
 export const STUDENT_ENROLLED = 'school.admission.enrolled.v1';
+/** Required papers when the year has no form of its own (as the form's default). */
+const DEFAULT_REQUIRED = ['birth_certificate', 'photo', 'address_proof'];
 /** Default days to accept an offer (spec default). */
 export const OFFER_DAYS = 7;
 export type Category = 'general' | 'rte' | 'staff' | 'management';
@@ -55,18 +67,18 @@ export class AdmissionError extends Error {
 const PHONE = /^\+91[6-9]\d{9}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-async function placeFor(tx: Tx, institutionId: string) {
+export async function placeFor(tx: Tx, institutionId: string) {
   const p = await placeOfInstitution(tx, institutionId);
   if (!p) throw new AdmissionError('institution_not_found');
   return p;
 }
 
-async function today(tx: Tx) {
+export async function today(tx: Tx) {
   const [r] = await tx.execute<{ d: string }>(sql`select app_today()::text as d`);
   return r?.d ?? '';
 }
 
-type Row = {
+export type Row = {
   id: string;
   institutionId: string;
   yearLabel: string;
@@ -84,7 +96,7 @@ type Row = {
   siblingOf: string | null;
 };
 
-async function load(tx: Tx, id: string, lock = false): Promise<Row> {
+export async function load(tx: Tx, id: string, lock = false): Promise<Row> {
   const [r] = await tx.execute<Row>(sql`
     select id::text, institution_id::text as "institutionId", year_label as "yearLabel", class_id::text as "classId",
       category, source, state, child_name as "childName", date_of_birth::text as "dateOfBirth", gender,
@@ -95,7 +107,7 @@ async function load(tx: Tx, id: string, lock = false): Promise<Row> {
   return r;
 }
 
-async function record(
+export async function record(
   tx: Tx,
   id: string,
   from: State | null,
@@ -110,6 +122,129 @@ async function record(
     update school_application set state = ${to}, updated_at = now(),
       closed_reason = case when ${CLOSED.has(to)} then ${reason} else closed_reason end
     where org_id = app_current_org() and id = ${id}`);
+}
+
+/** What the family tells the school beyond the enquiry, as application columns. */
+export const DETAIL_COLUMNS = {
+  guardianEmail: 'guardian_email',
+  secondGuardianName: 'second_guardian_name',
+  secondGuardianRelationship: 'second_guardian_relationship',
+  secondGuardianPhone: 'second_guardian_phone',
+  secondGuardianEmail: 'second_guardian_email',
+  bloodGroup: 'blood_group',
+  motherTongue: 'mother_tongue',
+  religion: 'religion',
+  socialCategory: 'social_category',
+  nationality: 'nationality',
+  placeOfBirth: 'place_of_birth',
+  addressLine: 'address_line',
+  city: 'city',
+  pincode: 'pincode',
+  stateCode: 'state_code',
+  previousSchool: 'previous_school',
+  disability: 'disability',
+  medicalNotes: 'medical_notes',
+} as const;
+export type DetailKey = keyof typeof DETAIL_COLUMNS;
+export type ApplicationDetails = Record<DetailKey, string | null>;
+/** Details given in a write: absent leaves a field alone, empty clears it. */
+export type DetailsInput = { [K in DetailKey]?: string | null | undefined };
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const LIMITS: Partial<Record<DetailKey, number>> = {
+  secondGuardianName: 120,
+  motherTongue: 40,
+  religion: 40,
+  nationality: 40,
+  placeOfBirth: 80,
+  addressLine: 300,
+  city: 80,
+  previousSchool: 160,
+  disability: 200,
+  medicalNotes: 500,
+};
+const RELATIONS = ['mother', 'father', 'guardian', 'grandparent', 'sibling', 'other'];
+
+/** Which given details are not acceptable (empty strings mean "clear"). */
+export function detailProblems(d: DetailsInput): DetailKey[] {
+  const bad: DetailKey[] = [];
+  for (const [k, raw] of Object.entries(d) as [DetailKey, string | null | undefined][]) {
+    const v = raw?.trim();
+    if (!v) continue;
+    const limit = LIMITS[k];
+    if (limit !== undefined && v.length > limit) bad.push(k);
+    else if (
+      (k === 'guardianEmail' || k === 'secondGuardianEmail') &&
+      (!EMAIL_RE.test(v) || v.length > 200)
+    )
+      bad.push(k);
+    else if (k === 'secondGuardianPhone' && !PHONE.test(v)) bad.push(k);
+    else if (k === 'secondGuardianRelationship' && !RELATIONS.includes(v)) bad.push(k);
+    else if (k === 'pincode' && !/^[1-9]\d{5}$/.test(v)) bad.push(k);
+    else if (k === 'stateCode' && !/^[A-Z]{2}$/.test(v)) bad.push(k);
+    else if (k === 'bloodGroup' && !['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].includes(v))
+      bad.push(k);
+    else if (
+      k === 'socialCategory' &&
+      !['general', 'obc', 'sc', 'st', 'ews', 'not_stated'].includes(v)
+    )
+      bad.push(k);
+  }
+  const name = d.secondGuardianName?.trim();
+  if (name !== undefined && !!name !== !!d.secondGuardianRelationship?.trim())
+    bad.push('secondGuardianRelationship');
+  return bad;
+}
+
+/** Writes the given details (empty clears). Call inside the tenant, after detailProblems. */
+export async function writeDetails(
+  tx: Tx,
+  applicationId: string,
+  given: DetailsInput,
+): Promise<DetailKey[]> {
+  // A second guardian removed takes their relationship, phone and email with them.
+  const d =
+    given.secondGuardianName !== undefined && !given.secondGuardianName?.trim()
+      ? {
+          ...given,
+          secondGuardianRelationship: null,
+          secondGuardianPhone: null,
+          secondGuardianEmail: null,
+        }
+      : given;
+  const keys = (Object.keys(d) as DetailKey[]).filter(
+    (k) => k in DETAIL_COLUMNS && d[k] !== undefined,
+  );
+  // One statement, so related columns (a second guardian's name and relationship) change together.
+  if (keys.length > 0)
+    await tx.execute(sql`
+      update school_application set ${sql.join(
+        keys.map((k) => {
+          const v = d[k]?.trim() || null;
+          return sql`${sql.raw(DETAIL_COLUMNS[k])} = ${k.endsWith('Email') && v ? v.toLowerCase() : v}`;
+        }),
+        sql`, `,
+      )}
+      where org_id = app_current_org() and id = ${applicationId}`);
+  return keys;
+}
+
+/**
+ * The admission year as the school set it up (Academic years): admissions work only in years the
+ * school has. New families and changes need a year that hasn't ended or closed.
+ */
+export async function admissionYear(tx: Tx, institutionId: string, label: string, open = false) {
+  const y = await yearByLabel(tx, institutionId, label);
+  if (!y) throw new AdmissionError('year_not_set_up', { year: label });
+  if (open && (y.status === 'ended' || y.status === 'closed'))
+    throw new AdmissionError('year_not_open', { year: label });
+  return y;
+}
+
+/** A class the year runs (it has open sections that year). */
+export async function assertClassInYear(tx: Tx, yearId: string, classId: string, label: string) {
+  if (!(await classesIn(tx, yearId)).some((c) => c.classId === classId))
+    throw new AdmissionError('class_not_in_year', { year: label });
 }
 
 export type EnquiryInput = {
@@ -128,6 +263,10 @@ export type EnquiryInput = {
   notes?: string | null | undefined;
   /** Owner-defined admission questions, by key (decision 0020). */
   custom?: Record<string, unknown> | undefined;
+  details?: DetailsInput | undefined;
+  ownerPersonId?: string | null | undefined;
+  interest?: 'hot' | 'warm' | 'cold' | null | undefined;
+  campaign?: string | null | undefined;
 };
 
 /**
@@ -143,6 +282,8 @@ export async function addEnquiry(
   if (input.dateOfBirth && !DATE.test(input.dateOfBirth)) throw new AdmissionError('bad_date');
   if (input.category === 'rte' && input.source !== 'rte_portal')
     throw new AdmissionError('rte_from_portal_only');
+  const bad = detailProblems(input.details ?? {});
+  if (bad.length > 0) throw new AdmissionError('bad_details', { fields: bad });
   const place = await withTenant(deps.db, actor.orgId, (tx) => placeFor(tx, input.institutionId));
   return command(
     deps.db,
@@ -153,6 +294,8 @@ export async function addEnquiry(
       const c = await classInfo(tx, input.classId);
       if (!c || c.institutionId !== input.institutionId)
         throw new AdmissionError('class_not_found');
+      const year = await admissionYear(tx, input.institutionId, input.yearLabel, true);
+      await assertClassInYear(tx, year.yearId, input.classId, year.label);
       const [dup] = await tx.execute<{ id: string }>(sql`
         select id::text from school_application
         where org_id = app_current_org() and guardian_phone = ${input.guardianPhone}
@@ -172,6 +315,17 @@ export async function addEnquiry(
         returning id::text`);
       if (!row) throw new Error('addEnquiry: no row');
       await record(tx, row.id, null, 'enquiry', actor.personId);
+      await writeDetails(tx, row.id, input.details ?? {});
+      await tx.execute(sql`
+        update school_application set owner_person_id = ${input.ownerPersonId ?? null}::uuid,
+          interest = ${input.interest ?? null}, campaign = ${input.campaign?.trim() || null}
+        where org_id = app_current_org() and id = ${row.id}`);
+      if (input.nextFollowUp)
+        await tx.execute(sql`
+          insert into school_admission_follow_up (org_id, application_id, due_on, purpose, assigned_to_person_id,
+            created_by_person_id)
+          values (app_current_org(), ${row.id}, ${input.nextFollowUp}::date, 'First follow-up',
+            ${input.ownerPersonId ?? actor.personId}, ${actor.personId})`);
       const custom = await saveValues(tx, 'admission', row.id, input.custom ?? {});
       return {
         result: { id: row.id, siblings: siblings.map((s) => ({ studentName: s.studentName })) },
@@ -192,7 +346,7 @@ export async function addEnquiry(
   );
 }
 
-async function command_<T>(
+export async function command_<T>(
   deps: AdmissionsDeps,
   actor: Actor,
   applicationId: string,
@@ -273,8 +427,23 @@ export async function updateApplication(
     nextFollowUp?: string | null | undefined;
     ageOverride?: { reason: string; orderRef: string } | null | undefined;
     custom?: Record<string, unknown> | undefined;
+    details?: DetailsInput | undefined;
+    childName?: string | undefined;
+    guardianName?: string | undefined;
+    guardianPhone?: string | undefined;
+    guardianRelationship?: Relationship | undefined;
+    classId?: string | undefined;
   },
 ): Promise<void> {
+  const bad = detailProblems(input.details ?? {});
+  if (bad.length > 0) throw new AdmissionError('bad_details', { fields: bad });
+  if (input.guardianPhone !== undefined && !PHONE.test(input.guardianPhone))
+    throw new AdmissionError('bad_phone');
+  if (
+    (input.childName !== undefined && input.childName.trim().length < 2) ||
+    (input.guardianName !== undefined && input.guardianName.trim().length < 2)
+  )
+    throw new AdmissionError('name_required');
   if (
     input.ageOverride &&
     (input.ageOverride.reason.trim().length < 3 || input.ageOverride.orderRef.trim().length < 2)
@@ -282,9 +451,32 @@ export async function updateApplication(
     throw new AdmissionError('override_needs_reason_and_order');
   }
   if (input.dateOfBirth && !DATE.test(input.dateOfBirth)) throw new AdmissionError('bad_date');
-  await command_(deps, actor, input.applicationId, 'school.admission.manage', async (tx) => {
+  await command_(deps, actor, input.applicationId, 'school.admission.manage', async (tx, a) => {
+    if (input.classId !== undefined && input.classId !== a.classId) {
+      if (
+        ![
+          'enquiry',
+          'contacted',
+          'applied',
+          'documents_pending',
+          'under_review',
+          'waitlisted',
+        ].includes(a.state)
+      )
+        throw new AdmissionError('class_fixed', { state: a.state });
+      const c = await classInfo(tx, input.classId);
+      if (!c || c.institutionId !== a.institutionId) throw new AdmissionError('class_not_found');
+      const year = await admissionYear(tx, a.institutionId, a.yearLabel, true);
+      await assertClassInYear(tx, year.yearId, input.classId, year.label);
+    }
+    const details = await writeDetails(tx, input.applicationId, input.details ?? {});
     await tx.execute(sql`
       update school_application set
+        child_name = coalesce(${input.childName?.trim() ?? null}, child_name),
+        guardian_name = coalesce(${input.guardianName?.trim() ?? null}, guardian_name),
+        guardian_phone = coalesce(${input.guardianPhone ?? null}, guardian_phone),
+        guardian_relationship = coalesce(${input.guardianRelationship ?? null}, guardian_relationship),
+        class_id = coalesce(${input.classId ?? null}::uuid, class_id),
         date_of_birth = case when ${input.dateOfBirth !== undefined} then ${input.dateOfBirth ?? null}::date else date_of_birth end,
         gender = case when ${input.gender !== undefined} then ${input.gender ?? null} else gender end,
         previous_school = case when ${input.previousSchool !== undefined} then ${input.previousSchool ?? null} else previous_school end,
@@ -297,7 +489,14 @@ export async function updateApplication(
     const custom = await saveValues(tx, 'admission', input.applicationId, input.custom ?? {});
     return {
       result: undefined,
-      detail: { ageOverride: !!input.ageOverride, custom: custom.join(',') },
+      detail: {
+        ageOverride: !!input.ageOverride,
+        custom: custom.join(','),
+        details: details.join(','),
+        basics: ['childName', 'guardianName', 'guardianPhone', 'guardianRelationship', 'classId']
+          .filter((k) => input[k as keyof typeof input] !== undefined)
+          .join(','),
+      },
       ...(input.ageOverride
         ? { reason: `${input.ageOverride.reason} (${input.ageOverride.orderRef})` }
         : {}),
@@ -305,7 +504,7 @@ export async function updateApplication(
   });
 }
 
-async function ageOf(tx: Tx, a: Row): Promise<AgeCheck> {
+export async function ageOf(tx: Tx, a: Row): Promise<AgeCheck> {
   const c = await classInfo(tx, a.classId);
   return ageCheck(
     c ? admissionAgeRule(c.board, c.code) : null,
@@ -315,7 +514,7 @@ async function ageOf(tx: Tx, a: Row): Promise<AgeCheck> {
   );
 }
 
-async function seatsLeft(
+export async function seatsLeft(
   tx: Tx,
   a: Pick<Row, 'institutionId' | 'yearLabel' | 'classId' | 'category'>,
 ) {
@@ -328,17 +527,26 @@ async function seatsLeft(
   return r?.seats === null || r?.seats === undefined ? null : r.seats - r.held;
 }
 
+/** The fees an offer discloses: the plans for the application's year that name its class or a section of it. */
 async function disclosureFor(
   tx: Tx,
-  a: Pick<Row, 'institutionId' | 'classId'>,
+  a: Pick<Row, 'institutionId' | 'classId' | 'yearLabel'>,
 ): Promise<FeeDisclosure[]> {
-  const sections = (await sectionsOn(tx, a.institutionId, await today(tx))).filter(
-    (s) => s.classId === a.classId,
+  const year = await yearByLabel(tx, a.institutionId, a.yearLabel);
+  const sections = year
+    ? (await sectionsOfYear(tx, year.yearId, year.starts)).filter((s) => s.classId === a.classId)
+    : (await sectionsOn(tx, a.institutionId, await today(tx))).filter(
+        (s) => s.classId === a.classId,
+      );
+  return feeDisclosure(
+    tx,
+    a.institutionId,
+    [a.classId, ...sections.map((s) => s.sectionId)],
+    year?.yearId ?? null,
   );
-  return feeDisclosure(tx, a.institutionId, [a.classId, ...sections.map((s) => s.sectionId)]);
 }
 
-async function makeOffer(tx: Tx, a: Row, actorId: string | null, reason: string | null) {
+export async function makeOffer(tx: Tx, a: Row, actorId: string | null, reason: string | null) {
   const left = await seatsLeft(tx, a);
   if (left !== null && left <= 0) throw new AdmissionError('no_seat');
   if ((await disclosureFor(tx, a)).length === 0) throw new AdmissionError('no_fee_plan');
@@ -352,7 +560,7 @@ async function makeOffer(tx: Tx, a: Row, actorId: string | null, reason: string 
   await record(tx, a.id, a.state, 'offered', actorId, reason);
 }
 
-async function hasOverride(tx: Tx, id: string) {
+export async function hasOverride(tx: Tx, id: string) {
   const [r] = await tx.execute(sql`
     select 1 from school_application where org_id = app_current_org() and id = ${id} and age_override_reason is not null`);
   return !!r;
@@ -454,10 +662,16 @@ export async function enrolApplicant(
   if (!DATE.test(input.from)) throw new AdmissionError('bad_date');
   return command_(deps, actor, input.applicationId, 'school.admission.enrol', async (tx, a) => {
     if (a.state !== 'confirmed') throw new AdmissionError('not_confirmed');
-    const section = (await sectionsOn(tx, a.institutionId, input.from)).find(
+    // A section of the class in the year applied for, open to new students, from a day in that year.
+    const year = await admissionYear(tx, a.institutionId, a.yearLabel);
+    if (year.status === 'closed') throw new AdmissionError('year_not_open', { year: year.label });
+    if (input.from < year.starts || input.from >= year.ends)
+      throw new AdmissionError('from_outside_year', { year: year.label, starts: year.starts });
+    const section = (await sectionsOfYear(tx, year.yearId, input.from)).find(
       (s) => s.sectionId === input.sectionId,
     );
     if (!section || section.classId !== a.classId) throw new AdmissionError('section_not_in_class');
+    if (section.closed) throw new AdmissionError('section_closed');
 
     const studentId = await createPerson(tx, {
       legalName: a.childName,
@@ -512,13 +726,71 @@ export async function enrolApplicant(
       relationship: a.guardianRelationship,
       primary: true,
     });
+    // Everything the family told the school becomes the student's record (owner's brief, 20 Nov 2026).
+    const d = await detailsOf(tx, a.id);
+    if (d.guardianEmail) await addEmail(tx, guardianId, d.guardianEmail);
+    let secondGuardian = false;
+    if (d.secondGuardianName && d.secondGuardianRelationship) {
+      let second = d.secondGuardianPhone
+        ? await findByPhoneAndName(tx, d.secondGuardianPhone, d.secondGuardianName)
+        : null;
+      if (!second) {
+        second = await createPerson(tx, { legalName: d.secondGuardianName, source: 'admission' });
+        if (d.secondGuardianPhone) await addPhone(tx, second, d.secondGuardianPhone);
+        await assignRole(tx, {
+          personId: second,
+          roleKey: 'parent',
+          scope: { type: 'organisation', id: actor.orgId },
+        });
+      }
+      if (d.secondGuardianEmail) await addEmail(tx, second, d.secondGuardianEmail);
+      if (second !== guardianId) {
+        await linkGuardian(tx, {
+          guardianId: second,
+          studentId,
+          relationship: d.secondGuardianRelationship,
+          primary: false,
+        });
+        secondGuardian = true;
+      }
+    }
+    const carriedDetails = await setStudentDetailsIn(tx, studentId, {
+      bloodGroup: d.bloodGroup,
+      motherTongue: d.motherTongue,
+      religion: d.religion,
+      socialCategory: d.socialCategory,
+      nationality: d.nationality,
+      placeOfBirth: d.placeOfBirth,
+      addressLine: d.addressLine,
+      city: d.city,
+      pincode: d.pincode,
+      stateCode: d.stateCode,
+      previousSchool: d.previousSchool,
+      disability: d.disability,
+      medicalNotes: d.medicalNotes,
+    });
+    // The school's own questions carry over where the student record asks the same one.
+    const answers = await valuesOf(tx, 'admission', a.id);
+    const asked = new Map((await listFields(tx, 'admission')).map((f) => [f.key, f.type]));
+    const studentTypes = new Map((await listFields(tx, 'student')).map((f) => [f.key, f.type]));
+    const shared = Object.fromEntries(
+      Object.entries(answers).filter(
+        ([k, v]) => v !== null && asked.get(k) !== 'file' && studentTypes.get(k) === asked.get(k),
+      ),
+    );
+    const carriedAnswers =
+      Object.keys(shared).length > 0
+        ? await saveValues(tx, 'student', studentId, shared, { notAsked: ['file'] })
+        : [];
     // The applicant's photo and papers become the student's (Milestone 21), checks and all.
-    const carried = await carryToStudent(tx, a.id, studentId);
+    const carried = await carryToStudent(tx, a.id, studentId, actor.personId);
 
     const bill = await billStudent(tx, deps.audience, {
       studentId,
       institutionId: a.institutionId,
       actorId: actor.personId,
+      // The year joined: its plans, and only instalments from the first day.
+      asOf: input.from,
     });
     // Enrolled and its student are set together (a CHECK holds them in step).
     await tx.execute(sql`
@@ -541,7 +813,15 @@ export async function enrolApplicant(
           sibling: !!a.siblingOf,
         }),
       },
-      detail: { studentId, admissionNumber, invoices: bill.invoices, documents: carried },
+      detail: {
+        studentId,
+        admissionNumber,
+        invoices: bill.invoices,
+        documents: carried,
+        details: carriedDetails.join(','),
+        answers: carriedAnswers.join(','),
+        secondGuardian,
+      },
       events: [
         {
           type: STUDENT_ENROLLED,
@@ -561,8 +841,24 @@ export async function enrolApplicant(
 
 export type Pipeline = {
   yearLabel: string;
+  /** The school's year: whether new families can still be added (not ended or closed). */
+  year: { status: 'planned' | 'active' | 'ended' | 'closed'; starts: string; ends: string };
   counts: Record<State, number>;
-  classes: { classId: string; name: string; seats: number | null; held: number }[];
+  classes: {
+    classId: string;
+    name: string;
+    /** Admission seats set for the year (all categories), if set. */
+    seats: number | null;
+    held: number;
+    /** Places in the year's open sections. */
+    capacity: number;
+    /** Students in the year's open sections (today, or the year's first or last day). */
+    students: number;
+    /** Offered or confirmed, not enrolled yet. */
+    promised: number;
+    /** The class runs in the year (it has open sections). */
+    running: boolean;
+  }[];
   applications: {
     id: string;
     childName: string;
@@ -575,6 +871,22 @@ export type Pipeline = {
     offerExpiresOn: string | null;
     sibling: boolean;
     updatedAt: string;
+    createdAt: string;
+    classId: string;
+    reference: string | null;
+    guardianName: string;
+    guardianEmail: string | null;
+    owner: { personId: string; name: string } | null;
+    interest: 'hot' | 'warm' | 'cold' | null;
+    campaign: string | null;
+    verified: boolean;
+    lastContactAt: string | null;
+    lastContactKind: string | null;
+    nextPurpose: string | null;
+    /** Required papers: how many verified, waiting for a check, rejected, of how many. */
+    papers: { required: number; verified: number; waiting: number; rejected: number };
+    /** The latest personal form link: sent, opened by the family, or submitted. */
+    form: { state: 'sent' | 'opened' | 'submitted'; at: string } | null;
   }[];
 };
 
@@ -594,7 +906,48 @@ export async function pipeline(
     await lapseOffers(tx, input.institutionId);
   });
   return withTenant(deps.db, actor.orgId, async (tx) => {
-    const classes = await classesOf(tx, input.institutionId);
+    const year = await admissionYear(tx, input.institutionId, input.yearLabel);
+    // The classes that year runs, and any class that still has families from before it stopped.
+    const running = await classesIn(tx, year.yearId);
+    const withFamilies = new Set(
+      (
+        await tx.execute<{ c: string }>(sql`
+          select distinct class_id::text as c from school_application
+          where org_id = app_current_org() and institution_id = ${input.institutionId} and year_label = ${input.yearLabel}`)
+      ).map((r) => r.c),
+    );
+    const capacity = new Map(running.map((c) => [c.classId, c.capacity]));
+    // Students already in the year's open sections (imported, moved up at year end or enrolled):
+    // counted today in the running year, on the first day of a coming one, the last of a past one.
+    const day = await today(tx);
+    const countOn =
+      day < year.starts
+        ? year.starts
+        : day >= year.ends
+          ? new Date(Date.parse(`${year.ends}T00:00:00Z`) - 864e5).toISOString().slice(0, 10)
+          : day;
+    const open = (await sectionsOfYear(tx, year.yearId, countOn)).filter((x) => !x.closed);
+    const heads = await sectionHeadcounts(
+      tx,
+      open.map((x) => x.sectionId),
+      countOn,
+    );
+    const students = new Map<string, number>();
+    for (const x of open)
+      students.set(x.classId, (students.get(x.classId) ?? 0) + (heads.get(x.sectionId) ?? 0));
+    // Families offered or confirmed but not enrolled yet: their seats are promised.
+    const promised = new Map(
+      (
+        await tx.execute<{ classId: string; n: number }>(sql`
+          select class_id::text as "classId", count(*)::int as n from school_application
+          where org_id = app_current_org() and institution_id = ${input.institutionId}
+            and year_label = ${input.yearLabel} and state in ('offered', 'confirmed')
+          group by class_id`)
+      ).map((r) => [r.classId, r.n]),
+    );
+    const classes = (await classesOf(tx, input.institutionId)).filter(
+      (c) => capacity.has(c.classId) || withFamilies.has(c.classId),
+    );
     const seats = await tx.execute<{ classId: string; seats: number; held: number }>(sql`
       select s.class_id::text as "classId", sum(s.seats)::int as seats,
         (select count(*)::int from school_application a where a.org_id = s.org_id and a.institution_id = s.institution_id
@@ -604,14 +957,63 @@ export async function pipeline(
       where s.org_id = app_current_org() and s.institution_id = ${input.institutionId} and s.year_label = ${input.yearLabel}
       group by s.org_id, s.institution_id, s.year_label, s.class_id`);
     const bySeat = new Map(seats.map((s) => [s.classId, s]));
-    const apps = await tx.execute<Pipeline['applications'][number]>(sql`
+    const rows = await tx.execute<
+      Omit<Pipeline['applications'][number], 'owner' | 'papers' | 'form'> & {
+        ownerId: string | null;
+        formState: 'sent' | 'opened' | 'submitted' | null;
+        formAt: string | null;
+      }
+    >(sql`
       select a.id::text, a.child_name as "childName", c.name as "className", a.state, a.category, a.source,
         a.guardian_phone as "guardianPhone", a.next_follow_up::text as "nextFollowUp",
         a.offer_expires_on::text as "offerExpiresOn", a.sibling_of_person_id is not null as sibling,
-        a.updated_at::text as "updatedAt"
+        a.updated_at::text as "updatedAt", a.created_at::text as "createdAt", a.class_id::text as "classId",
+        a.public_ref as reference, a.guardian_name as "guardianName", a.guardian_email as "guardianEmail",
+        a.owner_person_id::text as "ownerId", a.interest, a.campaign, a.verified_at is not null as verified,
+        act.at::text as "lastContactAt", act.kind as "lastContactKind",
+        (select f.purpose from school_admission_follow_up f where f.org_id = a.org_id and f.application_id = a.id
+          and f.done_at is null order by f.due_on limit 1) as "nextPurpose",
+        case when inv.submitted_at is not null then 'submitted' when inv.opened_at is not null then 'opened'
+          when inv.id is not null then 'sent' end as "formState",
+        coalesce(inv.submitted_at, inv.opened_at, inv.created_at)::text as "formAt"
       from school_application a join school_class c on c.org_id = a.org_id and c.id = a.class_id
+      left join lateral (select x.at, x.kind from school_admission_activity x
+        where x.org_id = a.org_id and x.application_id = a.id order by x.at desc limit 1) act on true
+      left join lateral (select i.id, i.created_at, i.opened_at, i.submitted_at from school_admission_invite i
+        where i.org_id = a.org_id and i.application_id = a.id and i.cancelled_at is null
+        order by i.created_at desc limit 1) inv on true
       where a.org_id = app_current_org() and a.institution_id = ${input.institutionId} and a.year_label = ${input.yearLabel}
-      order by a.updated_at desc limit 500`);
+      order by a.updated_at desc limit 1000`);
+    const form = await tx.execute<{ papers: { kind: string; required: boolean }[] }>(sql`
+      select papers from school_admission_form
+      where org_id = app_current_org() and institution_id = ${input.institutionId} and year_label = ${input.yearLabel}`);
+    const required = (form[0]?.papers ?? DEFAULT_REQUIRED.map((kind) => ({ kind, required: true })))
+      .filter((p) => p.required)
+      .map((p) => p.kind);
+    const docs = await tx.execute<{ a: string; kind: string; status: string }>(sql`
+      select distinct on (d.application_id, d.kind) d.application_id::text as a, d.kind, d.status
+      from school_application_document d join school_application a on a.org_id = d.org_id and a.id = d.application_id
+      where d.org_id = app_current_org() and a.institution_id = ${input.institutionId}
+        and a.year_label = ${input.yearLabel} and d.kind = any(${`{${required.join(',')}}`}::text[])
+      order by d.application_id, d.kind, d.uploaded_at desc`);
+    const owners = await displayNames(
+      tx,
+      rows.flatMap((r) => (r.ownerId ? [r.ownerId] : [])),
+    );
+    const apps = rows.map(({ ownerId, formState, formAt, ...r }) => {
+      const mine = docs.filter((d) => d.a === r.id);
+      return {
+        ...r,
+        owner: ownerId ? { personId: ownerId, name: owners[ownerId] ?? '' } : null,
+        papers: {
+          required: required.length,
+          verified: mine.filter((d) => d.status === 'verified').length,
+          waiting: mine.filter((d) => d.status === 'received').length,
+          rejected: mine.filter((d) => d.status === 'rejected').length,
+        },
+        form: formState && formAt ? { state: formState, at: formAt } : null,
+      };
+    });
     const counts = Object.fromEntries(
       (
         [
@@ -633,18 +1035,33 @@ export async function pipeline(
     return {
       yearLabel: input.yearLabel,
       counts,
+      year: { status: year.status, starts: year.starts, ends: year.ends },
       classes: classes.map((c) => ({
         classId: c.classId,
         name: c.name,
         seats: bySeat.get(c.classId)?.seats ?? null,
         held: bySeat.get(c.classId)?.held ?? 0,
+        capacity: capacity.get(c.classId) ?? 0,
+        students: students.get(c.classId) ?? 0,
+        promised: promised.get(c.classId) ?? 0,
+        running: capacity.has(c.classId),
       })),
-      applications: [...apps],
+      applications: apps,
     };
   });
 }
 
 export type ApplicationDetail = Row & {
+  details: ApplicationDetails;
+  reference: string | null;
+  owner: { personId: string; name: string } | null;
+  interest: 'hot' | 'warm' | 'cold' | null;
+  campaign: string | null;
+  createdAt: string;
+  consentedAt: string | null;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  waitlistPosition: number | null;
   className: string;
   previousSchool: string | null;
   notes: string | null;
@@ -660,6 +1077,9 @@ export type ApplicationDetail = Row & {
   fees: FeeDisclosure[];
   siblings: { studentName: string }[];
   sections: { sectionId: string; label: string }[];
+  /** The school's year applied for: enrolment starts within it. Null if the school hasn't set it up. */
+  yearStarts: string | null;
+  yearEnds: string | null;
   history: {
     from: string | null;
     to: string;
@@ -690,30 +1110,63 @@ export async function applicationDetail(
       studentId: string | null;
       closedReason: string | null;
       photoFileId: string | null;
+      reference: string | null;
+      ownerId: string | null;
+      interest: 'hot' | 'warm' | 'cold' | null;
+      campaign: string | null;
+      createdAt: string;
+      consentedAt: string | null;
+      verifiedAt: string | null;
+      verifiedById: string | null;
+      waitlistPosition: number | null;
+      details: ApplicationDetails;
     }>(sql`
       select c.name as "className", a.previous_school as "previousSchool", a.notes, a.next_follow_up::text as "nextFollowUp",
         a.age_override_reason as "ageOverrideReason", a.age_order_ref as "ageOrderRef",
         a.student_person_id::text as "studentId", a.closed_reason as "closedReason",
-        a.photo_file_id::text as "photoFileId"
+        a.photo_file_id::text as "photoFileId", a.public_ref as reference, a.owner_person_id::text as "ownerId",
+        a.interest, a.campaign, a.created_at::text as "createdAt", a.consented_at::text as "consentedAt",
+        a.verified_at::text as "verifiedAt", a.verified_by_person_id::text as "verifiedById",
+        a.waitlist_position as "waitlistPosition",
+        jsonb_build_object(${sql.raw(
+          Object.entries(DETAIL_COLUMNS)
+            .map(([k, c]) => `'${k}', a.${c}`)
+            .join(', '),
+        )}) as details
       from school_application a join school_class c on c.org_id = a.org_id and c.id = a.class_id
       where a.org_id = app_current_org() and a.id = ${applicationId}`);
+    if (!more) throw new AdmissionError('application_not_found');
+    const { ownerId, verifiedById, ...rest } = more;
+    const people = await displayNames(
+      tx,
+      [ownerId, verifiedById].filter((x) => x !== null),
+    );
     const history = await tx.execute<ApplicationDetail['history'][number]>(sql`
       select e.from_state as from, e.to_state as to, e.reason, p.legal_name as by, e.at::text as at
       from school_application_event e left join person p on p.org_id = e.org_id and p.id = e.actor_person_id
       where e.org_id = app_current_org() and e.application_id = ${applicationId} order by e.at, e.id`);
-    const sections = (await sectionsOn(tx, a.institutionId, await today(tx))).filter(
-      (s) => s.classId === a.classId,
-    );
+    // Sections of the class in the year applied for, open to new students.
+    const ofYear = await yearByLabel(tx, a.institutionId, a.yearLabel);
+    const sections = ofYear
+      ? (await sectionsOfYear(tx, ofYear.yearId, ofYear.starts)).filter(
+          (s) => s.classId === a.classId && !s.closed,
+        )
+      : [];
     return {
       ...a,
-      ...(more as NonNullable<typeof more>),
+      ...rest,
+      yearStarts: ofYear?.starts ?? null,
+      yearEnds: ofYear?.ends ?? null,
+      owner: ownerId ? { personId: ownerId, name: people[ownerId] ?? '' } : null,
+      verifiedBy: verifiedById ? (people[verifiedById] ?? null) : null,
       custom: await valuesOf(tx, 'admission', applicationId),
       age: await ageOf(tx, a),
       seatsLeft: await seatsLeft(tx, a),
       fees: await disclosureFor(tx, a),
-      siblings: (await guardiansByPhone(tx, a.guardianPhone)).map((s) => ({
-        studentName: s.studentName,
-      })),
+      // Other children of this guardian; once enrolled, never the applicant's own record.
+      siblings: (await guardiansByPhone(tx, a.guardianPhone))
+        .filter((s) => s.studentId !== rest.studentId)
+        .map((s) => ({ studentName: s.studentName })),
       sections: sections.map((s) => ({ sectionId: s.sectionId, label: s.label })),
       history: [...history],
     };
@@ -759,8 +1212,25 @@ export async function setSeats(
   );
 }
 
+async function detailsOf(tx: Tx, applicationId: string): Promise<ApplicationDetails> {
+  const [r] = await tx.execute<{ d: ApplicationDetails }>(sql`
+    select jsonb_build_object(${sql.raw(
+      Object.entries(DETAIL_COLUMNS)
+        .map(([k, c]) => `'${k}', ${c}`)
+        .join(', '),
+    )}) as d
+    from school_application where org_id = app_current_org() and id = ${applicationId}`);
+  if (!r) throw new AdmissionError('application_not_found');
+  return r.d;
+}
+
 /** Copies an applicant's photo and documents to the new student's record. Returns how many papers. */
-async function carryToStudent(tx: Tx, applicationId: string, studentId: string): Promise<number> {
+async function carryToStudent(
+  tx: Tx,
+  applicationId: string,
+  studentId: string,
+  enrolledBy: string,
+): Promise<number> {
   const [app] = await tx.execute<{ photo: string | null }>(sql`
     select photo_file_id::text as photo from school_application where org_id = app_current_org() and id = ${applicationId}`);
   if (app?.photo) await setPhotoIn(tx, studentId, app.photo);
@@ -776,10 +1246,41 @@ async function carryToStudent(tx: Tx, applicationId: string, studentId: string):
     checkedBy: string | null;
     checkedAt: string | null;
   }>(sql`
-    select folder, kind, title, file_id::text as "fileId", status, note, uploaded_by_person_id::text as "uploadedBy",
+    select folder, kind, title, file_id::text as "fileId", status, note,
+      coalesce(uploaded_by_person_id, checked_by_person_id, ${enrolledBy}::uuid)::text as "uploadedBy",
       uploaded_at::text as "uploadedAt", checked_by_person_id::text as "checkedBy", checked_at::text as "checkedAt"
-    from school_application_document where org_id = app_current_org() and application_id = ${applicationId}
+    from (
+      -- The current copy of each paper; earlier (replaced or rejected) copies stay with the application.
+      select distinct on (kind) * from school_application_document
+      where org_id = app_current_org() and application_id = ${applicationId}
+      order by kind, uploaded_at desc
+    ) d
     order by uploaded_at`);
   for (const d of docs) await fileDocument(tx, { personId: studentId, ...d });
   return docs.length;
+}
+
+/**
+ * Whether a family (by phone or email) has an admission in progress at an institution, or a
+ * child admitted there in the last 90 days. Finance refuses donations from them then: a seat is
+ * never paid for outside the published fees (RTE Act 2009 s.13; state capitation fee acts).
+ */
+export async function admissionInProgress(
+  tx: Tx,
+  input: { institutionId: string; phone: string | null; email: string | null },
+): Promise<boolean> {
+  if (!input.phone && !input.email) return false;
+  const email = input.email?.toLowerCase() ?? null;
+  const [row] = await tx.execute(sql`
+    select 1 from school_application a
+    where a.org_id = app_current_org() and a.institution_id = ${input.institutionId}
+      and (a.guardian_phone = ${input.phone} or a.second_guardian_phone = ${input.phone}
+        or lower(a.guardian_email) = ${email} or lower(a.second_guardian_email) = ${email})
+      and (a.state = any(${`{${['enquiry', 'contacted', 'applied', 'documents_pending', 'under_review', 'offered', 'waitlisted', 'confirmed'].join(',')}}`}::text[])
+        or (a.state = 'enrolled' and exists (
+          select 1 from school_application_event e
+          where e.org_id = a.org_id and e.application_id = a.id and e.to_state = 'enrolled'
+            and e.at > now() - interval '90 days')))
+    limit 1`);
+  return !!row;
 }

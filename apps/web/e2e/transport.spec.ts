@@ -16,8 +16,8 @@ test('transport: vehicle, papers, stops, route, riders, a trip', async ({
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Transport' })).toBeVisible();
   await expect(page.getByText('No buses run today')).toBeVisible();
-  await page.getByRole('radio', { name: /Riders/ }).click();
-  await expect(page.getByText('No riders yet')).toBeVisible();
+  await page.getByRole('radio', { name: /Students/ }).click();
+  await expect(page.getByText('No students use the bus yet')).toBeVisible();
   await page.getByRole('radio', { name: /Vehicles/ }).click();
   await expect(page.getByText('No vehicles yet')).toBeVisible();
   await noA11yViolations(page);
@@ -51,19 +51,30 @@ test('transport: vehicle, papers, stops, route, riders, a trip', async ({
     await expect(page.getByText(name)).toBeVisible();
   }
 
-  // A route through them, in time order.
+  // A morning route through them, in time order; its afternoon drop is made with it.
   await page.getByRole('radio', { name: /Routes/ }).click();
   await page.getByRole('button', { name: 'Add a route' }).click();
   const route = page.getByRole('form', { name: 'Add a route' });
   await route.getByLabel('Route name').fill('Route 3');
-  await route.getByLabel('Usual vehicle').selectOption({ label: 'TS08EF5678 · 14 seats' });
+  await route
+    .getByRole('combobox', { name: 'Bus', exact: true })
+    .selectOption({ label: 'TS08EF5678 · 14 seats' });
   await route.getByLabel('Add a stop to the route').selectOption({ label: 'Gandhi Nagar' });
   await route.getByLabel('Time: Gandhi Nagar').fill('07:10');
   await route.getByLabel('Add a stop to the route').selectOption({ label: 'Bus Stand' });
   await route.getByLabel('Time: Bus Stand').fill('07:25');
+  await route.getByLabel('Bus leaves school at').fill('15:30');
   await route.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('Route 3')).toBeVisible();
-  await expect(page.getByText('2 stops')).toBeVisible();
+  await expect(route).toBeHidden();
+  // Two routes now: the morning pickup, and the afternoon drop the other way round.
+  await expect(page.getByText('Route 3', { exact: true })).toHaveCount(2);
+  await expect(page.getByText('Afternoon drop', { exact: true })).toHaveCount(1);
+  await expect(page.getByText(/15:30\s*Bus Stand/)).toBeVisible();
+  await expect(page.getByText(/15:45\s*Gandhi Nagar/)).toBeVisible();
+  await page.screenshot({
+    path: `e2e/screenshots/transport-routes-${info.project.name}.png`,
+    fullPage: true,
+  });
   await noA11yViolations(page);
 
   // Riders: one added by hand, one imported by admission number.
@@ -71,42 +82,52 @@ test('transport: vehicle, papers, stops, route, riders, a trip', async ({
     await page.request.get(`/api/v1/people/students?institutionId=${s.institutionId}`)
   ).json()) as { name: string; reference: string }[];
   const [first, second] = students;
-  await page.getByRole('radio', { name: /Riders/ }).click();
-  await page.getByRole('button', { name: 'Add a rider' }).click();
-  const add = page.getByRole('form', { name: 'Add a rider' });
+  await page.getByRole('radio', { name: /Students/ }).click();
+  await page.getByRole('button', { name: 'Add a student to the bus' }).click();
+  const add = page.getByRole('form', { name: 'Add a student to the bus' });
   await add.getByLabel('Find a student by name or admission no.').fill(first!.reference);
   await add.getByRole('button', { name: new RegExp(first!.name) }).click();
-  await add
-    .getByRole('combobox', { name: 'Route', exact: true })
-    .selectOption({ label: 'Route 3 · Morning pickup' });
-  await add
-    .getByRole('combobox', { name: 'Stop', exact: true })
-    .selectOption({ label: '07:10 · Gandhi Nagar' });
-  await add.getByRole('button', { name: 'Add a rider' }).click();
+  // Both ways by default: choosing the morning bus fills in the afternoon one at the same stop.
+  const morning = add.getByRole('group', { name: /Morning pickup/ });
+  const afternoon = add.getByRole('group', { name: /Afternoon drop/ });
+  await morning.getByLabel('Route').selectOption({ label: 'Route 3' });
+  await morning.getByLabel('Stop').selectOption({ label: '07:10 · Gandhi Nagar' });
+  await expect(afternoon.getByLabel('Route')).toHaveValue(/.+/);
+  await expect(afternoon.getByLabel('Stop')).toHaveValue(/.+/);
+  await noA11yViolations(page);
+  await page.screenshot({ path: `e2e/screenshots/transport-add-student-${info.project.name}.png` });
+  await add.getByRole('button', { name: 'Add a student to the bus' }).click();
   await expect(add).toBeHidden();
-  await expect(page.getByText(first!.name)).toBeVisible();
+  const row = page.getByRole('listitem').filter({ hasText: first!.name });
+  await expect(row).toContainText('Gandhi Nagar');
+  await expect(row.getByRole('button', { name: /Take off this trip/ })).toHaveCount(2);
 
-  await page.getByRole('button', { name: 'Import riders' }).click();
-  const sheet = page.getByRole('form', { name: 'Import riders' });
+  await page.getByRole('button', { name: 'Import from a sheet' }).click();
+  const sheet = page.getByRole('form', { name: 'Import from a sheet' });
   await sheet
     .getByLabel('Rows')
     .fill(
       `Admission no.,Route,Direction,Stop\n${second!.reference},Route 3,pickup,Bus Stand\nNOPE-1,Route 3,pickup,Bus Stand`,
     );
   await sheet.getByRole('button', { name: 'Preview' }).click();
-  const canvas = page.getByRole('dialog', { name: 'Import riders' });
+  const canvas = page.getByRole('dialog', { name: 'Import from a sheet' });
   await expect(canvas.getByText(/Row 2 \(NOPE-1\): no student/)).toBeVisible();
   await noA11yViolations(page);
-  await canvas.getByRole('button', { name: 'Assign 1 rider' }).click();
+  await canvas.getByRole('button', { name: 'Add 1 trip' }).click();
   await expect(canvas).toBeHidden();
   await expect(page.getByText(second!.name)).toBeVisible();
-  await expect(page.getByText('2 riders').first()).toBeVisible();
+  await expect(page.getByText('2 students').first()).toBeVisible();
+  await page.screenshot({
+    path: `e2e/screenshots/transport-students-${info.project.name}.png`,
+    fullPage: true,
+  });
   await noA11yViolations(page);
 
   // Today's trip: the attendant starts it, marks each child, and ends it with the empty-bus check.
   await page.getByRole('radio', { name: /Today/ }).click();
-  await expect(page.getByText('2 riders')).toBeVisible();
-  await page.getByRole('button', { name: 'Start trip' }).click();
+  await expect(page.getByText('2 students')).toBeVisible();
+  await expect(page.getByText('1 student', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Start trip: Route 3 · Morning pickup' }).click();
   await expect(page.getByRole('heading', { name: 'Route 3' })).toBeVisible();
   await expect(page.getByText(/Running since/)).toBeVisible();
   await noA11yViolations(page);
@@ -139,7 +160,7 @@ test('transport: vehicle, papers, stops, route, riders, a trip', async ({
   await page.getByRole('radio', { name: /Reports/ }).click();
   const log = page.getByRole('region', { name: 'Boarding log' });
   await expect(log.getByText(first!.name)).toHaveCount(2); // boarded, then handed to school
-  await expect(page.getByText(/Route 3 · Pickup · \d\d:\d\d to \d\d:\d\d/)).toBeVisible();
+  await expect(page.getByText(/Route 3 · Morning pickup · \d\d:\d\d to \d\d:\d\d/)).toBeVisible();
   await expect(
     page.getByText('Every vehicle’s papers are in order for the next 30 days.'),
   ).toBeVisible();

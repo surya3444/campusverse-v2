@@ -5,6 +5,7 @@ import {
   NewCampus,
   NewSchool,
   OrganisationChange,
+  ViewChoice,
 } from '@campusverse/contracts';
 import { withTenant, type Db } from '@campusverse/db';
 import {
@@ -26,7 +27,9 @@ import {
   addCampus,
   addInstitution,
   brandFiles,
+  myView,
   organisationProfile,
+  saveView,
   setCampusPhoto,
   setOrganisationLogo,
   updateCampus,
@@ -153,6 +156,18 @@ export class ProfilesController {
   }
 
   // The organisation and campuses --------------------------------------------------------------
+
+  /** The person's view: what they may look at, and what they chose. */
+  @Get('organisation/view')
+  view(@Req() req: AuthedRequest) {
+    return myView(this.db, actorOf(req));
+  }
+
+  @Post('organisation/view')
+  @HttpCode(200)
+  setView(@Body() body: unknown, @Req() req: AuthedRequest) {
+    return saveView(this.db, actorOf(req), ViewChoice.parse(body));
+  }
 
   @Get('organisation/profile')
   organisation(@Req() req: AuthedRequest) {

@@ -28,6 +28,8 @@ import { admissionsJobs } from '@campusverse/school-admissions';
 import { gateJobs } from '@campusverse/shared-gate';
 import { hostelAudience, hostelJobs } from '@campusverse/shared-hostel';
 import { helpdeskJobs } from '@campusverse/shared-helpdesk';
+import { mentoringJobs } from '@campusverse/shared-mentoring';
+import { grievanceJobs } from '@campusverse/shared-grievances';
 import { healthJobs } from '@campusverse/shared-health';
 import { coverJobs, generationJobs } from '@campusverse/school-timetable';
 import { schoolPlacement } from '@campusverse/school-enrolment';
@@ -120,6 +122,8 @@ const runtime: Runtime = createRuntime({
     ...gateJobs(),
     ...hostelJobs(),
     ...helpdeskJobs(),
+    ...mentoringJobs(),
+    ...grievanceJobs(),
     ...healthJobs(),
   ],
   tasks: [...comms.tasks, ...attendance.tasks, ...finance.tasks, ...transport.tasks],

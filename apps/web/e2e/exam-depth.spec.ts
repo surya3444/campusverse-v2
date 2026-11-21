@@ -25,7 +25,7 @@ test('an exam gets a date sheet, and its analysis shows how it went', async ({
   await expect(page.getByRole('heading', { name: 'Term 1' })).toBeVisible();
 
   // The date sheet: two papers on one day; the second can't overlap the first.
-  await page.getByRole('tab', { name: 'Date sheet' }).click();
+  await page.getByRole('radio', { name: 'Date sheet' }).click();
   const rows = page.getByRole('row');
   const first = rows.nth(1);
   const second = rows.nth(2);
@@ -51,7 +51,7 @@ test('an exam gets a date sheet, and its analysis shows how it went', async ({
   await page.screenshot({ path: 'e2e/screenshots/exam-date-sheet.png', fullPage: true });
 
   // Marks for the first paper, then the analysis shows it.
-  await page.getByRole('tab', { name: 'Papers' }).click();
+  await page.getByRole('radio', { name: 'Papers' }).click();
   await page
     .getByRole('link', { name: /^Enter marks: / })
     .first()
@@ -70,7 +70,7 @@ test('an exam gets a date sheet, and its analysis shows how it went', async ({
   }
   await expect(page.getByText(/Saved/).first()).toBeVisible({ timeout: 15_000 });
   await page.goBack();
-  await page.getByRole('tab', { name: 'Analysis' }).click();
+  await page.getByRole('radio', { name: 'Analysis' }).click();
   await expect(page.getByText('Pass mark 33.00%')).toBeVisible();
   await expect(page.getByText('Top of the class')).toBeVisible();
   await noA11yViolations(page);

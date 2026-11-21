@@ -393,6 +393,9 @@ export function FeesTab({
                   <div className="flex flex-1 flex-col">
                     <span className="tabular text-body font-medium text-ink">
                       {f.perYear(rupees(fee.totalPaise))}
+                      <span className="block text-caption font-normal text-ink-muted">
+                        {f.oneWay(rupees(Math.floor(fee.totalPaise / 2)))}
+                      </span>
                     </span>
                     <span className="text-caption text-ink-muted">
                       {fee.instalments.map((i) => `${i.label} ${date(i.dueOn)}`).join(' · ')}

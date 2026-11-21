@@ -7,6 +7,7 @@ import { parseFieldKeys } from '@campusverse/crypto';
 import { chooseGateway } from '@campusverse/shared-finance';
 import { createS3Store } from '@campusverse/platform-documents';
 import { claudeModel, localModel, openaiModel, type Model } from '@campusverse/verse-ai';
+import { createHash } from 'node:crypto';
 import { createApi } from './app.js';
 import { createSmsSimulator } from './simulation.js';
 
@@ -43,6 +44,9 @@ const app = await createApi(
       sender: applySimulator?.sender ?? sender,
     }),
     applySimulator,
+    applySecret: createHash('sha256')
+      .update(`apply-session:${env.AUTH_PEPPER}`)
+      .digest('base64url'),
     keys: parseFieldKeys(env.FIELD_KEYS),
     ...(env.HEALTH_KEYS ? { healthKeys: parseFieldKeys(env.HEALTH_KEYS) } : {}),
     gateway: chooseGateway({

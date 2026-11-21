@@ -64,3 +64,56 @@ export type VisitNotes = { complaint: string; care: string };
  */
 export const SMALL_COUNT = 5;
 export const shownCount = (n: number): number | null => (n > 0 && n < SMALL_COUNT ? null : n);
+
+// ---------------------------------------------------------------------------------------------
+// Medicines and stock (rule book §13.9 Medicines & Stock)
+// ---------------------------------------------------------------------------------------------
+
+/** A medicine is flagged when a batch expires within this many days. */
+export const EXPIRY_WARNING_DAYS = 30;
+
+export type Batch = { id: string; expiresOn: string; remaining: number };
+
+/**
+ * Takes `quantity` from the batches, earliest expiry first, skipping expired ones (dates as
+ * YYYY-MM-DD, `today` included as usable). Null when there isn't enough usable stock.
+ */
+export function takeFromBatches(
+  batches: Batch[],
+  quantity: number,
+  today: string,
+): { batchId: string; quantity: number }[] | null {
+  if (!Number.isInteger(quantity) || quantity <= 0) return null;
+  const usable = batches
+    .filter((b) => b.remaining > 0 && b.expiresOn >= today)
+    .sort((a, b) => a.expiresOn.localeCompare(b.expiresOn));
+  const takes: { batchId: string; quantity: number }[] = [];
+  let left = quantity;
+  for (const b of usable) {
+    if (left === 0) break;
+    const n = Math.min(left, b.remaining);
+    takes.push({ batchId: b.id, quantity: n });
+    left -= n;
+  }
+  return left === 0 ? takes : null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Emergencies (rule book §13.9 Emergency, §16.5 steps 3–6)
+// ---------------------------------------------------------------------------------------------
+
+export const INCIDENT_KINDS = ['medical', 'injury', 'fire', 'missing_child', 'other'] as const;
+export type IncidentKind = (typeof INCIDENT_KINDS)[number];
+export const INCIDENT_OUTCOMES = [
+  'resolved_on_site',
+  'sent_home',
+  'hospital',
+  'false_alarm',
+] as const;
+export type IncidentOutcome = (typeof INCIDENT_OUTCOMES)[number];
+export const PARTNER_KINDS = ['hospital', 'clinic', 'ambulance', 'pharmacy'] as const;
+export type PartnerKind = (typeof PARTNER_KINDS)[number];
+
+/** The break-glass reason written for an SOS: who needs help, where (10+ characters always). */
+export const sosReason = (kind: IncidentKind, location: string) =>
+  `SOS (${kind.replace('_', ' ')}) at ${location.trim()}`.slice(0, 500);

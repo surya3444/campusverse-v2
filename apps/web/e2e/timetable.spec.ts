@@ -58,7 +58,7 @@ test('timetable: schedule, a lesson, publish, copy', async ({ page, context, bro
   await noA11yViolations(page);
 
   // The bell schedule starts from a usual day: eight periods, a break and lunch.
-  await page.getByRole('button', { name: 'New timetable' }).click();
+  await page.getByRole('button', { name: 'Make one by hand' }).click();
   const form = page.getByRole('form', { name: 'New timetable' });
   await form.getByLabel('Name').fill('Term 1');
   await noA11yViolations(page);
@@ -80,9 +80,9 @@ test('timetable: schedule, a lesson, publish, copy', async ({ page, context, bro
   await cell.getByRole('button', { name: 'Save' }).click();
   await expect(cell).toBeHidden();
   await expect(
-    page.getByRole('button', { name: new RegExp(`3-A, ${day}, period 1: MATH`) }),
+    page.getByRole('button', { name: new RegExp(`3-A, ${day}, period 1: Mathematics`) }),
   ).toBeVisible();
-  await expect(page.getByText('MATH 1 of 6')).toBeVisible();
+  await expect(page.getByText(/^Mathematics( \(MATH\))? 1 of 6$/)).toBeVisible();
   await noA11yViolations(page);
   await page.screenshot({
     path: `e2e/screenshots/timetable-${info.project.name}.png`,
@@ -138,6 +138,36 @@ test('timetable: schedule, a lesson, publish, copy', async ({ page, context, bro
   // The parent sees today's lesson in the app, and that it's covered (the app is phone-sized).
   if (info.project.name === 'phone') return;
   await apiPost(page, `/school/setup/${id}/invites`);
+
+  // The maths teacher's own week: today's lesson, covered while they're away; and their calendar
+  // link, which a calendar app can fetch with no session.
+  const mine = await browser.newContext();
+  const teacherSession = await sessionFor('teacher', s.orgId);
+  await signInAs(mine, { ...teacherSession, institutionId: id });
+  const tpage = await mine.newPage();
+  await tpage.goto('/my-timetable');
+  await expect(tpage.getByRole('heading', { name: 'My timetable' })).toBeVisible();
+  const todayPanel = tpage.locator('section', {
+    has: tpage.getByRole('heading', { name: 'Today', exact: true }),
+  });
+  await expect(todayPanel).toContainText('You’re away today');
+  await expect(todayPanel.getByText('Mathematics')).toBeVisible();
+  await expect(todayPanel.getByText(/Covered by Synthetic Cover Teacher/)).toBeVisible();
+  await noA11yViolations(tpage);
+  await tpage.screenshot({ path: 'e2e/screenshots/my-timetable.png', fullPage: true });
+  await tpage.getByRole('button', { name: 'Add to my calendar' }).click();
+  const link = tpage.getByRole('dialog', { name: /Google Calendar or Outlook/ });
+  await link.getByRole('button', { name: 'Make my link' }).click();
+  const url = await link.getByLabel('Your calendar link').inputValue();
+  expect(url).toMatch(/\/api\/v1\/public\/calendar\/[0-9a-f-]{36}\/[A-Za-z0-9_-]+\.ics$/);
+  await noA11yViolations(tpage);
+  await tpage.screenshot({ path: 'e2e/screenshots/my-timetable-calendar.png' });
+  const anonymous = await browser.newContext();
+  const ics = await anonymous.request.get(url);
+  expect(ics.headers()['content-type']).toMatch(/^text\/calendar/);
+  expect(await ics.text()).toMatch(/^BEGIN:VCALENDAR/);
+  await anonymous.close();
+  await mine.close();
   const app = await openApp(browser, await sessionFor('guardian', s.orgId));
   await app.getByRole('button', { name: 'Timetable' }).first().click();
   await expect(app.getByText('Today', { exact: true })).toBeVisible({ timeout: 30_000 });
@@ -186,7 +216,7 @@ test('timetable: generate under rules, and a teaching group', async ({ page, con
     personId: overview.staff[0]!.personId,
   });
   await page.reload();
-  await page.getByRole('button', { name: 'New timetable' }).click();
+  await page.getByRole('button', { name: 'Make one by hand' }).click();
   const form = page.getByRole('form', { name: 'New timetable' });
   await form.getByLabel('Name').fill('Term 1');
   await form.getByRole('button', { name: 'Save' }).click();
@@ -195,33 +225,50 @@ test('timetable: generate under rules, and a teaching group', async ({ page, con
   // Generate: the rules (maths as a double once a week, in the morning), the worker's search,
   // then the preview of the six maths periods; placing them meets the target.
   await page.getByRole('button', { name: 'Generate timetable' }).click();
-  const rules = page.getByRole('form', { name: 'Generate timetable' });
-  await rules.locator('summary', { hasText: 'Subjects' }).click();
-  await rules.getByLabel('Double periods a week: Mathematics').selectOption('1');
-  await rules.getByLabel('Time of day: Mathematics').selectOption('morning');
-  await rules.getByLabel('Needs a room: Mathematics').fill('Maths room');
-  // The maths teacher isn't available in period 1.
-  await rules.locator('summary', { hasText: 'Teachers' }).click();
-  await rules.getByRole('checkbox', { name: /not available in P1$/ }).check();
+  const gen = page.getByRole('dialog', { name: 'Timetable generator' });
+  // It opens at the school day; the rules are step 4.
+  await expect(gen.getByRole('button', { name: 'School day' })).toHaveAttribute(
+    'aria-current',
+    'step',
+  );
+  await gen.getByRole('button', { name: 'Rules & preferences' }).click();
+  await page.screenshot({ path: `e2e/screenshots/generator-setup-${info.project.name}.png` });
+  await gen.getByRole('radio', { name: 'Subjects' }).click();
+  await gen.getByLabel('Double periods a week: Mathematics').selectOption('1');
+  await gen.getByLabel('Time of day: Mathematics').selectOption('morning');
+  await gen.getByLabel('Needs a room: Mathematics').fill('Maths room');
+  await gen.getByLabel('Needs a room: Mathematics').blur();
+  // The maths teacher isn't available in period 1…
+  await gen.getByRole('radio', { name: 'Teachers' }).click();
+  await gen.getByRole('button', { name: /not available in P1$/ }).click();
   // …and not on Monday in period 2.
-  await rules.getByText(/^Not available at particular times/).click();
-  await rules.getByRole('checkbox', { name: /not available Monday period 2$/ }).check();
+  await gen.getByText(/^Not available at particular times/).click();
+  await gen.getByRole('checkbox', { name: /not available Monday period 2$/ }).check();
   await noA11yViolations(page);
-  await noA11yViolations(page);
-  await rules.getByRole('button', { name: 'Generate' }).click();
-  const canvas = page.getByRole('dialog');
-  await expect(canvas.getByText('Every period placed with every rule kept.')).toBeVisible({
+  await gen.getByRole('button', { name: 'Check & generate' }).click();
+  await expect(gen.getByText('Periods to place')).toBeVisible();
+  await gen.getByRole('button', { name: 'Generate timetable' }).click();
+  await expect(gen.getByText('Every period is placed and every rule kept.')).toBeVisible({
     timeout: 30_000,
   });
-  await expect(canvas.getByText('6 of 6 lessons in their subject’s time of day.')).toBeVisible();
-  await expect(canvas.getByText(/period 1, Mathematics/)).toHaveCount(0);
-  await expect(canvas.getByText(/Monday, period 2, Mathematics/)).toHaveCount(0);
-  await expect(canvas.getByText(/Mathematics with .* in Maths room/).first()).toBeVisible();
-  await expect(canvas.getByRole('button', { name: 'Place 6 lessons' })).toBeVisible();
+  const wish = gen.getByRole('list', { name: 'Preferences met' }).getByRole('listitem');
+  await expect(wish.filter({ hasText: 'Subjects in their time of day' })).toContainText('6 of 6');
+  const week = gen.getByRole('region', { name: 'Class 3-A' });
+  await expect(week.getByRole('row', { name: /^Period 1/ })).not.toContainText('Mathematics');
+  await expect(week.getByText(/Maths room/).first()).toBeVisible();
+  await page.screenshot({ path: `e2e/screenshots/generator-result-${info.project.name}.png` });
   await noA11yViolations(page);
-  await canvas.getByRole('button', { name: 'Place 6 lessons' }).click();
-  await expect(canvas).toBeHidden();
-  await expect(page.getByText('MATH 6 of 6')).toBeVisible();
+  // Another arrangement keeps the rules; placing writes exactly what is shown.
+  await gen.getByRole('button', { name: 'Try another arrangement' }).click();
+  await expect(gen.getByText('Every period is placed and every rule kept.')).toBeVisible({
+    timeout: 30_000,
+  });
+  await gen.getByRole('button', { name: 'Place 6 lessons' }).click();
+  // Placed: publish now, or look at the week first (here: look, then add a group by hand).
+  await expect(gen.getByText('6 lessons placed.')).toBeVisible();
+  await gen.getByRole('button', { name: 'See the week' }).click();
+  await expect(gen).toBeHidden();
+  await expect(page.getByText(/^Mathematics( \(MATH\))? 6 of 6$/)).toBeVisible();
 
   // A second-language group of 3-A, placed in a free period as Hindi and Kannada.
   await page.getByRole('button', { name: 'New group' }).click();
@@ -252,7 +299,9 @@ test('timetable: generate under rules, and a teaching group', async ({ page, con
   await cell.getByRole('button', { name: 'Save' }).click();
   await expect(cell).toBeHidden();
   await expect(
-    page.getByRole('button', { name: /3-A, \w+, period \d+: Second language L2HI, L2KA/ }),
+    page.getByRole('button', {
+      name: /3-A, \w+, period \d+: Second language Hindi second language, Kannada second language/,
+    }),
   ).toBeVisible();
   await page.screenshot({
     path: `e2e/screenshots/timetable-groups-${info.project.name}.png`,

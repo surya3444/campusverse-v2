@@ -4,6 +4,7 @@ export {
   approvalDesign,
   approvalStates,
   decideApproval,
+  myDecisions,
   myWork,
   saveApprovalSteps,
   startApproval,
@@ -11,6 +12,7 @@ export {
   type ApprovalErrorCode,
   type ApprovalState,
   type ProcessPolicy,
+  type MyDecision,
   type WorkItem,
   type WorkflowDeps,
 } from './application/workflow.js';

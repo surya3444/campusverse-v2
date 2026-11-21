@@ -1,6 +1,10 @@
 import {
+  CoScholasticArea,
   ExamCreate,
   Id,
+  ReportCardSave,
+  ResultPlanSave,
+  SubjectParts,
   MarkChange,
   MarksSave,
   PaperScheduleInput,
@@ -11,8 +15,17 @@ import {
 } from '@campusverse/contracts';
 import type { Actor } from '@campusverse/platform-permissions';
 import {
+  coScholasticAreas,
   createExam,
   dateSheet,
+  publishResultPlan,
+  reportCardSheet,
+  resultPlanDetail,
+  resultPlans,
+  saveArea,
+  saveReportCard,
+  saveResultPlan,
+  setSubjectParts,
   examAnalysis,
   schedulePaper,
   decideMarkChange,
@@ -89,6 +102,82 @@ export class ExamsController {
       institutionId: Id.parse(id),
       ...ExamCreate.parse(body),
     });
+  }
+
+  /** One subject's marks split in one class (Theory + Practical), while it has no marks. */
+  @Post(':id/subject-parts')
+  subjectParts(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    return setSubjectParts(this.deps, actorOf(req), {
+      examId: Id.parse(id),
+      ...SubjectParts.parse(body),
+    });
+  }
+
+  /** Co-scholastic areas for report cards (CBSE's four to start with). */
+  @Get('institution/:institutionId/areas')
+  areas(@Param('institutionId') id: string, @Req() req: AuthedRequest) {
+    return coScholasticAreas(this.deps, actorOf(req), Id.parse(id));
+  }
+
+  @Post('institution/:institutionId/areas')
+  saveArea(@Param('institutionId') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    const a = CoScholasticArea.parse(body);
+    return saveArea(this.deps, actorOf(req), {
+      institutionId: Id.parse(id),
+      id: a.id ?? null,
+      name: a.name,
+      ...(a.retired !== undefined ? { retired: a.retired } : {}),
+    });
+  }
+
+  /** A section's report-card entries for an exam: co-scholastic grades and remarks. */
+  @Get(':id/report-card')
+  reportCard(
+    @Param('id') id: string,
+    @Query('sectionId') sectionId: string,
+    @Req() req: AuthedRequest,
+  ) {
+    return reportCardSheet(this.deps, actorOf(req), {
+      examId: Id.parse(id),
+      sectionId: Id.parse(sectionId),
+    });
+  }
+
+  @Post(':id/report-card')
+  saveReportCard(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    return saveReportCard(this.deps, actorOf(req), {
+      examId: Id.parse(id),
+      ...ReportCardSave.parse(body),
+    });
+  }
+
+  /** The year's final results: exams combined with weights. */
+  @Get('institution/:institutionId/final-results')
+  finals(@Param('institutionId') id: string, @Req() req: AuthedRequest) {
+    return resultPlans(this.deps, actorOf(req), Id.parse(id));
+  }
+
+  @Post('institution/:institutionId/final-results')
+  saveFinal(@Param('institutionId') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    const b = ResultPlanSave.parse(body);
+    return saveResultPlan(this.deps, actorOf(req), {
+      institutionId: Id.parse(id),
+      id: b.id ?? null,
+      yearId: b.yearId,
+      name: b.name,
+      classIds: b.classIds,
+      exams: b.exams,
+    });
+  }
+
+  @Get('final-results/:planId')
+  final(@Param('planId') id: string, @Req() req: AuthedRequest) {
+    return resultPlanDetail(this.deps, actorOf(req), Id.parse(id));
+  }
+
+  @Post('final-results/:planId/publish')
+  publishFinal(@Param('planId') id: string, @Req() req: AuthedRequest) {
+    return publishResultPlan(this.deps, actorOf(req), Id.parse(id));
   }
 
   @Get(':id/date-sheet')

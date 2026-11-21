@@ -49,6 +49,7 @@ import { chooseInstitution } from '../../lib/scope';
 import { SYSTEMS, profileOf, type Profile } from '../../lib/systems';
 import { useInstitution } from './attendance/shared';
 import { useMe } from './common/me';
+import { ViewSwitcher } from './common/view-switcher';
 import { absentTeacher, defaultScope, scopes, students, unmarkedSections } from './synthetic';
 
 type Actions = {
@@ -71,8 +72,8 @@ type NavSection = { group: string | null; key: string; modules: NavModule[] };
 /**
  * The sidebar, as the hub draws it: Home (Verse AI, Today, My Work, All institutions, All apps),
  * then the rule book's nine systems and Campus Core as sections. Each live module of a system is a
- * row: one page opens directly; several fold under the module's name. Links someone can't use
- * (their `perm`) are left out. A system with nothing live yet appears on /apps only.
+ * row: one page opens directly; several fold under the module's name; a planned module opens its
+ * "planned" page. Links someone can't use (their `perm`) are left out.
  */
 const navFor = (profile: Profile, can: (p: string) => boolean): NavSection[] =>
   [
@@ -87,25 +88,32 @@ const navFor = (profile: Profile, can: (p: string) => boolean): NavSection[] =>
         { href: '/apps', label: en.nav.apps, Icon: LayoutGrid },
       ].map((i) => ({ key: i.href, label: i.label, Icon: i.Icon, items: [i] })),
     },
-    ...SYSTEMS.filter((s) => s.key !== 'ai').map((s) => ({
+    ...SYSTEMS.map((s) => ({
       group: en.systems.groups[s.key] ?? s.key,
       key: s.key,
       modules: [
-        ...s.apps
-          .filter((a) => a.status !== 'planned')
-          .map((a) => ({
-            key: a.key,
-            label: (en.systems.apps as Record<string, readonly string[]>)[a.key]?.[0] ?? a.key,
-            Icon: a.Icon,
-            items: (a.nav ?? [])
-              .filter((n) => (n.for ?? a.for ?? [profile]).includes(profile))
-              .filter((n) => !n.perm || n.perm.some(can))
-              .map((n) => ({
-                href: n.href,
-                label: en.nav[n.key as keyof typeof en.nav] as string,
-                Icon: n.Icon ?? a.Icon,
-              })),
-          })),
+        ...s.apps.map((a) => ({
+          key: a.key,
+          label: (en.systems.apps as Record<string, readonly string[]>)[a.key]?.[0] ?? a.key,
+          Icon: a.Icon,
+          // A planned module opens its "planned" page, so every rule-book module has a row.
+          items: (a.status === 'planned'
+            ? (a.for ?? [profile]).includes(profile)
+              ? [{ key: 'soon', href: `/soon/${a.key}`, Icon: a.Icon }]
+              : []
+            : (a.nav ?? [])
+          )
+            .filter((n) => (n.for ?? a.for ?? [profile]).includes(profile))
+            .filter((n) => !n.perm || n.perm.some(can))
+            .map((n) => ({
+              href: n.href,
+              label:
+                n.key === 'soon'
+                  ? ((en.systems.apps as Record<string, readonly string[]>)[a.key]?.[0] ?? a.key)
+                  : (en.nav[n.key as keyof typeof en.nav] as string),
+              Icon: n.Icon ?? a.Icon,
+            })),
+        })),
         ...(s.key === 'core'
           ? [
               {
@@ -234,13 +242,27 @@ function ProfileMenu() {
   );
 }
 
+/** Every sidebar page's path, so a page under another (/admissions/leads) lights only its own link. */
+const NAV_BASES = [
+  ...new Set(
+    SYSTEMS.flatMap((x) =>
+      x.apps.flatMap((a) => (a.nav ?? []).map((n) => n.href.split('?')[0] ?? '')),
+    ),
+  ),
+];
+const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
+
 /** Whether a link is the page you're on; a `?tab=` link also needs its tab (or, with none, to be first). */
 function useIsHere() {
   const path = usePathname();
   const tab = useSearchParams().get('tab');
   return (href: string, first = false) => {
     const [base, query] = href.split('?');
-    const onPath = base === '/' ? path === '/' : path === base || path.startsWith(`${base ?? ''}/`);
+    const onPath =
+      base === '/'
+        ? path === '/'
+        : under(path, base ?? '') &&
+          !NAV_BASES.some((b) => b.length > (base ?? '').length && under(path, b));
     if (!onPath || !query) return onPath;
     const want = new URLSearchParams(query).get('tab');
     return tab ? tab === want : first;
@@ -522,13 +544,17 @@ function Sidebar({
         />
       </div>
       <div className="border-b border-white/10 px-4 pb-3">
-        <ScopeChip
-          value={scope}
-          options={options}
-          onChange={(id) => (real ? chooseInstitution(id) : onScope(id))}
-          label={en.app.scope}
-          dark
-        />
+        {signedIn ? (
+          <ViewSwitcher />
+        ) : (
+          <ScopeChip
+            value={scope}
+            options={options}
+            onChange={(id) => (real ? chooseInstitution(id) : onScope(id))}
+            label={en.app.scope}
+            dark
+          />
+        )}
       </div>
       <nav aria-label={en.app.nav} className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
         {navFor(profileOf(real ? chosen.profile : undefined), can).map((g) => (

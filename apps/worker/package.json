@@ -24,6 +24,8 @@
     "@campusverse/shared-gate": "workspace:*",
     "@campusverse/shared-health": "workspace:*",
     "@campusverse/shared-helpdesk": "workspace:*",
+    "@campusverse/shared-mentoring": "workspace:*",
+    "@campusverse/shared-grievances": "workspace:*",
     "@campusverse/shared-hostel": "workspace:*",
     "@campusverse/shared-transport": "workspace:*"
   },

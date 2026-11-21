@@ -51,6 +51,9 @@ export {
 export {
   assertYearOpen,
   classesOf,
+  classesIn,
+  sectionsOfYear,
+  yearByLabel,
   classInfo,
   classTeacherSections,
   type ClassInfo,
@@ -87,3 +90,14 @@ export {
 } from './application/subjects.js';
 export { setupTools } from './application/verse.js';
 export { closeYear, reopenYear, YEAR_CLOSED, YEAR_REOPENED } from './application/years.js';
+export {
+  addClassToYear,
+  addSection,
+  removeClassFromYear,
+  removeSection,
+  sectionInUse,
+  setSectionClosed,
+  updateSection,
+  yearPlanProblems,
+  type YearPlan,
+} from './application/year-structure.js';

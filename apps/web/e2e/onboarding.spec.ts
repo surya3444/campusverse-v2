@@ -35,7 +35,6 @@ test('an invited admin signs in with a simulated code and onboards two campuses'
 
   // Sign in: the code arrives as a simulated SMS on screen.
   await page.goto('/login');
-  await expect(page.getByText(/Simulation mode/)).toBeVisible();
   await page.getByLabel('Mobile number').fill(phone);
   await page.getByRole('button', { name: 'Send code' }).click();
   const sms = page.getByRole('status').filter({ hasText: 'Simulated SMS' });

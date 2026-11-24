@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react';
-import { appEnv, simulatingHere } from '@campusverse/config';
 import type { Metadata, Viewport } from 'next';
 import {
   DM_Sans,
@@ -66,9 +65,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: '#04266d', width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const env = appEnv();
-  const simulating = simulatingHere();
-  const showBar = env !== 'production' || simulating;
   const fonts = [dmSans, jakarta, kannada, telugu, tamil, devanagari]
     .map((f) => f.variable)
     .join(' ');
@@ -76,8 +72,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="en"
       className={fonts}
-      // The slim environment bar's height, so the sticky sidebar and top bar sit under it.
-      style={{ '--env-bar': showBar ? '26px' : '0px' } as CSSProperties}
+      // No environment bar: the sticky sidebar and top bar sit at the very top.
+      style={{ '--env-bar': '0px' } as CSSProperties}
     >
       <body className="min-h-dvh">
         <a
@@ -86,25 +82,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           {en.app.skipToContent}
         </a>
-        {showBar && (
-          // One slim bar: which environment this is, and whether messages are simulated.
-          <div
-            role="note"
-            className={
-              env === 'test'
-                ? 'sticky top-0 z-40 flex h-[26px] items-center justify-center gap-x-3 overflow-hidden bg-signal-warn-tint px-4 text-center text-[12px] font-medium whitespace-nowrap text-signal-warn-ink'
-                : 'sticky top-0 z-40 flex h-[26px] items-center justify-center gap-x-3 overflow-hidden bg-midnight-950 px-4 text-center text-[12px] font-medium whitespace-nowrap text-white/85'
-            }
-          >
-            {env !== 'production' && (
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden className="size-1.5 rounded-full bg-cyan-400" />
-                {en.app.env[env]}
-              </span>
-            )}
-            {simulating && <span className="truncate">{en.app.simulation}</span>}
-          </div>
-        )}
         {children}
       </body>
     </html>
